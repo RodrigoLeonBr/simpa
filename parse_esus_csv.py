@@ -20,12 +20,16 @@ Os arquivos de entrada devem estar em UTF-8 (os exports do e-SUS vem em
 ISO-8859-1 / Latin-1 -- converta antes com `iconv -f ISO-8859-1 -t UTF-8`).
 """
 
+import argparse
 import json
+import os
 import re
 import sys
 import unicodedata
 from datetime import datetime
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Mapeia o titulo do relatorio (linha 7 do arquivo) para o tipo_relatorio
 # usado na coluna CHECK de esus_cargas.
@@ -76,9 +80,19 @@ def parse_br_date(s: str):
     return datetime.strptime(s.strip(), "%d/%m/%Y").date()
 
 
+def read_lines(path: Path):
+    """Lê CSV e-SUS (UTF-8 ou ISO-8859-1 / Latin-1)."""
+    for encoding in ("utf-8", "latin-1"):
+        try:
+            with open(path, encoding=encoding) as f:
+                return [line.rstrip("\n") for line in f]
+        except UnicodeDecodeError:
+            continue
+    raise ValueError(f"Encoding não suportado em {path.name}")
+
+
 def parse_report(path: Path):
-    with open(path, encoding="utf-8") as f:
-        lines = [line.rstrip("\n") for line in f]
+    lines = read_lines(path)
 
     meta = {
         "arquivo_origem": path.name,
@@ -301,26 +315,161 @@ def build_sql(reports):
     return "\n".join(out)
 
 
-def main():
-    if len(sys.argv) != 3:
-        print(__doc__)
+def write_to_pg(reports):
+    """Grava lista de (meta, sections) no PostgreSQL via psycopg2."""
+    import psycopg2
+
+    load_dotenv()
+    conn = psycopg2.connect(
+        host=os.environ["PG_HOST"],
+        port=os.environ["PG_PORT"],
+        dbname=os.environ["PG_DB"],
+        user=os.environ["PG_USER"],
+        password=os.environ["PG_PASS"],
+    )
+    results = []
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                for meta, sections in reports:
+                    cur.execute(
+                        """
+                        INSERT INTO esus_cargas (
+                            tipo_relatorio, competencia, periodo_inicio, periodo_fim,
+                            municipio, unidade, equipe_codigo, equipe_nome,
+                            profissional, cbo, filtros_personalizados,
+                            dados_processados_em, relatorio_gerado_em,
+                            relatorio_gerado_por, registros_identificados,
+                            registros_nao_identificados, arquivo_origem
+                        ) VALUES (
+                            %(tipo_relatorio)s, %(competencia)s, %(periodo_inicio)s,
+                            %(periodo_fim)s, %(municipio)s, %(unidade)s,
+                            %(equipe_codigo)s, %(equipe_nome)s, %(profissional)s,
+                            %(cbo)s, %(filtros_personalizados)s,
+                            %(dados_processados_em)s, %(relatorio_gerado_em)s,
+                            %(relatorio_gerado_por)s, %(registros_identificados)s,
+                            %(registros_nao_identificados)s, %(arquivo_origem)s
+                        )
+                        ON CONFLICT (tipo_relatorio, competencia, unidade, equipe_nome)
+                        DO UPDATE SET
+                            arquivo_origem = EXCLUDED.arquivo_origem,
+                            importado_em   = now()
+                        RETURNING id
+                        """,
+                        meta,
+                    )
+                    carga_id = cur.fetchone()[0]
+
+                    for sec_name, rows in sections:
+                        for descricao, ordem, valores in rows:
+                            cur.execute(
+                                """
+                                INSERT INTO esus_indicadores_raw
+                                    (carga_id, secao, descricao, ordem, valores)
+                                VALUES (%s, %s, %s, %s, %s)
+                                ON CONFLICT (carga_id, secao, descricao)
+                                DO UPDATE SET valores = EXCLUDED.valores
+                                """,
+                                (
+                                    carga_id,
+                                    sec_name,
+                                    descricao,
+                                    ordem,
+                                    json.dumps(valores, ensure_ascii=False),
+                                ),
+                            )
+
+                    n_ind = sum(len(r) for _, r in sections)
+                    results.append(
+                        {
+                            "carga_id": carga_id,
+                            "tipo_relatorio": meta["tipo_relatorio"],
+                            "competencia": str(meta["competencia"]),
+                            "unidade": meta["unidade"],
+                            "equipe_nome": meta["equipe_nome"],
+                            "registros_identificados": meta.get("registros_identificados"),
+                            "registros_nao_identificados": meta.get(
+                                "registros_nao_identificados"
+                            ),
+                            "indicadores": n_ind,
+                            "status": "ok",
+                        }
+                    )
+    finally:
+        conn.close()
+    return results
+
+
+def collect_reports(src: Path):
+    reports = []
+    if src.is_dir():
+        paths = sorted(src.glob("*.csv"))
+    elif src.is_file():
+        paths = [src]
+    else:
+        print(f"Erro: {src} não encontrado", file=sys.stderr)
         sys.exit(1)
 
-    src_dir = Path(sys.argv[1])
-    out_file = Path(sys.argv[2])
-
-    reports = []
-    for path in sorted(src_dir.glob("*.csv")):
+    for path in paths:
         meta, sections = parse_report(path)
         reports.append((meta, sections))
+    return reports
+
+
+def main():
+    parser = argparse.ArgumentParser(description="SIMPA — Parser e-SUS APS")
+    parser.add_argument("input", help="Arquivo .csv ou pasta com .csvs")
+    parser.add_argument("output", nargs="?", help="Arquivo .sql de saída (modo legado)")
+    parser.add_argument(
+        "--json-out",
+        action="store_true",
+        help="Imprime JSON no stdout (sem gravar no banco)",
+    )
+    parser.add_argument(
+        "--pg-write",
+        action="store_true",
+        help="Grava direto no PostgreSQL via psycopg2",
+    )
+    args = parser.parse_args()
+
+    reports = collect_reports(Path(args.input))
+
+    if args.json_out:
+        output = []
+        for meta, sections in reports:
+            entry = {
+                k: str(v) if hasattr(v, "isoformat") else v for k, v in meta.items()
+            }
+            entry["sections_count"] = len(sections)
+            entry["indicadores_count"] = sum(len(r) for _, r in sections)
+            output.append(entry)
+        print(json.dumps(output, ensure_ascii=False, default=str))
+        return
+
+    if args.pg_write:
+        load_dotenv()
+        results = write_to_pg(reports)
+        print(json.dumps(results, ensure_ascii=False, default=str))
+        return
+
+    if not args.output:
+        print(
+            "Erro: informe o arquivo de saída .sql ou use --json-out/--pg-write",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    for meta, sections in reports:
         n_indicadores = sum(len(rows) for _, rows in sections)
-        print(f"OK  {path.name} -> {meta['tipo_relatorio']} "
-              f"({meta['competencia']}, {meta['unidade']}, {meta['equipe_nome']}) "
-              f"- {len(sections)} seções, {n_indicadores} indicadores")
+        print(
+            f"OK  {meta['arquivo_origem']} -> {meta['tipo_relatorio']} "
+            f"({meta['competencia']}, {meta['unidade']}, {meta['equipe_nome']}) "
+            f"- {len(sections)} seções, {n_indicadores} indicadores"
+        )
 
     sql = build_sql(reports)
-    out_file.write_text(sql, encoding="utf-8")
-    print(f"\nSeed SQL gerado em: {out_file}")
+    Path(args.output).write_text(sql, encoding="utf-8")
+    print(f"\nSeed SQL gerado em: {args.output}")
 
 
 if __name__ == "__main__":
