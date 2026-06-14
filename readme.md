@@ -42,10 +42,20 @@ pip install -r requirements.txt
 python parse_esus_csv.py <arquivo.csv> --json-out   # preview JSON
 python parse_esus_csv.py <arquivo.csv> --pg-write   # grava no PostgreSQL
 python parse_esus_csv.py <pasta_csvs> seed.sql      # modo legado (gera SQL)
-python sync_sia_mysql.py --competencia 2026-05      # sync SIA (requer MySQL)
+python sync_sia_mysql.py --competencia 2025-06      # sync SIA (requer MySQL)
 ```
 
 > **Nota:** exports e-SUS vêm em ISO-8859-1. Converta para UTF-8 antes do parse, ou use `iconv`.
+
+### 4. Backend API
+
+```powershell
+cd simpa-backend
+npm install
+copy ..\.env .env
+npm run dev
+# http://localhost:3001/api/health
+```
 
 ## Agentes Claude Code
 
@@ -57,8 +67,8 @@ Os arquivos `simpa_*.md` na raiz descrevem personas especializadas (ETL, DBA, ba
 - [x] Parser e-SUS (`parse_esus_csv.py`) + seed SQL de exemplo
 - [x] Schema PostgreSQL completo (`schema_full.sql` v3.1.0) aplicado no Docker
 - [x] Flags `--json-out` / `--pg-write` no parser (Plano A)
-- [x] `sync_sia_mysql.py` — conector SIA (requer credenciais MySQL/XAMPP no `.env`)
-- [ ] Backend Express (`simpa-backend/`)
+- [x] `sync_sia_mysql.py` — conector SIA (`s_prd` + `prestador` + `procedimento`)
+- [x] Backend Express (`simpa-backend/`) — porta 3001
 - [ ] Frontend React (`simpa-frontend/`)
 
 ## Repositório

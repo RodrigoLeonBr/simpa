@@ -68,64 +68,81 @@ def competencia_para_date(competencia: str) -> date:
     return date(int(ano), int(mes), 1)
 
 
+def competencia_para_cmp(competencia_date: date) -> str:
+    """date(2026, 5, 1) -> '202605' (formato prd_cmp no MySQL)."""
+    return f"{competencia_date.year}{competencia_date.month:02d}"
+
+
 def calcular_faixa_etaria(idade):
-    """45 -> '40-49'"""
+    """45 -> '40-49'. Idade 999 (SIA) = 'NI' (não informada)."""
     if pd.isna(idade):
-        return None
+        return "NI"
+    idade_int = int(idade)
+    if idade_int >= 130 or idade_int == 999:
+        return "NI"
     for i, limite in enumerate(FAIXA_ETARIA_BINS[1:]):
-        if int(idade) < limite:
+        if idade_int < limite:
             return FAIXA_ETARIA_LABELS[i]
     return "80+"
 
 
 def extrair_sia(conn_mysql, competencia_date: date) -> pd.DataFrame:
     """
-    Extrai producao do MySQL para a competencia informada.
+    Extrai produção ambulatorial SIA da tabela s_prd (banco producao/XAMPP).
 
-    AJUSTE a query abaixo conforme as tabelas reais do seu banco SIA/XAMPP.
-    Use phpMyAdmin para descobrir os nomes das colunas e tabelas.
+    Joins:
+      - prestador.re_cunid = s_prd.prd_uid  → nome da unidade
+      - procedimento.codigo = s_prd.prd_pa    → descrição SIGTAP
+
+    Sexo não existe em s_prd — preenchido como 'I' (indeterminado) na transformação.
     """
-    ano = competencia_date.year
-    mes = str(competencia_date.month).zfill(2)
+    prd_cmp = competencia_para_cmp(competencia_date)
 
     query = """
         SELECT
-            estabelecimento AS unidade,
-            procedimento    AS codigo_sigtap,
-            descricao_proc  AS descricao,
-            SUM(quantidade) AS quantidade,
-            SUM(valor_aprovado) AS valor_aprovado,
-            idade,
-            sexo,
-            cbo
-        FROM producao_ambulatorial
-        WHERE ano_competencia = %(ano)s
-          AND mes_competencia = %(mes)s
+            COALESCE(p.re_cnome, pr.prd_uid) AS unidade,
+            pr.prd_pa                       AS codigo_sigtap,
+            proc.procedimento               AS descricao,
+            SUM(pr.PRD_QT_A)                AS quantidade,
+            SUM(pr.PRD_VL_A)                AS valor_aprovado,
+            pr.PRD_IDADE                    AS idade,
+            pr.prd_cbo                      AS cbo
+        FROM s_prd pr
+        LEFT JOIN prestador p ON p.re_cunid = pr.prd_uid
+        LEFT JOIN procedimento proc ON proc.codigo = pr.prd_pa
+        WHERE pr.prd_cmp = %(prd_cmp)s
+          AND pr.PRD_QT_A > 0
         GROUP BY
-            estabelecimento, procedimento, descricao_proc,
-            idade, sexo, cbo
+            p.re_cnome, pr.prd_uid, pr.prd_pa, proc.procedimento,
+            pr.PRD_IDADE, pr.prd_cbo
     """
-    # NOTA: ajuste o nome da tabela (`producao_ambulatorial`) e das colunas
-    # conforme o schema real do seu banco SIA no XAMPP.
 
-    df = pd.read_sql(query, conn_mysql, params={"ano": ano, "mes": mes})
+    df = pd.read_sql(query, conn_mysql, params={"prd_cmp": prd_cmp})
     return df
 
 
 def transformar(df: pd.DataFrame) -> pd.DataFrame:
     """Normaliza tipos e calcula faixa_etaria."""
+    if df.empty:
+        return df
+
     df = df.copy()
     df["faixa_etaria"] = df["idade"].apply(calcular_faixa_etaria)
-    df["sexo"] = (
-        df["sexo"]
-        .astype(str)
-        .str.upper()
-        .str.strip()
-        .where(df["sexo"].astype(str).str.upper().str.strip().isin(["M", "F"]), other="I")
-    )
+    # s_prd não possui sexo — usar 'I' (indeterminado)
+    df["sexo"] = "I"
     df["cbo"] = df["cbo"].astype(str).str.strip().replace("nan", None)
     df["quantidade"] = pd.to_numeric(df["quantidade"], errors="coerce").fillna(0).astype(int)
     df["valor_aprovado"] = pd.to_numeric(df["valor_aprovado"], errors="coerce")
+
+    # Agrega idades distintas que caem na mesma faixa_etaria
+    df = (
+        df.groupby(
+            ["unidade", "codigo_sigtap", "descricao", "faixa_etaria", "sexo", "cbo"],
+            dropna=False,
+            as_index=False,
+        )
+        .agg(quantidade=("quantidade", "sum"), valor_aprovado=("valor_aprovado", "sum"))
+    )
     return df
 
 
@@ -148,22 +165,23 @@ def gravar_pg(conn_pg, df: pd.DataFrame, competencia_date: date) -> dict:
             sinc_id = cur.fetchone()[0]
 
             erros = 0
+            batch = []
+            insert_sql = """
+                INSERT INTO sia_producao (
+                    sincronizacao_id, competencia, unidade,
+                    codigo_sigtap, descricao, quantidade, valor_aprovado,
+                    faixa_etaria, sexo, cbo, dados_extras
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (sincronizacao_id, unidade, codigo_sigtap,
+                             faixa_etaria, sexo, cbo)
+                DO UPDATE SET
+                    quantidade     = sia_producao.quantidade + EXCLUDED.quantidade,
+                    valor_aprovado = COALESCE(sia_producao.valor_aprovado, 0)
+                                     + COALESCE(EXCLUDED.valor_aprovado, 0)
+            """
             for _, row in df.iterrows():
                 try:
-                    extras = {}
-                    cur.execute(
-                        """
-                        INSERT INTO sia_producao (
-                            sincronizacao_id, competencia, unidade,
-                            codigo_sigtap, descricao, quantidade, valor_aprovado,
-                            faixa_etaria, sexo, cbo, dados_extras
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (sincronizacao_id, unidade, codigo_sigtap,
-                                     faixa_etaria, sexo, cbo)
-                        DO UPDATE SET
-                            quantidade     = EXCLUDED.quantidade,
-                            valor_aprovado = EXCLUDED.valor_aprovado
-                        """,
+                    batch.append(
                         (
                             sinc_id,
                             competencia_date,
@@ -177,12 +195,18 @@ def gravar_pg(conn_pg, df: pd.DataFrame, competencia_date: date) -> dict:
                             row.get("faixa_etaria"),
                             row.get("sexo"),
                             row.get("cbo"),
-                            json.dumps(extras) if extras else None,
-                        ),
+                            None,
+                        )
                     )
+                    if len(batch) >= 500:
+                        cur.executemany(insert_sql, batch)
+                        batch.clear()
                 except Exception as e:
                     erros += 1
                     print(f"Erro linha: {e}", file=sys.stderr)
+
+            if batch:
+                cur.executemany(insert_sql, batch)
 
             status = "ok" if erros == 0 else ("parcial" if erros < len(df) else "erro")
             cur.execute(
