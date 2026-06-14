@@ -57,6 +57,29 @@ npm run dev
 # http://localhost:3001/api/health
 ```
 
+### 5. Frontend React
+
+```powershell
+cd simpa-frontend
+npm install
+
+# Terminal 1 — mock API (json-server 0.17, porta 3100)
+npm run mock
+
+# Terminal 2 — app Vite (porta 5173)
+npm run dev
+# http://localhost:5173
+```
+
+Por padrão, `.env.development` aponta para o mock (`http://localhost:3100`). Para usar o backend real, altere para `http://localhost:3001` e reinicie o Vite.
+
+Build de produção:
+
+```powershell
+npm run build
+# dist/ — VITE_API_BASE=http://localhost:3001 (.env.production)
+```
+
 ## Agentes Claude Code
 
 Os arquivos `simpa_*.md` na raiz descrevem personas especializadas (ETL, DBA, backend, frontend, financiamento, LGPD, produto) para uso com Claude Code.
@@ -69,7 +92,7 @@ Os arquivos `simpa_*.md` na raiz descrevem personas especializadas (ETL, DBA, ba
 - [x] Flags `--json-out` / `--pg-write` no parser (Plano A)
 - [x] `sync_sia_mysql.py` — conector SIA (`s_prd` + `prestador` + `procedimento`)
 - [x] Backend Express (`simpa-backend/`) — porta 3001
-- [ ] Frontend React (`simpa-frontend/`)
+- [x] Frontend React (`simpa-frontend/`) — painel, importação, cadastros
 
 ## Repositório
 
