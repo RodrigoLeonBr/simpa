@@ -1,0 +1,27 @@
+# Segredos e ambiente local
+.env
+.env.local
+
+# Dados sensíveis (e-SUS / saúde) — não versionar
+*.csv
+*.dbf
+
+# Uploads e artefatos locais
+uploads/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.superpowers/
+.claude/
+
+# Imagens e anexos locais
+*.jpeg
+*.jpg
+*.png
+WhatsApp*
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+*.swp
