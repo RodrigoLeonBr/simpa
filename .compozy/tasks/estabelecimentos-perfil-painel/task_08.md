@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "FilterBar and useDashboard profile-aware unit loading"
 type: frontend
 complexity: medium
@@ -31,10 +31,10 @@ Replace hardcoded APS-only establishment fetching in `FilterBar` and `useDashboa
 </requirements>
 
 ## Subtasks
-- [ ] 08.1 Wire `painelPerfil` dependency into `useDashboard` establishment effect
-- [ ] 08.2 Update FilterBar unit dropdown data source
-- [ ] 08.3 Clear stale dashboard data when perfil changes until reload completes
-- [ ] 08.4 Update unit tests for MAC/Hospitalar establishment lists
+- [x] 08.1 Wire `painelPerfil` dependency into `useDashboard` establishment effect
+- [x] 08.2 Update FilterBar unit dropdown data source
+- [x] 08.3 Clear stale dashboard data when perfil changes until reload completes
+- [x] 08.4 Update unit tests for MAC/Hospitalar establishment lists
 
 ## Implementation Details
 
@@ -58,11 +58,11 @@ See TechSpec **Data flow — Painel**. Dashboard payload remains APS-centric unt
 
 ## Tests
 - Unit tests:
-  - [ ] `useDashboard` with `painelPerfil='MAC'` calls fetch with `perfil=MAC`
-  - [ ] When `painelPerfil` changes from APS to Hospitalar, `unidades` array updates to mocked hospital list
-  - [ ] `FilterBar` renders unit options count matching mocked establishments for active perfil
+  - [x] `useDashboard` with `painelPerfil='MAC'` calls fetch with `perfil=MAC`
+  - [x] When `painelPerfil` changes from APS to Hospitalar, `unidades` array updates to mocked hospital list
+  - [x] `FilterBar` renders unit options count matching mocked establishments for active perfil
 - Integration tests:
-  - [ ] `useDashboard.test.tsx` full load cycle with perfil switch does not throw
+  - [x] `useDashboard.test.tsx` full load cycle with perfil switch does not throw
 - Test coverage target: >=80%
 - All tests must pass
 

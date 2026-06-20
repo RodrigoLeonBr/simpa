@@ -6,10 +6,40 @@ import {
   buildPainelKpis,
   buildRanking,
   buildUnitTable,
+  getPainelCatalogStatus,
+  isPainelCatalogReady,
+  PAINEL_KPI_CATALOGS,
+  resolvePainelViewContext,
 } from './dashboardView';
 
 describe('dashboardView', () => {
   const data = mockDb.planejamento[0] as ContratoDashboard;
+
+  it('getPainelCatalogStatus returns ready for APS', () => {
+    expect(getPainelCatalogStatus('APS')).toBe('ready');
+    expect(getPainelCatalogStatus('APS', 'B')).toBe('ready');
+  });
+
+  it('getPainelCatalogStatus returns pending for MAC and other non-APS perfis', () => {
+    expect(getPainelCatalogStatus('MAC')).toBe('pending');
+    expect(getPainelCatalogStatus('Hospitalar')).toBe('pending');
+    expect(getPainelCatalogStatus('Misto', 'C')).toBe('pending');
+  });
+
+  it('PAINEL_KPI_CATALOGS marks only APS layouts as ready', () => {
+    expect(PAINEL_KPI_CATALOGS.APS).toEqual({ A: 'ready', B: 'ready', C: 'ready' });
+    expect(PAINEL_KPI_CATALOGS.MAC.A).toBe('pending');
+    expect(isPainelCatalogReady('Hospitalar')).toBe(false);
+  });
+
+  it('resolvePainelViewContext combines perfil, layout and catalog status', () => {
+    expect(resolvePainelViewContext('APS', 'A')).toEqual({
+      perfil: 'APS',
+      layout: 'A',
+      catalogStatus: 'ready',
+    });
+    expect(resolvePainelViewContext('MAC', 'B').catalogStatus).toBe('pending');
+  });
 
   it('builds six KPI cards', () => {
     const kpis = buildPainelKpis(data);
@@ -85,5 +115,11 @@ describe('dashboardView', () => {
 
     expect(() => buildPainelKpis(emptyDb)).not.toThrow();
     expect(buildPainelKpis(emptyDb).find((item) => item.id === 'metas')?.value).toBe('—');
+  });
+
+  it('does not compare coletivas delta against unrelated historico field', () => {
+    const coletivasKpi = buildPainelKpis(data).find((item) => item.id === 'coletivas');
+    expect(coletivasKpi?.delta.label).toBe('—');
+    expect(coletivasKpi?.sparkSeries).toEqual([]);
   });
 });

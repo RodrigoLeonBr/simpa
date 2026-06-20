@@ -1,26 +1,33 @@
-import { useState } from 'react';
 import { useFilters } from '../../hooks/useFilters';
 import { useDashboard } from '../../hooks/useDashboard';
-import { buildModuleStatuses, type PainelLayout } from '../../utils/dashboardView';
+import {
+  buildModuleStatuses,
+  isPainelCatalogReady,
+  type PainelLayout,
+} from '../../utils/dashboardView';
 import { LayoutSwitcher, ModuleStatusBar } from '../../components/painel/LayoutSwitcher';
+import { PainelProfilePlaceholder } from '../../components/painel/PainelProfilePlaceholder';
+import { ProfileSwitcher } from '../../components/painel/ProfileSwitcher';
+import { useState } from 'react';
 import { LayoutA } from './LayoutA';
 import { LayoutB } from './LayoutB';
 import { LayoutC } from './LayoutC';
 
 export default function PainelPage() {
-  const { competencia } = useFilters();
+  const { competencia, painelPerfil, setPainelPerfil } = useFilters();
   const { data, unidades, loading, error } = useDashboard();
   const [layout, setLayout] = useState<PainelLayout>('A');
+  const catalogReady = isPainelCatalogReady(painelPerfil, layout);
 
-  if (loading) {
+  if (loading && catalogReady) {
     return <div className="painel-state">Carregando painel…</div>;
   }
 
-  if (error || !data) {
+  if (catalogReady && (error || !data)) {
     return <div className="painel-state painel-state-error">{error ?? 'Painel indisponível'}</div>;
   }
 
-  const moduleStatuses = buildModuleStatuses(data);
+  const moduleStatuses = data ? buildModuleStatuses(data) : [];
 
   return (
     <div className="painel-page simpa-rise" data-testid="painel-page">
@@ -28,17 +35,26 @@ export default function PainelPage() {
         <div>
           <h2 className="painel-title">Painel gerencial</h2>
           <p className="painel-subtitle">
-            Visão município · modelo OCI Regional · competência {competencia}
+            Visão município · perfil {painelPerfil} · competência {competencia}
           </p>
         </div>
-        <LayoutSwitcher layout={layout} onChange={setLayout} />
+        <div className="painel-switchers">
+          <ProfileSwitcher perfil={painelPerfil} onChange={setPainelPerfil} />
+          <LayoutSwitcher layout={layout} onChange={setLayout} />
+        </div>
       </div>
 
-      {layout === 'A' ? <LayoutA data={data} unidades={unidades} /> : null}
-      {layout === 'B' ? <LayoutB data={data} /> : null}
-      {layout === 'C' ? <LayoutC data={data} unidades={unidades} /> : null}
+      {catalogReady && data ? (
+        <>
+          {layout === 'A' ? <LayoutA data={data} unidades={unidades} /> : null}
+          {layout === 'B' ? <LayoutB data={data} unidades={unidades} /> : null}
+          {layout === 'C' ? <LayoutC data={data} unidades={unidades} /> : null}
+        </>
+      ) : (
+        <PainelProfilePlaceholder perfil={painelPerfil} unidadesCount={unidades.length} />
+      )}
 
-      <ModuleStatusBar statuses={moduleStatuses} />
+      {catalogReady && data ? <ModuleStatusBar statuses={moduleStatuses} /> : null}
     </div>
   );
 }

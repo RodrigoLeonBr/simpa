@@ -1,4 +1,16 @@
-jest.mock('../src/services/db');
+jest.mock('../src/services/db', () => {
+  const query = jest.fn();
+  const mockClient = {
+    query,
+    release: jest.fn(),
+  };
+  return {
+    query,
+    pool: {
+      connect: jest.fn(async () => mockClient),
+    },
+  };
+});
 
 const { query } = require('../src/services/db');
 const {
@@ -41,6 +53,15 @@ const hospitalCoreRow = {
   perfil_editado: false,
 };
 
+function mockTransactionalQuery(handler) {
+  query.mockImplementation((sql, params) => {
+    if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') {
+      return Promise.resolve({ rows: [] });
+    }
+    return handler(sql, params);
+  });
+}
+
 describe('estabelecimentosService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -63,6 +84,11 @@ describe('estabelecimentosService', () => {
 
     it('rejects invalid leitos values', () => {
       const result = validateEnrichmentPayload({ leitos: { clinico: -1 } });
+      expect(result.ok).toBe(false);
+    });
+
+    it('rejects non-integer leitos values', () => {
+      const result = validateEnrichmentPayload({ leitos: { clinico: 10.5 } });
       expect(result.ok).toBe(false);
     });
 
@@ -196,8 +222,13 @@ describe('estabelecimentosService', () => {
   });
 
   it('upsertEnrichment returns 403 when slug does not match perfil', async () => {
-    query.mockResolvedValueOnce({
-      rows: [{ id: 1, perfil: 'Hospitalar', perfil_editado: false }],
+    mockTransactionalQuery((sql) => {
+      if (sql.includes('FOR UPDATE')) {
+        return Promise.resolve({
+          rows: [{ id: 1, perfil: 'Hospitalar', perfil_editado: false }],
+        });
+      }
+      return Promise.resolve({ rows: [] });
     });
 
     await expect(
@@ -245,8 +276,18 @@ describe('estabelecimentosService', () => {
     ).toEqual({ notas: 'depois' });
   });
 
+  it('mergeEnrichmentForSlug deep-merges partial leitos updates', () => {
+    expect(
+      mergeEnrichmentForSlug(
+        'hospitalar',
+        { leitos: { clinico: 10, uti: 2 } },
+        { leitos: { clinico: 20 } }
+      )
+    ).toEqual({ leitos: { clinico: 20, uti: 2 } });
+  });
+
   it('merges allowed enrichment fields into hospitalar table', async () => {
-    query.mockImplementation((sql) => {
+    mockTransactionalQuery((sql) => {
       if (sql.includes('LEFT JOIN')) {
         return Promise.resolve({
           rows: [
@@ -259,6 +300,10 @@ describe('estabelecimentosService', () => {
             },
           ],
         });
+      }
+
+      if (sql.includes('FOR UPDATE')) {
+        return Promise.resolve({ rows: [hospitalCoreRow] });
       }
 
       if (sql.includes('FROM estabelecimentos') && sql.includes('WHERE id = $1')) {
@@ -291,7 +336,7 @@ describe('estabelecimentosService', () => {
   });
 
   it('clears saved enrichment when empty form is submitted', async () => {
-    query.mockImplementation((sql) => {
+    mockTransactionalQuery((sql) => {
       if (sql.includes('LEFT JOIN')) {
         return Promise.resolve({
           rows: [
@@ -304,6 +349,10 @@ describe('estabelecimentosService', () => {
             },
           ],
         });
+      }
+
+      if (sql.includes('FOR UPDATE')) {
+        return Promise.resolve({ rows: [hospitalCoreRow] });
       }
 
       if (sql.includes('FROM estabelecimentos') && sql.includes('WHERE id = $1')) {
@@ -350,7 +399,7 @@ describe('estabelecimentosService', () => {
   });
 
   it('upsertEnrichment persists APS enrichment', async () => {
-    query.mockImplementation((sql) => {
+    mockTransactionalQuery((sql) => {
       if (sql.includes('LEFT JOIN')) {
         return Promise.resolve({
           rows: [
@@ -367,7 +416,7 @@ describe('estabelecimentosService', () => {
         });
       }
 
-      if (sql.includes('FROM estabelecimentos')) {
+      if (sql.includes('FOR UPDATE')) {
         return Promise.resolve({
           rows: [{ id: 3, perfil: 'APS', perfil_editado: false }],
         });

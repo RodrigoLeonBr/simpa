@@ -3,6 +3,7 @@ import {
   buildEstabelecimentosQuery,
   buildProcedimentosQuery,
   canEditEnrichment,
+  canViewEnrichment,
   formatCatalogCount,
   formValuesToEnrichment,
   validateEnrichmentForm,
@@ -21,6 +22,12 @@ describe('enrichmentView', () => {
   it('blocks enrichment when role is not allowed', () => {
     expect(canEditEnrichment('Hospitalar', false)).toBe(false);
     expect(canEditEnrichment('APS', false)).toBe(false);
+  });
+
+  it('allows read-only viewers to see enrichment for supported perfis', () => {
+    expect(canViewEnrichment('Hospitalar')).toBe(true);
+    expect(canViewEnrichment('APS')).toBe(true);
+    expect(canEditEnrichment('Hospitalar', false)).toBe(false);
   });
 
   it('validates leitos as non-negative integers', () => {

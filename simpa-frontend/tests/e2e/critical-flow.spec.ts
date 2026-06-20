@@ -1,24 +1,17 @@
+/**
+ * E2E critical path: login → painel filters → import → cadastros → theme → logout.
+ * Multi-profile Painel and perfil edit scenarios live in perfil-painel.spec.ts (task_10).
+ */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import { login } from './helpers';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const csvFixture = path.join(
   repoRoot,
   'Relatório de atendimento individual-20260613175047.csv',
 );
-
-const ADMIN_USER = process.env.E2E_ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.E2E_ADMIN_PASS || 'simpa@2026';
-
-async function login(page: import('@playwright/test').Page) {
-  await page.goto('/login');
-  await expect(page.getByTestId('login-page')).toBeVisible();
-  await page.getByTestId('login-username').fill(ADMIN_USER);
-  await page.getByTestId('login-password').fill(ADMIN_PASS);
-  await page.getByTestId('login-submit').click();
-  await expect(page.getByTestId('painel-page')).toBeVisible();
-}
 
 test.describe('SIMPA critical flow', () => {
   test('login → painel → filters → import → cadastros → theme → logout', async ({ page }) => {

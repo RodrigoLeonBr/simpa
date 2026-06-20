@@ -16,7 +16,11 @@ import {
   ESTABELECIMENTO_PERFIS,
   resolveEstabelecimentoEnrichment,
 } from '../../utils/enrichmentByPerfil';
-import { canEditEnrichment, formatLeitosSummary } from '../../utils/enrichmentView';
+import {
+  canEditEnrichment,
+  canViewEnrichment,
+  formatLeitosSummary,
+} from '../../utils/enrichmentView';
 import { formatImportDate } from '../../utils/importacaoView';
 
 interface EstabelecimentoDetailDrawerProps {
@@ -47,6 +51,10 @@ function LockedField({ label, value }: { label: string; value: string }) {
   );
 }
 
+function isEstabelecimentoPerfil(value: string): value is EstabelecimentoPerfil {
+  return ESTABELECIMENTO_PERFIS.includes(value as EstabelecimentoPerfil);
+}
+
 export function EstabelecimentoDetailDrawer({
   estabelecimento,
   onClose,
@@ -59,10 +67,15 @@ export function EstabelecimentoDetailDrawer({
   const [savingPerfil, setSavingPerfil] = useState(false);
   const [perfilError, setPerfilError] = useState<string | null>(null);
 
-  const enrichment = resolveEstabelecimentoEnrichment(estabelecimento);
-  const showEnrichment = canEditEnrichment(estabelecimento.perfil, canEdit);
+  const perfilUnsaved = perfilDraft !== estabelecimento.perfil;
+  const enrichmentPerfil = perfilDraft;
+  const enrichment =
+    perfilUnsaved ? undefined : resolveEstabelecimentoEnrichment(estabelecimento);
+  const showEnrichment = canViewEnrichment(enrichmentPerfil);
+  const canEditEnrichmentForm =
+    canEditEnrichment(enrichmentPerfil, canEdit) && !perfilUnsaved;
   const leitosSummary =
-    estabelecimento.perfil === 'Hospitalar' || estabelecimento.perfil === 'Misto'
+    enrichmentPerfil === 'Hospitalar' || enrichmentPerfil === 'Misto'
       ? formatLeitosSummary(
           (enrichment as { leitos?: Record<string, number> } | undefined)?.leitos,
         )
@@ -146,9 +159,12 @@ export function EstabelecimentoDetailDrawer({
                     <select
                       value={perfilDraft}
                       data-testid="estabelecimento-perfil-select"
-                      onChange={(event) =>
-                        setPerfilDraft(event.target.value as EstabelecimentoPerfil)
-                      }
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        if (isEstabelecimentoPerfil(next)) {
+                          setPerfilDraft(next);
+                        }
+                      }}
                     >
                       {ESTABELECIMENTO_PERFIS.map((option) => (
                         <option key={option} value={option}>
@@ -159,6 +175,11 @@ export function EstabelecimentoDetailDrawer({
                   </label>
                   {estabelecimento.perfil_editado ? (
                     <p className="cadastro-detail-hint">Perfil editado manualmente.</p>
+                  ) : null}
+                  {perfilUnsaved ? (
+                    <p className="cadastro-detail-hint">
+                      Salve o perfil antes de editar o enriquecimento.
+                    </p>
                   ) : null}
                   {perfilError ? <p className="cadastro-form-error">{perfilError}</p> : null}
                   <div className="cadastro-form-actions">
@@ -187,16 +208,16 @@ export function EstabelecimentoDetailDrawer({
 
             {showEnrichment ? (
               <section className="cadastro-detail-section">
-                <h4>{enrichmentSectionTitle(estabelecimento.perfil)}</h4>
+                <h4>{enrichmentSectionTitle(enrichmentPerfil)}</h4>
                 {leitosSummary ? (
                   <p className="cadastro-detail-hint">Leitos atuais: {leitosSummary}</p>
                 ) : null}
                 <EnrichmentFormByPerfil
-                  perfil={estabelecimento.perfil}
+                  perfil={enrichmentPerfil}
                   enrichment={enrichment}
-                  readOnly={!canEdit}
+                  readOnly={!canEditEnrichmentForm}
                   onSubmit={async (payload) => {
-                    const slug = enrichmentSlugForPerfil(estabelecimento.perfil);
+                    const slug = enrichmentSlugForPerfil(enrichmentPerfil);
                     const updated = await updateEnrichmentBySlug(
                       estabelecimento.id,
                       slug,
@@ -209,7 +230,7 @@ export function EstabelecimentoDetailDrawer({
               </section>
             ) : (
               <p className="analytics-empty cadastro-detail-readonly-hint">
-                Enriquecimento não disponível para este perfil ou sem permissão de edição.
+                Enriquecimento não disponível para este perfil.
               </p>
             )}
           </div>

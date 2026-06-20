@@ -42,7 +42,8 @@ def test_migration_005_file_is_idempotent(migration_sql):
     assert "ADD COLUMN IF NOT EXISTS perfil_editado" in migration_sql
     for table in ENRICHMENT_TABLES:
         assert f"CREATE TABLE IF NOT EXISTS {table}" in migration_sql
-    assert "ON CONFLICT (estabelecimento_id) DO NOTHING" in migration_sql
+    assert "ON CONFLICT (estabelecimento_id) DO UPDATE SET" in migration_sql
+    assert "capacidade_notas" in migration_sql
 
 
 def test_migration_005_documents_manual_apply(migration_sql):

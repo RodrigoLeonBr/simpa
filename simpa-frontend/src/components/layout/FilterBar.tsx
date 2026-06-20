@@ -1,20 +1,45 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchEquipes, fetchEstabelecimentosAps, type Equipe } from '../../api/cadastros';
+import { fetchEquipes, fetchEstabelecimentos, type Equipe } from '../../api/cadastros';
 import type { Estabelecimento } from '../../types/cadastros';
-import { activeEstabelecimentos } from '../../utils/estabelecimentosView';
+import {
+  activeEstabelecimentos,
+  buildEstabelecimentosPerfilQuery,
+} from '../../utils/estabelecimentosView';
 import { useFilters } from '../../hooks/useFilters';
 
 export function FilterBar() {
-  const { competencia, unidadeId, equipeId, competencias, setCompetencia, setUnidadeId, setEquipeId } =
-    useFilters();
+  const {
+    competencia,
+    unidadeId,
+    equipeId,
+    painelPerfil,
+    competencias,
+    setCompetencia,
+    setUnidadeId,
+    setEquipeId,
+  } = useFilters();
   const [estabelecimentos, setEstabelecimentos] = useState<Estabelecimento[]>([]);
   const [equipes, setEquipes] = useState<Equipe[]>([]);
 
   useEffect(() => {
-    fetchEstabelecimentosAps()
-      .then(setEstabelecimentos)
-      .catch(() => setEstabelecimentos([]));
-  }, []);
+    let cancelled = false;
+
+    fetchEstabelecimentos(buildEstabelecimentosPerfilQuery(painelPerfil))
+      .then((result) => {
+        if (!cancelled) {
+          setEstabelecimentos(result.data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEstabelecimentos([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [painelPerfil]);
 
   useEffect(() => {
     if (!unidadeId) {

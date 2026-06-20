@@ -26,6 +26,7 @@
     "docker:smoke": "powershell -ExecutionPolicy Bypass -File scripts/smoke-compose.ps1",
     "docker:test": "docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait",
     "docker:test:down": "docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.test.yml down -v",
-    "seed:admin": "npm run seed:admin --prefix simpa-backend"
+    "seed:admin": "npm run seed:admin --prefix simpa-backend",
+    "seed:e2e": "npm run seed:e2e --prefix simpa-backend"
   }
 }

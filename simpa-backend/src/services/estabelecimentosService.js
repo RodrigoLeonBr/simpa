@@ -1,4 +1,4 @@
-const { query } = require('./db');
+const { pool, query } = require('./db');
 
 const VALID_PERFIS = ['APS', 'MAC', 'Hospitalar', 'Misto', 'Outro'];
 const VALID_SLUGS = ['aps', 'mac', 'hospitalar', 'misto', 'outro'];
@@ -88,8 +88,14 @@ function validateLeitos(leitos) {
     return 'leitos deve ser um objeto';
   }
   for (const [key, value] of Object.entries(leitos)) {
-    if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
-      return `leitos.${key} deve ser número >= 0`;
+    if (
+      typeof value !== 'number' ||
+      Number.isNaN(value) ||
+      value < 0 ||
+      !Number.isInteger(value) ||
+      !Number.isFinite(value)
+    ) {
+      return `leitos.${key} deve ser número inteiro >= 0`;
     }
   }
   return null;
@@ -225,7 +231,7 @@ function mergeLeitosField(current, body) {
   if (!body.leitos || Object.keys(body.leitos).length === 0) {
     return undefined;
   }
-  return body.leitos;
+  return { ...(current.leitos || {}), ...body.leitos };
 }
 
 function mergeEnrichmentForSlug(slug, current, body) {
@@ -379,9 +385,9 @@ function mapLegacyEnrichmentBody(body, slug) {
   return mapped;
 }
 
-async function persistEnrichment(id, slug, merged) {
+async function persistEnrichment(id, slug, merged, execute = query) {
   if (slug === 'hospitalar') {
-    await query(
+    await execute(
       `INSERT INTO enriquecimento_hospitalar (
          estabelecimento_id, leitos, especialidades, habilitacoes, capacidade_notas, notas, atualizado_em
        ) VALUES ($1, $2::jsonb, $3, $4, $5, $6, now())
@@ -405,7 +411,7 @@ async function persistEnrichment(id, slug, merged) {
   }
 
   if (slug === 'misto') {
-    await query(
+    await execute(
       `INSERT INTO enriquecimento_misto (
          estabelecimento_id, leitos, capacidades_ambulatoriais, notas_mac, notas, atualizado_em
        ) VALUES ($1, $2::jsonb, $3, $4, $5, now())
@@ -427,7 +433,7 @@ async function persistEnrichment(id, slug, merged) {
   }
 
   if (slug === 'aps') {
-    await query(
+    await execute(
       `INSERT INTO enriquecimento_aps (
          estabelecimento_id, notas_territorio, cobertura_populacional, vinculo_esus,
          prioridades_planejamento, notas, atualizado_em
@@ -452,7 +458,7 @@ async function persistEnrichment(id, slug, merged) {
   }
 
   if (slug === 'mac') {
-    await query(
+    await execute(
       `INSERT INTO enriquecimento_mac (
          estabelecimento_id, capacidades, relacionamento_referencia, autorizacoes, notas, atualizado_em
        ) VALUES ($1, $2, $3, $4, $5, now())
@@ -474,7 +480,7 @@ async function persistEnrichment(id, slug, merged) {
   }
 
   if (slug === 'outro') {
-    await query(
+    await execute(
       `INSERT INTO enriquecimento_outro (estabelecimento_id, notas, atualizado_em)
        VALUES ($1, $2, now())
        ON CONFLICT (estabelecimento_id) DO UPDATE SET
@@ -587,32 +593,61 @@ async function upsertEnrichment(id, slug, body) {
     throw createHttpError(validation.error, 400);
   }
 
-  const estab = await fetchEstabelecimentoCore(id);
-  const expectedSlug = PERFIL_TO_SLUG[estab.perfil];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  if (expectedSlug !== slug) {
-    throw createHttpError(
-      'Slug de enriquecimento não corresponde ao perfil do estabelecimento',
-      403
+    const { rows: estabRows } = await client.query(
+      `SELECT id, codigo_externo, nome, perfil, perfil_editado
+       FROM estabelecimentos
+       WHERE id = $1
+       FOR UPDATE`,
+      [id]
     );
+
+    if (!estabRows.length) {
+      throw createHttpError('Estabelecimento não encontrado', 404);
+    }
+
+    const estab = estabRows[0];
+    const expectedSlug = PERFIL_TO_SLUG[estab.perfil];
+
+    if (expectedSlug !== slug) {
+      throw createHttpError(
+        'Slug de enriquecimento não corresponde ao perfil do estabelecimento',
+        403
+      );
+    }
+
+    const table = `enriquecimento_${slug}`;
+    const { rows: enrichmentRows } = await client.query(
+      `SELECT * FROM ${table} WHERE estabelecimento_id = $1`,
+      [id]
+    );
+    const currentRow = enrichmentRows[0] || {};
+    const current = mapEnrichmentFromJoin({
+      perfil: estab.perfil,
+      ...currentRow,
+      eh_leitos: currentRow.leitos,
+      eh_notas: currentRow.notas,
+      emi_leitos: currentRow.leitos,
+      emi_notas: currentRow.notas,
+      aps_notas: currentRow.notas,
+      mac_notas: currentRow.notas,
+      mac_capacidades: currentRow.capacidades,
+      outro_notas: currentRow.notas,
+    });
+
+    const merged = mergeEnrichmentForSlug(slug, current, body);
+    await persistEnrichment(id, slug, merged, client.query.bind(client));
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
-
-  const currentRow = await fetchEnrichmentRow(id, slug);
-  const current = mapEnrichmentFromJoin({
-    perfil: estab.perfil,
-    ...currentRow,
-    eh_leitos: currentRow.leitos,
-    eh_notas: currentRow.notas,
-    emi_leitos: currentRow.leitos,
-    emi_notas: currentRow.notas,
-    aps_notas: currentRow.notas,
-    mac_notas: currentRow.notas,
-    mac_capacidades: currentRow.capacidades,
-    outro_notas: currentRow.notas,
-  });
-
-  const merged = mergeEnrichmentForSlug(slug, current, body);
-  await persistEnrichment(id, slug, merged);
 
   return getEstabelecimentoById(id);
 }

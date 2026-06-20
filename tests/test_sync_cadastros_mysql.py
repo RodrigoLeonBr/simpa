@@ -101,6 +101,20 @@ def test_upsert_estabelecimento_sql_preserves_manual_perfil():
     assert "%(perfil)s, false," in sql
 
 
+def test_inactivate_estabelecimentos_skips_empty_snapshot():
+    cur = MagicMock()
+    count = sync._inactivate_estabelecimentos(cur, set(), pg_write=True)
+    assert count == 0
+    cur.execute.assert_not_called()
+
+
+def test_inactivate_procedimentos_skips_empty_snapshot():
+    cur = MagicMock()
+    count = sync._inactivate_procedimentos(cur, set(), pg_write=True)
+    assert count == 0
+    cur.execute.assert_not_called()
+
+
 def test_normalize_prestador_row_maps_status_and_perfil(perfil_map, sync_ts):
     row = sync.normalize_prestador_row(
         {

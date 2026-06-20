@@ -12,6 +12,7 @@ import {
   apsEnrichmentToFormValues,
   apsFormValuesToPayload,
   enrichmentSectionTitle,
+  hospitalEnrichmentToFormValues,
   macEnrichmentToFormValues,
   macFormValuesToPayload,
   mistoEnrichmentToFormValues,
@@ -151,7 +152,21 @@ function MistoEnrichmentForm({
   }
 
   if (readOnly) {
-    return <p className="analytics-empty cadastro-detail-readonly-hint">Somente leitura.</p>;
+    return (
+      <ReadonlyFieldList
+        testId="enrichment-form-misto-readonly"
+        fields={[
+          { key: 'capacidades_ambulatoriais', label: 'Capacidades ambulatoriais' },
+          { key: 'notas_mac', label: 'Notas MAC' },
+          { key: 'notas', label: 'Notas' },
+        ]}
+        values={{
+          capacidades_ambulatoriais: values.capacidades_ambulatoriais,
+          notas_mac: values.notas_mac,
+          notas: values.notas,
+        }}
+      />
+    );
   }
 
   return (
@@ -203,6 +218,27 @@ function MistoEnrichmentForm({
   );
 }
 
+function ReadonlyFieldList({
+  testId,
+  fields,
+  values,
+}: {
+  testId: string;
+  fields: { key: string; label: string }[];
+  values: Record<string, string>;
+}) {
+  return (
+    <div className="cadastro-enrichment-readonly" data-testid={testId}>
+      {fields.map((field) => (
+        <div key={field.key} className="cadastro-field cadastro-field-locked">
+          <span>{field.label}</span>
+          <p>{values[field.key]?.trim() ? values[field.key] : '—'}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TextEnrichmentForm({
   testId,
   enrichment,
@@ -227,7 +263,7 @@ function TextEnrichmentForm({
   useEffect(() => {
     setValues(toValues(enrichment));
     setErrors({});
-  }, [enrichment, toValues]);
+  }, [enrichment]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -244,7 +280,13 @@ function TextEnrichmentForm({
   }
 
   if (readOnly) {
-    return <p className="analytics-empty cadastro-detail-readonly-hint">Somente leitura.</p>;
+    return (
+      <ReadonlyFieldList
+        testId={`${testId}-readonly`}
+        fields={fields}
+        values={values}
+      />
+    );
   }
 
   return (
@@ -278,7 +320,26 @@ export function EnrichmentFormByPerfil({
 }: EnrichmentFormByPerfilProps) {
   if (perfil === 'Hospitalar') {
     if (readOnly) {
-      return <p className="analytics-empty cadastro-detail-readonly-hint">Somente leitura.</p>;
+      const values = hospitalEnrichmentToFormValues(
+        (enrichment as EnrichmentHospitalar | undefined) ?? undefined,
+      );
+      return (
+        <ReadonlyFieldList
+          testId="enrichment-form-readonly"
+          fields={[
+            ...LEITOS_KEYS.map((key) => ({ key, label: LEITO_LABELS[key] })),
+            { key: 'especialidades', label: 'Especialidades' },
+            { key: 'habilitacoes', label: 'Habilitações' },
+            { key: 'notas', label: 'Notas' },
+          ]}
+          values={{
+            ...values.leitos,
+            especialidades: values.especialidades,
+            habilitacoes: values.habilitacoes,
+            notas: values.notas,
+          }}
+        />
+      );
     }
 
     return (

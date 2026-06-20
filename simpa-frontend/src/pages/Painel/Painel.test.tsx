@@ -24,6 +24,20 @@ vi.mock('../../hooks/useDashboard', () => ({
 
 import { useDashboard } from '../../hooks/useDashboard';
 
+function renderPainel() {
+  return render(
+    <MemoryRouter>
+      <AuthProvider>
+        <AppProvider>
+          <FiltersProvider>
+            <PainelPage />
+          </FiltersProvider>
+        </AppProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+}
+
 describe('Painel page', () => {
   afterEach(() => cleanup());
 
@@ -44,32 +58,42 @@ describe('Painel page', () => {
     });
   });
 
-  it('layout switcher changes visible panel', async () => {
-    render(
-      <MemoryRouter>
-        <AuthProvider>
-          <AppProvider>
-            <FiltersProvider>
-              <PainelPage />
-            </FiltersProvider>
-          </AppProvider>
-        </AuthProvider>
-      </MemoryRouter>,
-    );
+  it('renders layout-a for default APS perfil', () => {
+    renderPainel();
+
+    expect(screen.getByTestId('layout-a')).toBeInTheDocument();
+    expect(screen.queryByTestId('painel-profile-placeholder')).not.toBeInTheDocument();
+  });
+
+  it('renders placeholder instead of APS KPI grid for Hospitalar perfil', async () => {
+    const user = userEvent.setup();
+    renderPainel();
+
+    await user.click(screen.getByRole('button', { name: 'Hospitalar' }));
+
+    expect(screen.getByTestId('painel-profile-placeholder')).toBeInTheDocument();
+    expect(screen.queryByTestId('layout-a')).not.toBeInTheDocument();
+    expect(screen.queryByText('Atendimentos individuais')).not.toBeInTheDocument();
+  });
+
+  it('layout switcher changes visible panel under APS', async () => {
+    const user = userEvent.setup();
+    renderPainel();
 
     expect(screen.getByTestId('layout-a')).toBeInTheDocument();
     expect(screen.queryByTestId('layout-b')).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'B · Foco' }));
+    await user.click(screen.getByRole('button', { name: 'B · Foco' }));
 
     expect(screen.queryByTestId('layout-a')).not.toBeInTheDocument();
     expect(screen.getByTestId('layout-b')).toBeInTheDocument();
+    expect(screen.getByText(/Atendimentos individuais/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'C · Tabela' }));
+    await user.click(screen.getByRole('button', { name: 'C · Tabela' }));
     expect(screen.getByTestId('layout-c')).toBeInTheDocument();
   });
 
-  it('shows loading and error states', () => {
+  it('shows loading and error states for APS catalog', () => {
     vi.mocked(useDashboard).mockReturnValueOnce({
       data: null,
       unidades: [],
@@ -77,17 +101,7 @@ describe('Painel page', () => {
       error: null,
     });
 
-    const { rerender } = render(
-      <MemoryRouter>
-        <AuthProvider>
-          <AppProvider>
-            <FiltersProvider>
-              <PainelPage />
-            </FiltersProvider>
-          </AppProvider>
-        </AuthProvider>
-      </MemoryRouter>,
-    );
+    const { rerender } = renderPainel();
 
     expect(screen.getByText('Carregando painel…')).toBeInTheDocument();
 

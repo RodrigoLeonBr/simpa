@@ -63,11 +63,17 @@ describe('EnrichmentFormByPerfil', () => {
     });
   });
 
-  it('shows readonly hint when readOnly is true', () => {
+  it('shows readonly summary when readOnly is true', () => {
     render(
-      <EnrichmentFormByPerfil perfil="APS" readOnly onSubmit={vi.fn()} />,
+      <EnrichmentFormByPerfil
+        perfil="APS"
+        readOnly
+        enrichment={{ notas_territorio: 'Zona leste' }}
+        onSubmit={vi.fn()}
+      />,
     );
 
-    expect(screen.getByText(/Somente leitura/i)).toBeInTheDocument();
+    expect(screen.getByTestId('enrichment-form-aps-readonly')).toBeInTheDocument();
+    expect(screen.getByText('Zona leste')).toBeInTheDocument();
   });
 });

@@ -57,6 +57,9 @@ jobs:
       - name: Seed admin user
         run: docker compose --env-file .env.docker exec -T api node scripts/seed-admin.js
 
+      - name: Seed E2E estabelecimentos
+        run: docker compose --env-file .env.docker exec -T api node scripts/seed-e2e-estabelecimentos.js
+
       - name: Python unit tests
         run: pytest -m "not integration"
 

@@ -1,4 +1,4 @@
-import type { ContratoDashboard } from '../../types/contrato';
+import type { ContratoDashboard, Unidade } from '../../types/contrato';
 import { buildPainelKpis, buildTrendSeries } from '../../utils/dashboardView';
 import { EChart, heroTrendOption } from '../../components/charts/EChart';
 import { KpiCard } from '../../components/painel/KpiCard';
@@ -6,9 +6,11 @@ import { QualityBars } from '../../components/painel/QualityBars';
 
 interface LayoutBProps {
   data: ContratoDashboard;
+  unidades: Unidade[];
 }
 
-export function LayoutB({ data }: LayoutBProps) {
+export function LayoutB({ data, unidades }: LayoutBProps) {
+  void unidades;
   const kpis = buildPainelKpis(data);
   const hero = kpis[0];
   const secondary = kpis.slice(3, 6);

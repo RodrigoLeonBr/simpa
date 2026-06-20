@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchEquipes, fetchEstabelecimentosAps } from '../api/cadastros';
+import { fetchEquipes, fetchEstabelecimentos } from '../api/cadastros';
 import { fetchDashboard } from '../api/dashboard';
 import { useFilters } from './useFilters';
 import type { ContratoDashboard, Unidade } from '../types/contrato';
-import { mapEstabelecimentosToUnidades } from '../utils/estabelecimentosView';
+import {
+  buildEstabelecimentosPerfilQuery,
+  mapEstabelecimentosToUnidades,
+} from '../utils/estabelecimentosView';
+import { isPainelCatalogReady } from '../utils/dashboardView';
 
 export interface DashboardViewModel {
   data: ContratoDashboard;
@@ -11,7 +15,7 @@ export interface DashboardViewModel {
 }
 
 export function useDashboard() {
-  const { competencia, unidadeId, equipeId } = useFilters();
+  const { competencia, unidadeId, equipeId, painelPerfil } = useFilters();
   const [data, setData] = useState<ContratoDashboard | null>(null);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [unidadesLoaded, setUnidadesLoaded] = useState(false);
@@ -19,8 +23,8 @@ export function useDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const filterKey = useMemo(
-    () => `${competencia}:${unidadeId ?? 'all'}:${equipeId ?? 'all'}`,
-    [competencia, unidadeId, equipeId],
+    () => `${painelPerfil}:${competencia}:${unidadeId ?? 'all'}:${equipeId ?? 'all'}`,
+    [painelPerfil, competencia, unidadeId, equipeId],
   );
 
   const unidadeNomeMap = useMemo(
@@ -31,10 +35,16 @@ export function useDashboard() {
   useEffect(() => {
     let cancelled = false;
 
-    fetchEstabelecimentosAps()
-      .then((items) => {
+    setUnidadesLoaded(false);
+    setUnidades([]);
+    setData(null);
+    setLoading(true);
+    setError(null);
+
+    fetchEstabelecimentos(buildEstabelecimentosPerfilQuery(painelPerfil))
+      .then((result) => {
         if (!cancelled) {
-          setUnidades(mapEstabelecimentosToUnidades(items));
+          setUnidades(mapEstabelecimentosToUnidades(result.data));
           setUnidadesLoaded(true);
         }
       })
@@ -48,7 +58,7 @@ export function useDashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [painelPerfil]);
 
   useEffect(() => {
     if (unidadeId !== null && !unidadesLoaded) {
@@ -58,6 +68,14 @@ export function useDashboard() {
     let cancelled = false;
 
     async function loadDashboard() {
+      if (!isPainelCatalogReady(painelPerfil)) {
+        if (!cancelled) {
+          setData(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -92,7 +110,7 @@ export function useDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [filterKey, competencia, unidadeId, equipeId, unidadesLoaded, unidadeNomeMap]);
+  }, [filterKey, competencia, unidadeId, equipeId, unidadesLoaded, unidadeNomeMap, painelPerfil]);
 
   return { data, unidades, loading, error };
 }

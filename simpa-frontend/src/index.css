@@ -936,6 +936,37 @@ body {
   box-shadow: 0 1px 3px rgba(15, 27, 45, 0.08);
 }
 
+.painel-switchers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.painel-profile-placeholder {
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.painel-profile-placeholder h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.painel-profile-placeholder p {
+  margin: 0;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.painel-profile-placeholder-meta {
+  margin-top: 16px !important;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .painel-state {
   padding: 24px;
   color: var(--text-secondary);

@@ -15,8 +15,12 @@ export interface EnrichmentFormValues {
 
 const ENRICHMENT_PERFIS: EstabelecimentoPerfil[] = ['APS', 'MAC', 'Hospitalar', 'Misto', 'Outro'];
 
+export function canViewEnrichment(perfil: EstabelecimentoPerfil): boolean {
+  return ENRICHMENT_PERFIS.includes(perfil);
+}
+
 export function canEditEnrichment(perfil: EstabelecimentoPerfil, roleAllowed = true): boolean {
-  return roleAllowed && ENRICHMENT_PERFIS.includes(perfil);
+  return roleAllowed && canViewEnrichment(perfil);
 }
 
 export function enrichmentToFormValues(

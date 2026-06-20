@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Painel profile switcher, KPI catalogs, and placeholder UX"
 type: frontend
 complexity: medium
@@ -32,11 +32,11 @@ Add `ProfileSwitcher` beside `LayoutSwitcher` on the Painel, introduce `PAINEL_K
 </requirements>
 
 ## Subtasks
-- [ ] 09.1 Build `ProfileSwitcher` component
-- [ ] 09.2 Add `PAINEL_KPI_CATALOGS` / resolver functions in `dashboardView.ts`
-- [ ] 09.3 Create `PainelProfilePlaceholder` component
-- [ ] 09.4 Update `Painel/index.tsx` conditional render logic
-- [ ] 09.5 Add CSS classes consistent with existing painel switcher styles
+- [x] 09.1 Build `ProfileSwitcher` component
+- [x] 09.2 Add `PAINEL_KPI_CATALOGS` / resolver functions in `dashboardView.ts`
+- [x] 09.3 Create `PainelProfilePlaceholder` component
+- [x] 09.4 Update `Painel/index.tsx` conditional render logic
+- [x] 09.5 Add CSS classes consistent with existing painel switcher styles
 
 ## Implementation Details
 
@@ -65,13 +65,13 @@ See TechSpec **ADR-004** and PRD **F4**. Do not implement MAC/Hospitalar/Misto K
 
 ## Tests
 - Unit tests:
-  - [ ] `getPainelCatalogStatus('APS')` returns `'ready'`
-  - [ ] `getPainelCatalogStatus('MAC')` returns `'pending'`
-  - [ ] Painel page with `painelPerfil='APS'` renders `layout-a` test id
-  - [ ] Painel page with `painelPerfil='Hospitalar'` renders placeholder test id, not APS KPI grid
-  - [ ] ProfileSwitcher button click calls `setPainelPerfil`
+  - [x] `getPainelCatalogStatus('APS')` returns `'ready'`
+  - [x] `getPainelCatalogStatus('MAC')` returns `'pending'`
+  - [x] Painel page with `painelPerfil='APS'` renders `layout-a` test id
+  - [x] Painel page with `painelPerfil='Hospitalar'` renders placeholder test id, not APS KPI grid
+  - [x] ProfileSwitcher button click calls `setPainelPerfil`
 - Integration tests:
-  - [ ] `AppShell.integration.test.tsx` or Painel test: switch layout B under APS still shows APS KPI labels
+  - [x] `AppShell.integration.test.tsx` or Painel test: switch layout B under APS still shows APS KPI labels
 - Test coverage target: >=80%
 - All tests must pass
 

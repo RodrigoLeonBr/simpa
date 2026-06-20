@@ -1,4 +1,5 @@
 import type { ContratoDashboard, HistoricoMensal, Unidade } from '../types/contrato';
+import type { PainelCatalogStatus, PainelPerfil, PainelViewContext } from '../types/painel';
 import { computeDelta, EM_DASH, formatKpi, isNullKpi, type KpiDelta } from './kpi';
 
 export type PainelLayout = 'A' | 'B' | 'C';
@@ -37,6 +38,42 @@ export interface ModuleStatus {
   label: string;
   status: string;
   tone: 'green' | 'amber' | 'red';
+}
+
+export const PAINEL_KPI_CATALOGS: Record<
+  PainelPerfil,
+  Record<PainelLayout, PainelCatalogStatus>
+> = {
+  APS: { A: 'ready', B: 'ready', C: 'ready' },
+  MAC: { A: 'pending', B: 'pending', C: 'pending' },
+  Hospitalar: { A: 'pending', B: 'pending', C: 'pending' },
+  Misto: { A: 'pending', B: 'pending', C: 'pending' },
+};
+
+export function getPainelCatalogStatus(
+  perfil: PainelPerfil,
+  layout?: PainelLayout,
+): PainelCatalogStatus {
+  if (layout) {
+    return PAINEL_KPI_CATALOGS[perfil][layout];
+  }
+
+  return perfil === 'APS' ? 'ready' : 'pending';
+}
+
+export function resolvePainelViewContext(
+  perfil: PainelPerfil,
+  layout: PainelLayout,
+): PainelViewContext {
+  return {
+    perfil,
+    layout,
+    catalogStatus: getPainelCatalogStatus(perfil, layout),
+  };
+}
+
+export function isPainelCatalogReady(perfil: PainelPerfil, layout: PainelLayout = 'A'): boolean {
+  return getPainelCatalogStatus(perfil, layout) === 'ready';
 }
 
 export interface TrendPoint {
@@ -110,7 +147,6 @@ function countMetasTotal(data: ContratoDashboard): number | null {
 export function buildPainelKpis(data: ContratoDashboard): PainelKpi[] {
   const historico = historicoSorted(data);
   const prev = historico.length > 1 ? historico[historico.length - 2] : null;
-  const curr = historico.length > 0 ? historico[historico.length - 1] : null;
   const metasAtingidas = countMetasAtingidas(data);
   const metasTotal = countMetasTotal(data);
 
@@ -170,8 +206,7 @@ export function buildPainelKpis(data: ContratoDashboard): PainelKpi[] {
       value: formatKpi(coletivas),
       raw: coletivas,
       isNull: isNullKpi(coletivas),
-      delta: computeDelta(coletivas, curr?.atendimentos ?? null),
-      sparkField: 'atendimentos',
+      delta: { label: '—', direction: 'flat' },
     },
   ];
 

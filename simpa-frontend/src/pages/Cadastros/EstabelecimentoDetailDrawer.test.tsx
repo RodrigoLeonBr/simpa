@@ -67,7 +67,7 @@ describe('EstabelecimentoDetailDrawer', () => {
 
     expect(screen.getByTestId('estabelecimento-perfil-readonly')).toBeDisabled();
     expect(screen.queryByTestId('estabelecimento-perfil-select')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('enrichment-form')).not.toBeInTheDocument();
+    expect(screen.getByTestId('enrichment-form-readonly')).toBeInTheDocument();
   });
 
   it('renders perfil select for planning user', () => {

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Playwright E2E for perfil edit and multi-profile Painel"
 type: test
 complexity: medium
@@ -32,10 +32,10 @@ Extend the Playwright critical flow to cover establishment perfil editing in Cad
 </requirements>
 
 ## Subtasks
-- [ ] 10.1 Add E2E: navigate to Estabelecimentos, open drawer, change perfil, verify list chip
-- [ ] 10.2 Add E2E: Painel select MAC profile, assert placeholder visible
-- [ ] 10.3 Add E2E: Painel select APS, switch layouts A/B/C smoke assertions
-- [ ] 10.4 Verify CI workflow still passes Playwright job
+- [x] 10.1 Add E2E: navigate to Estabelecimentos, open drawer, change perfil, verify list chip
+- [x] 10.2 Add E2E: Painel select MAC profile, assert placeholder visible
+- [x] 10.3 Add E2E: Painel select APS, switch layouts A/B/C smoke assertions
+- [x] 10.4 Verify CI workflow still passes Playwright job
 
 ## Implementation Details
 
@@ -59,12 +59,12 @@ See TechSpec **Testing Approach — E2E** section. Reuse patterns from existing 
 
 ## Tests
 - Unit tests:
-  - [ ] N/A — E2E task
+  - [x] N/A — E2E task
 - Integration tests:
-  - [ ] E2E: login as admin → Cadastros → Estabelecimentos → change perfil on first row → success toast or drawer shows new perfil
-  - [ ] E2E: Painel → click MAC profile → `[data-testid=painel-profile-placeholder]` visible
-  - [ ] E2E: Painel → APS → `[data-testid=painel-page]` and `[data-testid=layout-a]` visible
-  - [ ] E2E: Painel APS → switch to layout C → `[data-testid=layout-c]` visible
+  - [x] E2E: login as admin → Cadastros → Estabelecimentos → change perfil on first row → success toast or drawer shows new perfil
+  - [x] E2E: Painel → click MAC profile → `[data-testid=painel-profile-placeholder]` visible
+  - [x] E2E: Painel → APS → `[data-testid=painel-page]` and `[data-testid=layout-a]` visible
+  - [x] E2E: Painel APS → switch to layout C → `[data-testid=layout-c]` visible
 - Test coverage target: E2E scenarios above all green
 - All tests must pass
 

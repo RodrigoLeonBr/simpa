@@ -276,20 +276,15 @@ def _count_upserts(rows: list[dict[str, Any]], existing: set[str], key_col: str)
 
 def _inactivate_estabelecimentos(cur, snapshot_keys: set[str], pg_write: bool) -> int:
     if not snapshot_keys:
-        cur.execute(
-            """
-            SELECT codigo_externo FROM estabelecimentos
-            WHERE status = 'ativo'
-            """
-        )
-    else:
-        cur.execute(
-            """
-            SELECT codigo_externo FROM estabelecimentos
-            WHERE status = 'ativo' AND codigo_externo NOT IN %s
-            """,
-            (tuple(snapshot_keys),),
-        )
+        return 0
+
+    cur.execute(
+        """
+        SELECT codigo_externo FROM estabelecimentos
+        WHERE status = 'ativo' AND codigo_externo NOT IN %s
+        """,
+        (tuple(snapshot_keys),),
+    )
     to_inactivate = [row[0] for row in cur.fetchall()]
     if pg_write and to_inactivate:
         cur.execute(
@@ -305,21 +300,16 @@ def _inactivate_estabelecimentos(cur, snapshot_keys: set[str], pg_write: bool) -
 
 def _inactivate_procedimentos(cur, snapshot_keys: set[str], pg_write: bool) -> int:
     if not snapshot_keys:
-        cur.execute(
-            """
-            SELECT codigo_sigtap FROM procedimentos
-            WHERE fonte = 'mysql_sync' AND status = 'ativo'
-            """
-        )
-    else:
-        cur.execute(
-            """
-            SELECT codigo_sigtap FROM procedimentos
-            WHERE fonte = 'mysql_sync' AND status = 'ativo'
-              AND codigo_sigtap NOT IN %s
-            """,
-            (tuple(snapshot_keys),),
-        )
+        return 0
+
+    cur.execute(
+        """
+        SELECT codigo_sigtap FROM procedimentos
+        WHERE fonte = 'mysql_sync' AND status = 'ativo'
+          AND codigo_sigtap NOT IN %s
+        """,
+        (tuple(snapshot_keys),),
+    )
     to_inactivate = [row[0] for row in cur.fetchall()]
     if pg_write and to_inactivate:
         cur.execute(
