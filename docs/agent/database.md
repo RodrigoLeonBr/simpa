@@ -27,8 +27,10 @@ Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations em `/dock
 
 | Tabela | Uso |
 |--------|-----|
-| `estabelecimentos` | CNES, perfil, enriquecimento JSONB |
-| `procedimentos` | Códigos SUS |
+| `estabelecimentos` | espelho MySQL; `perfil`, `perfil_editado`, `status` |
+| `enriquecimento_aps` … `enriquecimento_outro` | enriquecimento manual por perfil |
+| `estabelecimentos.enriquecimento` | JSONB legado (somente leitura/backfill) |
+| `procedimentos` | Códigos SIGTAP |
 | `cadastros_sync_log` | Histórico sync MySQL |
 
 ### Auth / admin
@@ -66,9 +68,10 @@ Pool: `simpa-backend/src/services/db.js`.
 
 - `estabelecimentos.perfil_editado`
 - `enriquecimento_aps`, `enriquecimento_mac`, `enriquecimento_hospitalar`, `enriquecimento_misto`, `enriquecimento_outro`
-- FK `estabelecimento_id` → `estabelecimentos(id)`
+- FK `estabelecimento_id` → `estabelecimentos(id) ON DELETE CASCADE`
+- Backfill JSONB → tabelas normalizadas (idempotente com `ON CONFLICT DO UPDATE`)
 
-Montada em `docker-compose.yml` (initdb). DB existente: aplicar manualmente via `psql` (ver cabeçalho do arquivo).
+Montada em `docker-compose.yml` (`05-migration_005_…`). DB existente: aplicar manualmente via `psql` (ver cabeçalho do arquivo).
 
 ## Queries úteis
 

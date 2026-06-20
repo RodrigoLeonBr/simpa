@@ -59,7 +59,16 @@ Limite upload: `UPLOAD_MAX_BYTES` (default 50MB).
 
 ### Cadastros (`routes/cadastros.js`)
 
-Ver **[cadastros.md](cadastros.md)** — endpoints de estabelecimentos e procedimentos.
+| Método | Path | Auth |
+|--------|------|------|
+| GET | `/api/cadastros/estabelecimentos` | JWT |
+| GET | `/api/cadastros/estabelecimentos/:id` | JWT |
+| PUT | `/api/cadastros/estabelecimentos/:id/perfil` | JWT + `requirePlanningStaff` |
+| PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento/:slug` | JWT + `requirePlanningStaff` |
+| PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento` | JWT + `requirePlanningStaff` (legado) |
+| GET/POST | procedimentos, sincronizar, … | ver **[cadastros.md](cadastros.md)** |
+
+Detalhes de payloads e slugs: **[cadastros.md](cadastros.md)**.
 
 ### Admin (`routes/admin.js`)
 
@@ -84,7 +93,7 @@ Ver **[auth-roles.md](auth-roles.md#admin)**.
 | `storage.js` | Paths de upload em disco |
 | `siaSync.js` | Spawn `sync_sia_mysql.py` |
 | `cadastrosSync.js` | Spawn `sync_cadastros_mysql.py` |
-| `estabelecimentosService.js` | CRUD listagem, enriquecimento |
+| `estabelecimentosService.js` | listagem, `updatePerfil`, `upsertEnrichment` (transação) |
 | `procedimentosService.js` | CRUD procedimentos |
 | `cadastroRegistry.js` | Registry genérico outros cadastros |
 | `auditService.js` | `audit_log` inserts |
@@ -103,7 +112,7 @@ Ver **[auth-roles.md](auth-roles.md#admin)**.
 1. Lógica em `services/<dominio>Service.js`.
 2. Rota fina em `routes/<dominio>.js` — validação, status HTTP, `next(err)`.
 3. Registrar em `routes/api.js` se novo mount.
-4. Teste Jest em `simpa-backend/__tests__/`.
+4. Teste Jest em `simpa-backend/tests/`.
 5. Client frontend em `simpa-frontend/src/api/`.
 
 ## Variáveis de ambiente (API)

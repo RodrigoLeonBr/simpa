@@ -7,42 +7,53 @@
 | `npm test` | Jest (backend) + Vitest (frontend) |
 | `npm run test:api` | só `simpa-backend` |
 | `npm run test:web` | só `simpa-frontend` |
-| `npm run test:py` | pytest |
+| `npm run test:py` | pytest unit (`python -m pytest -m "not integration"` se PATH sem pytest) |
+| `npm run test:py:integration` | pytest integration (PG em `:5433`) |
 | `npm run test:e2e` | Playwright |
+| `npm run seed:e2e` | reativa `E2E001–004` (sync pode inativar) |
 | `npm run docker:test` | sobe Compose para E2E |
 | `npm run docker:smoke` | health endpoints |
 | `npm run ci` | `scripts/ci.sh` (bash, pipeline completo) |
 
 ## Backend — Jest
 
-- Pasta: `simpa-backend/__tests__/`
-- Config: `simpa-backend/jest.config.js`
-- Mock de `db.js` comum para services.
-- Rodar após mudanças em `services/` e `routes/`.
+- Pasta: `simpa-backend/tests/`
+- Config: `jest.config.js` (coverage threshold global 80%)
+- Mock de `db.js`; `pool.connect` para testes de transação em `upsertEnrichment`.
+- Integração: `tests/integration/cadastros.integration.test.js`
 
 ## Frontend — Vitest
 
 - Colocalizado: `*.test.ts`, `*.test.tsx` em `simpa-frontend/src/`
 - Setup: `vitest.config.ts`
-- Testing Library para componentes.
+- ~206 testes (incl. Painel, drawer, `useDashboard`, `dashboardView`).
 
 ## Python — pytest
 
 - Pasta: `tests/` na raiz
-- Foco: parse, consolidate, `derive_perfil`, sync helpers
-- `npm run test:py` ou `pytest tests/ -v`
+- Feature perfil-painel: `test_migration_005.py`, `test_sync_cadastros_mysql.py`
+- `npm run test:py` ou `python -m pytest tests/ -m "not integration" -v`
 
 ## E2E — Playwright
 
-- Config: `playwright.config.ts`
-- Testes: `e2e/` ou `tests/e2e/` (ver config)
-- **Requer stack rodando** em `http://localhost:8080` (Docker).
-- Fluxo típico:
+- Config: `simpa-frontend/playwright.config.ts`
+- Testes: `simpa-frontend/tests/e2e/`
+  - `perfil-painel.spec.ts` — Painel multi-perfil + edição perfil cadastros
+  - `critical-flow.spec.ts` — smoke login
+  - `helpers.ts` — login, navegação, `searchEstabelecimentos`
+
+**Requer stack** em `http://localhost:8080` (Docker).
 
 ```powershell
 npm run docker:test
+npm run seed:admin --prefix simpa-backend   # se necessário
+npm run seed:e2e
+cd simpa-frontend
+$env:E2E_BASE_URL="http://localhost:8080"
 npm run test:e2e
 ```
+
+CI (`.github/workflows/ci.yml`): seed admin + seed E2E antes do Playwright.
 
 ## Smoke Docker
 
@@ -53,7 +64,7 @@ npm run test:e2e
 
 ## CI (`scripts/ci.sh`)
 
-Sequência aproximada: install → test:api → test:web → test:py → (opcional e2e).
+Sequência: docker test stack → seed admin → pytest unit → pytest integration → Jest → Vitest → Playwright E2E.
 
 ## Checklist ao implementar feature
 
@@ -66,3 +77,5 @@ Sequência aproximada: install → test:api → test:web → test:py → (opcion
 ## Compozy tasks
 
 Cada `task_NN.md` lista `Validation` / `Test Plan` específicos — executar **todos**, não só `npm test` genérico.
+
+Review rounds: `compozy reviews fix <slug>` após `cy-review-round`.

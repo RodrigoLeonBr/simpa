@@ -36,14 +36,18 @@ MySQL prestador/procedimento → sync_cadastros_mysql.py → estabelecimentos, p
 - UPSERT `estabelecimentos` e `procedimentos`.
 - `derive_perfil()` mapeia tipo prestador → APS/MAC/Hospitalar/Misto/Outro.
 - Respeita `perfil_editado = true` (não sobrescreve perfil manual).
+- Inativa registros ausentes no snapshot MySQL; **snapshot vazio não inativa em massa**.
 
 Funções-chave a localizar no arquivo:
 
 - `derive_perfil`
-- `upsert_estabelecimento` / equivalente
+- `_inactivate_estabelecimentos` / `_inactivate_procedimentos`
+- UPSERT SQL com `CASE WHEN perfil_editado …`
 - `main` / argparse CLI
 
 Chamado por: `cadastrosSync.js` → `POST /api/cadastros/sincronizar`.
+
+**E2E:** registros `E2E001–004` podem ser inativados pelo sync; `npm run seed:e2e` reativa via upsert (`simpa-backend/scripts/seed-e2e-estabelecimentos.js`).
 
 ## Configuração
 
@@ -64,7 +68,10 @@ npm run test:py
 pytest tests/ -v
 ```
 
-Testes unitários em `tests/` na raiz (ex.: lógica de parse, derive_perfil).
+Testes unitários em `tests/` na raiz:
+
+- `test_sync_cadastros_mysql.py` — derive_perfil, guard snapshot vazio, UPSERT condicional
+- `test_migration_005.py` — schema 005, backfill idempotente
 
 ## Dependências
 

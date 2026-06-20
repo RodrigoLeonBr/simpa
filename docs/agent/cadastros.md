@@ -2,24 +2,34 @@
 
 ## Modelo de dados (estado atual)
 
-Tabela `estabelecimentos` (migration 004):
+Tabela `estabelecimentos` (migration 004 + 005):
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
 | `id` | serial | PK |
-| `cnes` | varchar | único, espelho MySQL |
-| `nome`, `tipo`, `endereco`… | — | sync MySQL |
-| `perfil` | varchar | APS, MAC, Hospitalar, Misto, Outro — **sync sobrescreve** |
-| `enriquecimento` | JSONB | só Hospitalar/Misto hoje |
-| `ativo` | boolean | — |
+| `codigo_externo` | varchar | único, espelho MySQL (`re_cunid`) |
+| `nome`, `cnpj`, `tipouni`, `status`… | — | sync MySQL |
+| `perfil` | varchar | APS, MAC, Hospitalar, Misto, Outro |
+| `perfil_editado` | boolean | se `true`, sync **não** sobrescreve `perfil` |
+| `enriquecimento` | JSONB | legado; **não usar** para writes novos |
 
-`procedimentos`: código SUS, descrição, grupo — sync MySQL.
+Enriquecimento normalizado (migration 005), 1:1 com `estabelecimentos`:
+
+| Tabela | Perfil |
+|--------|--------|
+| `enriquecimento_aps` | APS |
+| `enriquecimento_mac` | MAC |
+| `enriquecimento_hospitalar` | Hospitalar |
+| `enriquecimento_misto` | Misto |
+| `enriquecimento_outro` | Outro |
+
+`procedimentos`: código SIGTAP, descrição — sync MySQL.
 
 ## Fonte de verdade
 
-- **Identidade** (CNES, nome, tipo): MySQL `prestador` via `sync_cadastros_mysql.py`.
-- **Enriquecimento manual**: API PUT (não vem do MySQL).
-- **Perfil**: derivado no sync (`derive_perfil`); UI bloqueada até feature perfil-painel.
+- **Identidade** (código, nome, tipouni, status): MySQL via `sync_cadastros_mysql.py`.
+- **Perfil:** derivado no sync (`derive_perfil`); editável na UI → `perfil_editado = true`.
+- **Enriquecimento manual:** `PUT /enriquecimento/:slug` → tabela do perfil ativo.
 
 ## Backend
 
@@ -27,11 +37,15 @@ Tabela `estabelecimentos` (migration 004):
 
 | Função | Descrição |
 |--------|-----------|
-| `listEstabelecimentos(filters)` | paginação, busca, filtro perfil |
-| `getEstabelecimento(id)` | detalhe + enriquecimento |
-| `updateEnriquecimento(id, body)` | merge JSONB Hospitalar/Misto (legado) |
+| `listEstabelecimentos(query)` | paginação, `q`, filtro `perfil`, `status` |
+| `getEstabelecimentoById(id)` | detalhe + `enrichment` (JOIN nas 5 tabelas) |
+| `updatePerfil(id, perfil)` | set `perfil_editado = true` |
+| `upsertEnrichment(id, slug, body)` | transação `FOR UPDATE`; validação por slug |
+| `updateEnriquecimento(id, body)` | legado Hospitalar/Misto → proxy para `upsertEnrichment` |
 
-`FORBIDDEN_IDENTITY_KEYS` inclui `perfil` — não editável via PUT genérico hoje.
+`FORBIDDEN_IDENTITY_KEYS` inclui `perfil` — perfil só via `updatePerfil`.
+
+Validação de leitos: inteiros ≥ 0. Merge parcial de `leitos` faz deep-merge.
 
 ### `routes/cadastros.js` — endpoints
 
@@ -39,34 +53,40 @@ Tabela `estabelecimentos` (migration 004):
 |--------|------|------|
 | GET | `/api/cadastros/estabelecimentos` | JWT |
 | GET | `/api/cadastros/estabelecimentos/:id` | JWT |
-| PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento` | JWT (JSONB Hospitalar/Misto) |
+| PUT | `/api/cadastros/estabelecimentos/:id/perfil` | JWT + `requirePlanningStaff` |
+| PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento/:slug` | JWT + `requirePlanningStaff` |
+| PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento` | JWT + `requirePlanningStaff` (legado Hospitalar/Misto) |
 | GET | `/api/cadastros/procedimentos` | JWT |
-| GET | `/api/cadastros/procedimentos/:id` | JWT |
 | POST | `/api/cadastros/sincronizar` | JWT + `requirePlanningStaff` |
-| GET | `/api/cadastros/sincronizacoes` | JWT — histórico sync |
+| GET | `/api/cadastros/sincronizacoes` | JWT |
+
+Roles de edição: Administrador, Gestor Secretaria, Planejamento.
 
 ### Sync (`sync_cadastros_mysql.py`)
 
-- UPSERT estabelecimentos/procedimentos.
-- `derive_perfil(tipo, …)` → APS/MAC/Hospitalar/Misto/Outro.
-- **Após task 02:** não sobrescreve `perfil` se `perfil_editado = true`.
+- UPSERT estabelecimentos/procedimentos; inativa ausentes no snapshot MySQL.
+- **Snapshot vazio:** não inativa em massa (guarda contra falha MySQL).
+- `perfil`: `CASE WHEN perfil_editado THEN atual ELSE derivado END`.
+- Linhas de enriquecimento antigas **permanecem** ao trocar perfil (TechSpec).
 
 ## Frontend
 
 | Arquivo | Comportamento |
 |---------|---------------|
-| `EstabelecimentosPage.tsx` | tabela, chips perfil (sem Misto no chip) |
-| `EstabelecimentoDetailDrawer.tsx` | perfil = `LockedField` |
-| `api/cadastros.ts` | `fetchEstabelecimentos`, `updateEnriquecimento` |
-| `utils/enrichmentView.ts` | campos por perfil Hospitalar/Misto |
+| `EstabelecimentosPage.tsx` | tabela, chips perfil (incl. Misto) |
+| `EstabelecimentoDetailDrawer.tsx` | perfil editável; enriquecimento por `perfilDraft` |
+| `EnrichmentFormByPerfil.tsx` | forms APS/MAC/Hospitalar/Misto/Outro |
+| `api/cadastros.ts` | `updatePerfil`, `updateEnrichmentBySlug`, `fetchEstabelecimentos` |
+| `utils/enrichmentByPerfil.ts` | slug, payloads, títulos por perfil |
+| `utils/enrichmentView.ts` | `canViewEnrichment`, `canEditEnrichment` |
 
-`useDashboard.ts` usa `fetchEstabelecimentosAps` — filtra só APS para Painel.
+`useDashboard.ts` lista unidades via `fetchEstabelecimentos({ perfil: painelPerfil })` — ver [frontend.md](frontend.md#painel).
 
 ---
 
 ## Workflow: estabelecimentos-perfil-painel {#workflow-estabelecimentos-perfil-painel}
 
-Spec: `.compozy/tasks/estabelecimentos-perfil-painel/`
+Spec: `.compozy/tasks/_archived/*-estabelecimentos-perfil-painel/` · **Status: concluído e arquivado (tasks 01–10)**
 
 ### ADRs resumidos
 
@@ -75,34 +95,27 @@ Spec: `.compozy/tasks/estabelecimentos-perfil-painel/`
 | adr-001 | Produto: perfis APS/MAC/Hospitalar/Misto, KPIs distintos |
 | adr-002 | `perfil_editado BOOLEAN`; sync não sobrescreve se true |
 | adr-003 | 5 tabelas enriquecimento + `enriquecimento_outro` |
-| adr-004 | `painelPerfil` em `useFilters` |
+| adr-004 | `painelPerfil` em `useFilters`; dashboard API APS no MVP |
 
-### Migration 005 (aplicada — task 01 ✅)
+### Migration 005 ✅
 
-Arquivo: `migration_005_estabelecimentos_perfil_enrichment.sql` (também no init Docker).
+Arquivo: `migration_005_estabelecimentos_perfil_enrichment.sql` (init Docker + manual).
 
 - `perfil_editado BOOLEAN DEFAULT false`
-- Tabelas: `enriquecimento_aps`, `_mac`, `_hospitalar`, `_misto`, `enriquecimento_outro`
-- Backfill de JSONB existente
+- Tabelas `enriquecimento_*`
+- Backfill JSONB legado com `ON CONFLICT DO UPDATE` (preenche vazios)
 
-### Tasks (ordem)
+### Tasks ✅
 
-1. ~~Migration 005 + backfill~~ ✅
-2. ~~Sync Python condicional~~ ✅
-3. Backend service perfil/enrichment ← **próximo**
-4. Rotas + `requirePlanningStaff` + audit
-5. Frontend types + API client
-6. UI Cadastros perfil + forms
-7. `painelPerfil` em useFilters
-8. FilterBar + useDashboard
-9. ProfileSwitcher + KPI catalogs
-10. Playwright E2E
+| # | Entrega |
+|---|---------|
+| 01 | Migration 005 + backfill |
+| 02 | Sync condicional + guard snapshot vazio |
+| 03–04 | Service + rotas + audit |
+| 05–06 | Types, API client, drawer + forms |
+| 07 | `painelPerfil` em `useFilters` |
+| 08 | FilterBar + `useDashboard` por perfil |
+| 09 | `ProfileSwitcher`, placeholder, `PAINEL_KPI_CATALOGS` |
+| 10 | E2E `perfil-painel.spec.ts` + seed `E2E001–004` |
 
-### Endpoints planejados
-
-| Método | Path |
-|--------|------|
-| PUT | `/api/cadastros/estabelecimentos/:id/perfil` |
-| PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento/:slug` |
-
-Roles: Administrador, Gestor Secretaria, Planejamento.
+Review round: `reviews-001/` (11 issues resolvidos).

@@ -13,39 +13,43 @@ Ferramenta de PRD → TechSpec → tasks executáveis. Config: `.compozy/` na ra
 ├── adrs/
 │   ├── adr-001.md    # produto
 │   └── adr-002.md …  # técnicos
-└── (memória opcional em .compozy/tasks/<slug>/memory/)
+├── reviews-NNN/      # review rounds (issues markdown)
+└── (memória opcional)
 ```
 
-## Workflow ativo: `estabelecimentos-perfil-painel`
+## Workflow arquivado: `estabelecimentos-perfil-painel`
+
+Local: `.compozy/tasks/_archived/*-estabelecimentos-perfil-painel/`
 
 | Artefato | Conteúdo |
 |----------|----------|
 | `_prd.md` | Perfil editável, Painel multi-perfil, KPIs |
 | `_techspec.md` | migration 005, APIs, frontend |
-| `_tasks.md` | 10 tasks com dependências |
+| `_tasks.md` | 10 tasks — **todas completed** |
 | `adrs/adr-001` … `004` | decisões produto + técnica |
+| `reviews-001/` | 11 issues resolvidos (review round 1) |
 
 ### Status
 
 | Tasks | Estado |
 |-------|--------|
-| 01 migration 005 | ✅ completed |
-| 02 sync condicional | ✅ completed |
-| 03–10 | pending |
+| 01–10 | ✅ completed |
 
-### Ordem de execução
+### Entregáveis principais
 
-```
-01 migration → 02 sync py → 03 backend service → 04 routes  (03 = próximo)
-→ 05 frontend types → 06 UI cadastros → 07 useFilters
-→ 08 FilterBar/dashboard → 09 ProfileSwitcher → 10 E2E
-```
+- Migration 005 + sync com `perfil_editado`
+- API `PUT /perfil`, `PUT /enriquecimento/:slug`
+- Cadastros: drawer + `EnrichmentFormByPerfil`
+- Painel: `ProfileSwitcher`, placeholder MAC/Hospitalar/Misto
+- E2E + seed `E2E001–004` (`npm run seed:e2e`)
 
-### Comandos
+### Comandos (histórico)
+
+Workflow arquivado — não executar `tasks run`. Referência:
 
 ```powershell
-compozy tasks validate --name estabelecimentos-perfil-painel
-compozy tasks run estabelecimentos-perfil-painel --ide cursor-agent
+compozy sync --name estabelecimentos-perfil-painel   # antes de archive
+compozy archive --name estabelecimentos-perfil-painel
 ```
 
 ## Skills Claude/Cursor (`.claude/skills/`)
@@ -53,6 +57,8 @@ compozy tasks run estabelecimentos-perfil-painel --ide cursor-agent
 | Skill | Uso |
 |-------|-----|
 | `cy-execute-task` | Executar uma `task_NN.md` end-to-end |
+| `cy-review-round` | Gerar review round |
+| `cy-fix-reviews` | Remediar issues do review |
 | `cy-create-prd` | Novo PRD |
 | `cy-create-techspec` | TechSpec a partir do PRD |
 | `cy-create-tasks` | Decompor em tasks |
@@ -66,16 +72,16 @@ compozy tasks run estabelecimentos-perfil-painel --ide cursor-agent
 3. Implementar escopo mínimo da task.
 4. Rodar validações listadas na task.
 5. Atualizar checkboxes em `task_NN.md` e `_tasks.md`.
-6. Commit só se usuário pedir (auto-commit conforme skill).
+6. Commit só se usuário pedir.
 
 ## Referência cruzada
 
-Detalhe de domínio após implementar:
+Detalhe de domínio:
 
 - DB → [database.md](database.md)
-- API → [backend-api.md](backend-api.md)
-- Cadastros → [cadastros.md](cadastros.md)
+- API → [backend-api.md](backend-api.md) + [cadastros.md](cadastros.md)
 - Frontend → [frontend.md](frontend.md)
+- Testes → [testing-ci.md](testing-ci.md)
 
 ## Criar novo workflow
 
