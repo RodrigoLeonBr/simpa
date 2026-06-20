@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "mock": "json-server --watch mock/db.json --port 3100 --routes mock/routes.json",
+    "mock": "json-server --watch mock/db.json --port 3100 --routes mock/routes.json --middlewares mock/auth-middleware.cjs",
     "test": "vitest run --coverage",
     "test:watch": "vitest"
   },
@@ -22,6 +22,7 @@
     "@tailwindcss/vite": "^4.3.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

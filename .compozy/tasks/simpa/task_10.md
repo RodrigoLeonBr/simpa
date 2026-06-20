@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Auth frontend + login page
 type: frontend
 complexity: medium
@@ -31,10 +31,10 @@ Implement JWT auth on the frontend: AuthContext, ProtectedRoute, api client with
 </requirements>
 
 ## Subtasks
-- [ ] 10.1 AuthContext + api/auth.ts
-- [ ] 10.2 ProtectedRoute wrapper
-- [ ] 10.3 Login page UI per design-system.md
-- [ ] 10.4 Wire routes: public /login, protected /*
+- [x] 10.1 AuthContext + api/auth.ts
+- [x] 10.2 ProtectedRoute wrapper
+- [x] 10.3 Login page UI per design-system.md
+- [x] 10.4 Wire routes: public /login, protected /*
 
 ## Implementation Details
 
@@ -56,11 +56,11 @@ See auth design spec Sections 4 and 12 (frontend artifacts).
 
 ## Tests
 - Unit tests:
-  - [ ] login() stores token and user in localStorage
-  - [ ] logout() clears storage
-  - [ ] ProtectedRoute redirects when token missing
+  - [x] login() stores token and user in localStorage
+  - [x] logout() clears storage
+  - [x] ProtectedRoute redirects when token missing
 - Integration tests:
-  - [ ] Login form submits and navigates to /
+  - [x] Login form submits and navigates to /
 - Test coverage target: >=80%
 - All tests must pass
 

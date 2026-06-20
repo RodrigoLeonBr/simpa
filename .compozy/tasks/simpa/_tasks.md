@@ -13,8 +13,8 @@
 | 07 | SIA sync API | completed | medium | task_02, task_03, task_04 |
 | 08 | Cadastros & Admin API | completed | high | task_03, task_04 |
 | 09 | Frontend scaffold + design system | completed | high | — |
-| 10 | Auth frontend + login page | pending | medium | task_04, task_09 |
-| 11 | App shell (Sidebar, Topbar, FilterBar) | pending | medium | task_09, task_10 |
+| 10 | Auth frontend + login page | completed | medium | task_04, task_09 |
+| 11 | App shell (Sidebar, Topbar, FilterBar) | completed | medium | task_09, task_10 |
 | 12 | Painel layouts A/B/C + ECharts | pending | high | task_05, task_11 |
 | 13 | Sala de Situação overlay | pending | medium | task_11, task_12 |
 | 14 | Indicadores, Metas e Relatórios | pending | high | task_11, task_12 |

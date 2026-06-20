@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: App shell (Sidebar, Topbar, FilterBar)
 type: frontend
 complexity: medium
@@ -31,10 +31,10 @@ Build the application chrome: 236px sidebar with labeled nav (7 modules), 58px t
 </requirements>
 
 ## Subtasks
-- [ ] 11.1 Layout grid matching design-system.md shell diagram
-- [ ] 11.2 Sidebar + nav active states
-- [ ] 11.3 Topbar + user menu
-- [ ] 11.4 FilterBar + useFilters context hook
+- [x] 11.1 Layout grid matching design-system.md shell diagram
+- [x] 11.2 Sidebar + nav active states
+- [x] 11.3 Topbar + user menu
+- [x] 11.4 FilterBar + useFilters context hook
 
 ## Implementation Details
 
@@ -56,11 +56,11 @@ See auth design spec Section 3 and SIMPA.dc.html app shell lines 135–195.
 
 ## Tests
 - Unit tests:
-  - [ ] Nav highlights active route
-  - [ ] Filter cascade resets equipe when unidade changes
-  - [ ] Theme persists in localStorage
+  - [x] Nav highlights active route
+  - [x] Filter cascade resets equipe when unidade changes
+  - [x] Theme persists in localStorage
 - Integration tests:
-  - [ ] Shell renders for authenticated user
+  - [x] Shell renders for authenticated user
 - Test coverage target: >=80%
 - All tests must pass
 

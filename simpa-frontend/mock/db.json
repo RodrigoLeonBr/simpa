@@ -121,6 +121,20 @@
       "nome": "CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO",
       "tipo": "APS",
       "status": "ativo"
+    },
+    {
+      "id": 2,
+      "codigo": "UBS002",
+      "nome": "UBS JARDIM SAO PAULO",
+      "tipo": "APS",
+      "status": "ativo"
+    },
+    {
+      "id": 3,
+      "codigo": "HOSP001",
+      "nome": "HOSPITAL MUNICIPAL DR. SYLVIO DE MATTOS",
+      "tipo": "Hospitalar",
+      "status": "ativo"
     }
   ],
   "equipes": [
@@ -130,6 +144,30 @@
       "nome": "EQUIPE 9 EAP",
       "tipo": "EAP",
       "unidade_id": 1,
+      "status": "ativo"
+    },
+    {
+      "id": 2,
+      "codigo": "0002200123",
+      "nome": "ESF 12",
+      "tipo": "ESF",
+      "unidade_id": 1,
+      "status": "ativo"
+    },
+    {
+      "id": 3,
+      "codigo": "0002200456",
+      "nome": "ESF 07",
+      "tipo": "ESF",
+      "unidade_id": 2,
+      "status": "ativo"
+    },
+    {
+      "id": 4,
+      "codigo": "0002200789",
+      "nome": "EAP 03",
+      "tipo": "EAP",
+      "unidade_id": 2,
       "status": "ativo"
     }
   ]
