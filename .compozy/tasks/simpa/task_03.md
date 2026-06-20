@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Backend Express foundation
 type: backend
 complexity: medium
@@ -30,10 +30,10 @@ Create the `simpa-backend/` Node.js Express application with PostgreSQL pool, gl
 </requirements>
 
 ## Subtasks
-- [ ] 3.1 Initialize npm project and install express, pg, dotenv, cors
-- [ ] 3.2 Implement pg Pool singleton and query helper
-- [ ] 3.3 Wire middleware stack and error handler
-- [ ] 3.4 Add health route with PG ping
+- [x] 3.1 Initialize npm project and install express, pg, dotenv, cors
+- [x] 3.2 Implement pg Pool singleton and query helper
+- [x] 3.3 Wire middleware stack and error handler
+- [x] 3.4 Add health route with PG ping
 
 ## Implementation Details
 
@@ -57,10 +57,10 @@ See Plano B Task 1–3 and TechSpec **Component Overview** (api service).
 
 ## Tests
 - Unit tests:
-  - [ ] db.query mocked — health returns 200 when PG ok
-  - [ ] health returns 503 when PG unreachable
+  - [x] db.query mocked — health returns 200 when PG ok
+  - [x] health returns 503 when PG unreachable
 - Integration tests:
-  - [ ] supertest GET /api/health against test container
+  - [x] supertest GET /api/health against test container
 - Test coverage target: >=80% on services/middleware
 - All tests must pass
 

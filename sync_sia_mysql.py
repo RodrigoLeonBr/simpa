@@ -60,53 +60,72 @@ def _sia_env(name: str, default: str) -> str:
     return os.environ.get(name, default)
 
 
-def extrair_sia(conn_mysql, competencia_date: date) -> pd.DataFrame:
+def build_sia_query() -> tuple[str, dict[str, str]]:
     """
-    Extrai produção SIA do MySQL para a competência informada.
+    Monta SQL de extração conforme schema DATASUS do banco producao/XAMPP.
 
-    Colunas/tabelas configuráveis via env (SIA_TABLE_*, SIA_COL_*).
-    Defaults alinhados a ADR-003: s_prd + prestador + procedimento.
+    Defaults: s_prd + prestador + procedimento (dump producao MariaDB).
+    Override via SIA_TABLE_* / SIA_COL_* no .env.
     """
-    table_prd = _sia_env("SIA_TABLE_PRD", "s_prd")
-    table_prest = _sia_env("SIA_TABLE_PRESTADOR", "prestador")
-    table_proc = _sia_env("SIA_TABLE_PROCEDIMENTO", "procedimento")
+    cfg = {
+        "table_prd": _sia_env("SIA_TABLE_PRD", "s_prd"),
+        "table_prest": _sia_env("SIA_TABLE_PRESTADOR", "prestador"),
+        "table_proc": _sia_env("SIA_TABLE_PROCEDIMENTO", "procedimento"),
+        "col_comp": _sia_env("SIA_COL_COMPETENCIA", "prd_cmp"),
+        "col_prd_uid": _sia_env("SIA_COL_PRD_UID", "prd_uid"),
+        "col_prest_pk": _sia_env("SIA_COL_PRESTADOR_PK", "re_cunid"),
+        "col_proc": _sia_env("SIA_COL_COD_PROC", "prd_pa"),
+        "col_proc_pk": _sia_env("SIA_COL_PROC_PK", "codigo"),
+        "col_qtd": _sia_env("SIA_COL_QTD", "PRD_QT_A"),
+        "col_valor": _sia_env("SIA_COL_VALOR", "PRD_VL_A"),
+        "col_idade": _sia_env("SIA_COL_IDADE", "PRD_IDADE"),
+        "col_cbo": _sia_env("SIA_COL_CBO", "prd_cbo"),
+        "col_unidade": _sia_env("SIA_COL_UNIDADE", "re_cnome"),
+        "col_desc": _sia_env("SIA_COL_DESC_PROC", "procedimento"),
+        "col_sexo": _sia_env("SIA_COL_SEXO", ""),
+        "col_prest_ativo": _sia_env("SIA_COL_PRESTADOR_ATIVO", "ativo"),
+    }
 
-    col_comp = _sia_env("SIA_COL_COMPETENCIA", "competencia")
-    col_cnes = _sia_env("SIA_COL_CNES", "cnes")
-    col_proc = _sia_env("SIA_COL_COD_PROC", "cod_proced")
-    col_qtd = _sia_env("SIA_COL_QTD", "qtd_aprov")
-    col_valor = _sia_env("SIA_COL_VALOR", "val_aprov")
-    col_idade = _sia_env("SIA_COL_IDADE", "idade")
-    col_sexo = _sia_env("SIA_COL_SEXO", "sexo")
-    col_cbo = _sia_env("SIA_COL_CBO", "cbo")
-    col_unidade = _sia_env("SIA_COL_UNIDADE", "nome_fantasia")
-    col_desc = _sia_env("SIA_COL_DESC_PROC", "descricao")
-
-    comp = competencia_date.strftime("%Y%m")
+    sexo_expr = (
+        f"prd.{cfg['col_sexo']} AS sexo"
+        if cfg["col_sexo"]
+        else "'I' AS sexo"
+    )
+    sexo_group = f", prd.{cfg['col_sexo']}" if cfg["col_sexo"] else ""
+    ativo_filter = ""
+    if cfg["col_prest_ativo"]:
+        ativo_filter = f" AND (p.{cfg['col_prest_ativo']} = 1 OR p.{cfg['col_prest_ativo']} IS NULL)"
 
     query = f"""
         SELECT
-            COALESCE(p.{col_unidade}, p.nome, p.razao_social) AS unidade,
-            prd.{col_proc} AS codigo_sigtap,
-            COALESCE(proc.{col_desc}, proc.nome, proc.descricao) AS descricao,
-            SUM(prd.{col_qtd}) AS quantidade,
-            SUM(prd.{col_valor}) AS valor_aprovado,
-            prd.{col_idade} AS idade,
-            prd.{col_sexo} AS sexo,
-            prd.{col_cbo} AS cbo
-        FROM {table_prd} prd
-        LEFT JOIN {table_prest} p ON prd.{col_cnes} = p.{col_cnes}
-        LEFT JOIN {table_proc} proc ON prd.{col_proc} = proc.codigo
-        WHERE prd.{col_comp} = %(comp)s
+            p.{cfg['col_unidade']} AS unidade,
+            prd.{cfg['col_proc']} AS codigo_sigtap,
+            proc.{cfg['col_desc']} AS descricao,
+            SUM(prd.{cfg['col_qtd']}) AS quantidade,
+            SUM(prd.{cfg['col_valor']}) AS valor_aprovado,
+            prd.{cfg['col_idade']} AS idade,
+            {sexo_expr},
+            prd.{cfg['col_cbo']} AS cbo
+        FROM {cfg['table_prd']} prd
+        LEFT JOIN {cfg['table_prest']} p
+            ON prd.{cfg['col_prd_uid']} = p.{cfg['col_prest_pk']}
+        LEFT JOIN {cfg['table_proc']} proc
+            ON prd.{cfg['col_proc']} = proc.{cfg['col_proc_pk']}
+        WHERE prd.{cfg['col_comp']} = %(comp)s{ativo_filter}
         GROUP BY
-            COALESCE(p.{col_unidade}, p.nome, p.razao_social),
-            prd.{col_proc},
-            COALESCE(proc.{col_desc}, proc.nome, proc.descricao),
-            prd.{col_idade},
-            prd.{col_sexo},
-            prd.{col_cbo}
+            p.{cfg['col_unidade']},
+            prd.{cfg['col_proc']},
+            proc.{cfg['col_desc']},
+            prd.{cfg['col_idade']}{sexo_group},
+            prd.{cfg['col_cbo']}
     """
+    return query, cfg
 
+
+def extrair_sia(conn_mysql, competencia_date: date) -> pd.DataFrame:
+    """Extrai produção SIA do MySQL para a competência informada (prd_cmp = YYYYMM)."""
+    query, _ = build_sia_query()
+    comp = competencia_date.strftime("%Y%m")
     return pd.read_sql(query, conn_mysql, params={"comp": comp})
 
 
