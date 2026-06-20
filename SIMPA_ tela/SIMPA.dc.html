@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#c3cedb;border-radius:6px;border:2px solid transparent;background-clip:content-box}
+  ::-webkit-scrollbar-track{background:transparent}
+  @keyframes simpaPulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes simpaSpin{to{transform:rotate(360deg)}}
+  @keyframes simpaRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  select{font-family:inherit}
+  button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+
+<div style="height:100vh;overflow:hidden;background:#eef2f7;color:#0f1b2d;font-size:14px">
+
+  <!-- ================= LOGIN ================= -->
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+  <div style="height:100vh;display:grid;grid-template-columns:1.05fr 1fr">
+    <div style="background:#0c2236;color:#fff;padding:64px 60px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:radial-gradient(120% 80% at 100% 0%, rgba(11,95,173,.45), transparent 60%)"></div>
+      <div style="display:flex;align-items:center;gap:14px;position:relative">
+        <div style="width:46px;height:46px;border-radius:11px;background:#0b5fad;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;letter-spacing:-.5px">S</div>
+        <div>
+          <div style="font-weight:700;font-size:18px;letter-spacing:.5px">SIMPA</div>
+          <div style="font-size:11px;color:#9fb3c8;letter-spacing:.3px">Inteligência em Saúde · Americana/SP</div>
+        </div>
+      </div>
+      <div style="position:relative">
+        <div style="font-size:13px;color:#7fa9d4;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:18px">Unidade de Planejamento</div>
+        <h1 style="font-size:38px;line-height:1.15;font-weight:700;letter-spacing:-1px;max-width:13ch">Decisões em saúde orientadas a dados.</h1>
+        <p style="margin-top:20px;color:#aebfd1;font-size:15px;line-height:1.6;max-width:42ch">Produção da APS, desfechos hospitalares, metas regulamentadas e benchmarking entre unidades — em uma só plataforma.</p>
+      </div>
+      <div style="position:relative;display:flex;gap:30px;color:#8fa6bd;font-size:12px;font-family:'IBM Plex Mono',monospace">
+        <div><span style="color:#fff;font-size:20px;font-weight:600">42</span><br>equipes APS</div>
+        <div><span style="color:#fff;font-size:20px;font-weight:600">11</span><br>unidades</div>
+        <div><span style="color:#fff;font-size:20px;font-weight:600">~240k</span><br>habitantes</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;padding:40px;background:#fff">
+      <div style="width:100%;max-width:360px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#0b5fad">Acesso restrito</div>
+        <h2 style="font-size:26px;font-weight:700;margin-top:10px;letter-spacing:-.5px">Entrar na plataforma</h2>
+        <p style="color:#5a6b80;margin-top:8px;font-size:13px">Use suas credenciais institucionais.</p>
+        <div style="margin-top:30px;display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;flex-direction:column;gap:7px">
+            <span style="font-size:12px;font-weight:600;color:#3a4a5e">Usuário</span>
+            <input value="planejamento.saude" readonly style="border:1.5px solid #dde5ee;border-radius:9px;padding:12px 13px;font-size:14px;background:#f7f9fc;font-family:'IBM Plex Mono',monospace">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:7px">
+            <span style="font-size:12px;font-weight:600;color:#3a4a5e">Senha</span>
+            <input value="••••••••••" type="password" readonly style="border:1.5px solid #dde5ee;border-radius:9px;padding:12px 13px;font-size:14px;background:#f7f9fc">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:7px">
+            <span style="font-size:12px;font-weight:600;color:#3a4a5e">Perfil de acesso</span>
+            <select value="{{ perfil }}" onChange="{{ onPerfil }}" style="border:1.5px solid #dde5ee;border-radius:9px;padding:12px 13px;font-size:14px;background:#fff;color:#0f1b2d">
+              <sc-for list="{{ perfis }}" as="p" hint-placeholder-count="4"><option value="{{ p }}">{{ p }}</option></sc-for>
+            </select>
+          </label>
+          <button onClick="{{ onLogin }}" style="margin-top:6px;background:#0b5fad;color:#fff;border:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600;letter-spacing:.2px" style-hover="background:#0a528f">Entrar</button>
+          <button onClick="{{ onLogin }}" style="background:none;border:none;color:#0b5fad;font-size:12.5px;font-weight:500;margin-top:2px">Esqueci minha senha</button>
+        </div>
+        <div style="margin-top:34px;padding-top:18px;border-top:1px solid #eef2f7;font-size:11px;color:#8595a8;line-height:1.6">Ambiente protegido · LGPD · Auditoria de acessos ativa.<br>Prefeitura Municipal de Americana · Secretaria de Saúde</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ================= SALA DE SITUAÇÃO (TELÃO) ================= -->
+  <sc-if value="{{ isSituacao }}" hint-placeholder-val="{{ false }}">
+  <div style="height:100vh;background:#070f1c;color:#eaf1fa;padding:30px 38px;display:flex;flex-direction:column;gap:22px;overflow:hidden;font-family:'IBM Plex Sans',sans-serif">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="width:40px;height:40px;border-radius:10px;background:#0b5fad;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px">S</div>
+        <div>
+          <div style="font-weight:700;font-size:20px;letter-spacing:1px">SALA DE SITUAÇÃO · SIMPA</div>
+          <div style="font-size:12px;color:#6f86a3;letter-spacing:.5px;font-family:'IBM Plex Mono',monospace">Atenção Primária à Saúde · Americana/SP · Competência {{ competencia }}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:24px">
+        <div style="text-align:right;font-family:'IBM Plex Mono',monospace"><div style="font-size:12px;color:#6f86a3">ATUALIZADO</div><div style="font-size:15px;color:#36d39e">● ao vivo · 06/06 08:42</div></div>
+        <button onClick="{{ closeSituacao }}" style="background:#13243c;border:1px solid #21374f;color:#aebfd1;border-radius:8px;padding:9px 15px;font-size:12.5px;font-weight:600">↩ Sair do telão</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+      <div style="background:#0e1a2e;border:1px solid #1c2c44;border-radius:14px;padding:20px 22px">
+        <div style="font-size:12.5px;color:#8499b3;font-weight:500">{{ k.label }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;margin-top:8px;color:#eaf1fa">{{ k.value }}</div>
+        <div style="font-size:12px;margin-top:4px;color:{{ k.deltaColor }}">{{ k.delta }}</div>
+      </div>
+      </sc-for>
+    </div>
+    <div style="flex:1;display:grid;grid-template-columns:1.5fr 1fr;gap:16px;min-height:0">
+      <div style="background:#0e1a2e;border:1px solid #1c2c44;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-weight:600;font-size:15px">Atendimentos individuais · 12 competências</div><div style="font-size:12px;color:#6f86a3;font-family:'IBM Plex Mono',monospace">jun/25 — mai/26</div></div>
+        <svg viewBox="0 0 720 230" preserveAspectRatio="none" style="width:100%;flex:1;margin-top:10px">
+          <defs><linearGradient id="sitg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b5fad" stop-opacity=".55"/><stop offset="1" stop-color="#0b5fad" stop-opacity="0"/></linearGradient></defs>
+          <path d="{{ trend.area }}" fill="url(#sitg)"></path>
+          <polyline points="{{ trend.points }}" fill="none" stroke="#3b9bff" stroke-width="2.5" stroke-linejoin="round"></polyline>
+          <sc-for list="{{ trend.dots }}" as="d" hint-placeholder-count="12"><circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3" fill="#9fd0ff"></circle></sc-for>
+        </svg>
+      </div>
+      <div style="background:#0e1a2e;border:1px solid #1c2c44;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;min-height:0">
+        <div style="font-weight:600;font-size:15px;margin-bottom:14px">Componente Qualidade APS</div>
+        <div style="display:flex;flex-direction:column;gap:13px;overflow:auto">
+          <sc-for list="{{ indicadores }}" as="i" hint-placeholder-count="6">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span style="color:#bcccdf"><b style="font-family:'IBM Plex Mono',monospace;color:{{ i.color }}">{{ i.cod }}</b> {{ i.nomeCurto }}</span><span style="font-family:'IBM Plex Mono',monospace;color:{{ i.color }}">{{ i.execTxt }}</span></div>
+            <div style="height:7px;border-radius:4px;background:#1c2c44;position:relative;overflow:hidden">
+              <div style="position:absolute;inset:0 auto 0 0;width:{{ i.execW }};background:{{ i.color }};border-radius:4px"></div>
+              <div style="position:absolute;top:-2px;bottom:-2px;left:{{ i.metaW }};width:2px;background:#eaf1fa"></div>
+            </div>
+          </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ================= APP SHELL ================= -->
+  <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+  <div style="height:100vh;display:grid;grid-template-columns:236px 1fr;grid-template-rows:58px 1fr">
+
+    <!-- brand corner -->
+    <div style="grid-row:1;grid-column:1;background:#0c2236;display:flex;align-items:center;gap:11px;padding:0 18px;border-bottom:1px solid #0a1c30">
+      <div style="width:32px;height:32px;border-radius:8px;background:#0b5fad;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:15px">S</div>
+      <div style="color:#fff"><div style="font-weight:700;font-size:15px;letter-spacing:.5px;line-height:1">SIMPA</div><div style="font-size:9.5px;color:#7e93ab;letter-spacing:.3px">Americana/SP</div></div>
+    </div>
+
+    <!-- topbar -->
+    <div style="grid-row:1;grid-column:2;background:#fff;border-bottom:1px solid #e2e9f1;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h1 style="font-size:16px;font-weight:600;letter-spacing:-.2px">{{ screenTitle }}</h1>
+        <span style="font-size:11px;color:#8595a8">/ {{ screenCrumb }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <button onClick="{{ openSituacao }}" style="display:flex;align-items:center;gap:7px;background:#0c2236;color:#fff;border:none;border-radius:8px;padding:8px 13px;font-size:12px;font-weight:600" style-hover="background:#143150">▣ Sala de Situação</button>
+        <div style="width:1px;height:22px;background:#e2e9f1"></div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:32px;height:32px;border-radius:50%;background:#e7eef6;color:#0b5fad;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;font-family:'IBM Plex Mono',monospace">PL</div>
+          <div style="line-height:1.2"><div style="font-size:12.5px;font-weight:600">Planejamento</div><div style="font-size:10.5px;color:#8595a8">{{ perfil }}</div></div>
+        </div>
+        <button onClick="{{ onLogout }}" title="Sair" style="background:none;border:1px solid #e2e9f1;border-radius:8px;width:32px;height:32px;color:#8595a8;font-size:14px" style-hover="border-color:#c0392b;color:#c0392b">⏻</button>
+      </div>
+    </div>
+
+    <!-- sidebar -->
+    <nav style="grid-row:2;grid-column:1;background:#0c2236;padding:14px 12px;display:flex;flex-direction:column;gap:3px;overflow:auto">
+      <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;color:#566f8c;padding:8px 12px 6px">MÓDULOS</div>
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="7">
+        <button onClick="{{ n.go }}" style="{{ n.style }}" style-hover="background:#14304e;color:#dce8f5">
+          <span style="width:18px;display:flex;justify-content:center;color:{{ n.iconColor }}">{{ n.icon }}</span>
+          <span style="flex:1;text-align:left">{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-family:'IBM Plex Mono',monospace;background:#0b5fad;color:#fff;border-radius:20px;padding:1px 7px">{{ n.badge }}</span></sc-if>
+        </button>
+      </sc-for>
+      <div style="margin-top:auto;padding:12px;border-top:1px solid #16304c;font-size:10.5px;color:#56708c;line-height:1.6;font-family:'IBM Plex Mono',monospace">v0.4 · Fase 2<br>ETL e-SUS · SIA · SIHD</div>
+    </nav>
+
+    <!-- main -->
+    <main style="grid-row:2;grid-column:2;overflow:auto;background:#eef2f7">
+
+      <!-- filter bar (shared) -->
+      <sc-if value="{{ showFilters }}" hint-placeholder-val="{{ true }}">
+      <div style="position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #e2e9f1;padding:11px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:600;color:#8595a8;text-transform:uppercase;letter-spacing:.5px">Competência</span>
+          <select value="{{ competencia }}" onChange="{{ onComp }}" style="border:1.5px solid #dde5ee;border-radius:8px;padding:7px 11px;font-size:13px;font-family:'IBM Plex Mono',monospace;background:#fff;font-weight:500">
+            <sc-for list="{{ competencias }}" as="c" hint-placeholder-count="5"><option value="{{ c }}">{{ c }}</option></sc-for>
+          </select></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:600;color:#8595a8;text-transform:uppercase;letter-spacing:.5px">Unidade</span>
+          <select value="{{ unidadeFiltro }}" onChange="{{ onUnidade }}" style="border:1.5px solid #dde5ee;border-radius:8px;padding:7px 11px;font-size:13px;background:#fff;font-weight:500;max-width:230px">
+            <sc-for list="{{ unidadeOpc }}" as="u" hint-placeholder-count="6"><option value="{{ u }}">{{ u }}</option></sc-for>
+          </select></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:600;color:#8595a8;text-transform:uppercase;letter-spacing:.5px">Equipe</span>
+          <select value="{{ equipeFiltro }}" onChange="{{ onEquipe }}" style="border:1.5px solid #dde5ee;border-radius:8px;padding:7px 11px;font-size:13px;background:#fff;font-weight:500">
+            <sc-for list="{{ equipeOpc }}" as="e" hint-placeholder-count="4"><option value="{{ e }}">{{ e }}</option></sc-for>
+          </select></div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;color:#8595a8;font-family:'IBM Plex Mono',monospace"><span style="width:7px;height:7px;border-radius:50%;background:#1f8a5b;display:inline-block"></span>Dados consolidados</div>
+      </div>
+      </sc-if>
+
+      <div style="padding:22px">
+
+      <!-- ===== PAINEL ===== -->
+      <sc-if value="{{ scrPainel }}" hint-placeholder-val="{{ true }}">
+      <div style="animation:simpaRise .25s ease both">
+        <!-- layout switcher -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:19px;font-weight:700;letter-spacing:-.3px">Painel gerencial</div>
+            <div style="font-size:12.5px;color:#5a6b80;margin-top:2px">Visão município · modelo OCI Regional · competência {{ competencia }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:#8595a8;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Layout</span>
+            <div style="display:flex;background:#e2e9f1;border-radius:9px;padding:3px">
+              <sc-for list="{{ layoutOpc }}" as="l" hint-placeholder-count="3"><button onClick="{{ l.go }}" style="{{ l.style }}">{{ l.label }}</button></sc-for>
+            </div>
+          </div>
+        </div>
+
+        <!-- LAYOUT A: KPI grid + trend + ranking -->
+        <sc-if value="{{ layoutA }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6">
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:16px 18px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="font-size:12.5px;color:#5a6b80;font-weight:500;max-width:18ch">{{ k.label }}</div>
+              <span style="font-size:11px;font-weight:600;color:{{ k.deltaColor }};font-family:'IBM Plex Mono',monospace;white-space:nowrap">{{ k.delta }}</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;margin-top:6px;letter-spacing:-.5px">{{ k.value }}</div>
+            <svg viewBox="0 0 120 30" preserveAspectRatio="none" style="width:100%;height:26px;margin-top:6px"><polyline points="{{ k.spark }}" fill="none" stroke="{{ k.sparkColor }}" stroke-width="2"></polyline></svg>
+          </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:14px;margin-top:14px">
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 20px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><div style="font-weight:600;font-size:14.5px">Atendimentos individuais</div><div style="font-size:11.5px;color:#8595a8;font-family:'IBM Plex Mono',monospace">jun/25 — mai/26</div></div>
+            <svg viewBox="0 0 720 220" preserveAspectRatio="none" style="width:100%;height:200px">
+              <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b5fad" stop-opacity=".22"/><stop offset="1" stop-color="#0b5fad" stop-opacity="0"/></linearGradient></defs>
+              <sc-for list="{{ gridY }}" as="g" hint-placeholder-count="4"><line x1="24" y1="{{ g }}" x2="696" y2="{{ g }}" stroke="#eef2f7" stroke-width="1"></line></sc-for>
+              <path d="{{ trend.area }}" fill="url(#pg)"></path>
+              <polyline points="{{ trend.points }}" fill="none" stroke="#0b5fad" stroke-width="2.5" stroke-linejoin="round"></polyline>
+              <sc-for list="{{ trend.dots }}" as="d" hint-placeholder-count="12"><circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3" fill="#fff" stroke="#0b5fad" stroke-width="2"></circle></sc-for>
+            </svg>
+          </div>
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 20px">
+            <div style="font-weight:600;font-size:14.5px;margin-bottom:14px">Produção por unidade · top 6</div>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <sc-for list="{{ ranking }}" as="r" hint-placeholder-count="6">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:500">{{ r.nome }}</span><span style="font-family:'IBM Plex Mono',monospace;color:#5a6b80">{{ r.valTxt }}</span></div>
+                <div style="height:8px;background:#eef2f7;border-radius:5px;overflow:hidden"><div style="height:100%;width:{{ r.w }};background:{{ r.color }};border-radius:5px"></div></div>
+              </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- LAYOUT B: focus hero + compact metas -->
+        <sc-if value="{{ layoutB }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="background:linear-gradient(115deg,#0c2236,#0b3f6e);color:#fff;border-radius:14px;padding:22px 24px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+              <div>
+                <div style="font-size:12.5px;color:#9fb8d4;font-weight:500">Atendimentos individuais · {{ competencia }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:42px;font-weight:600;letter-spacing:-1px;margin-top:6px">48.213</div>
+                <div style="font-size:12.5px;color:#7fe0b4;margin-top:2px">▲ 6,2% vs. competência anterior</div>
+                <div style="display:flex;gap:22px;margin-top:22px">
+                  <div><div style="font-size:11px;color:#9fb8d4">Cobertura APS</div><div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600">78,4%</div></div>
+                  <div><div style="font-size:11px;color:#9fb8d4">Equipes ativas</div><div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600">42</div></div>
+                  <div><div style="font-size:11px;color:#9fb8d4">Metas atingidas</div><div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600">5/7</div></div>
+                </div>
+              </div>
+              <svg viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;align-self:center">
+                <defs><linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5db0ff" stop-opacity=".5"/><stop offset="1" stop-color="#5db0ff" stop-opacity="0"/></linearGradient></defs>
+                <path d="{{ trendHero.area }}" fill="url(#hb)"></path>
+                <polyline points="{{ trendHero.points }}" fill="none" stroke="#8fcaff" stroke-width="2.5"></polyline>
+              </svg>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+              <sc-for list="{{ kpisB }}" as="k" hint-placeholder-count="3">
+              <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:15px 17px">
+                <div style="font-size:12px;color:#5a6b80">{{ k.label }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:600;margin-top:5px">{{ k.value }}</div>
+                <div style="font-size:11px;color:{{ k.deltaColor }};margin-top:2px;font-family:'IBM Plex Mono',monospace">{{ k.delta }}</div>
+              </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 20px">
+            <div style="font-weight:600;font-size:14.5px;margin-bottom:14px">Metas · Componente Qualidade</div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <sc-for list="{{ indicadores }}" as="i" hint-placeholder-count="7">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span><b style="font-family:'IBM Plex Mono',monospace;color:{{ i.color }}">{{ i.cod }}</b> {{ i.nomeCurto }}</span><span style="font-family:'IBM Plex Mono',monospace;color:{{ i.color }};font-weight:600">{{ i.execTxt }}</span></div>
+                <div style="height:7px;border-radius:4px;background:#eef2f7;position:relative;overflow:hidden">
+                  <div style="position:absolute;inset:0 auto 0 0;width:{{ i.execW }};background:{{ i.color }};border-radius:4px"></div>
+                  <div style="position:absolute;top:-2px;bottom:-2px;left:{{ i.metaW }};width:2px;background:#0f1b2d"></div>
+                </div>
+              </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- LAYOUT C: dense table-first -->
+        <sc-if value="{{ layoutC }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6">
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:11px;padding:13px 14px">
+            <div style="font-size:11px;color:#5a6b80;line-height:1.3;height:28px">{{ k.label }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;margin-top:4px">{{ k.value }}</div>
+            <div style="font-size:10.5px;color:{{ k.deltaColor }};font-family:'IBM Plex Mono',monospace">{{ k.delta }}</div>
+          </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;overflow:hidden">
+          <div style="padding:14px 18px;border-bottom:1px solid #eef2f7;font-weight:600;font-size:14.5px">Desempenho por unidade · competência {{ competencia }}</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead><tr style="background:#f7f9fc;color:#5a6b80;text-align:left">
+              <th style="padding:10px 18px;font-weight:600">Unidade</th><th style="padding:10px 12px;font-weight:600">Tipo</th><th style="padding:10px 12px;font-weight:600;text-align:right">Atend. ind.</th><th style="padding:10px 12px;font-weight:600;text-align:right">Odonto</th><th style="padding:10px 12px;font-weight:600;text-align:right">Cobertura</th><th style="padding:10px 18px;font-weight:600;text-align:right">Metas</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ tabelaUnidades }}" as="u" hint-placeholder-count="8">
+              <tr style="border-top:1px solid #eef2f7" style-hover="background:#f7f9fc">
+                <td style="padding:10px 18px;font-weight:500">{{ u.nome }}</td>
+                <td style="padding:10px 12px"><span style="font-size:11px;background:#e7eef6;color:#0b5fad;border-radius:20px;padding:2px 9px;font-weight:600">{{ u.tipo }}</span></td>
+                <td style="padding:10px 12px;text-align:right;font-family:'IBM Plex Mono',monospace">{{ u.atend }}</td>
+                <td style="padding:10px 12px;text-align:right;font-family:'IBM Plex Mono',monospace">{{ u.odonto }}</td>
+                <td style="padding:10px 12px;text-align:right;font-family:'IBM Plex Mono',monospace">{{ u.cob }}</td>
+                <td style="padding:10px 18px;text-align:right"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:{{ u.metaColor }}">{{ u.metas }}</span></td>
+              </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ===== INDICADORES ===== -->
+      <sc-if value="{{ scrIndic }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:simpaRise .25s ease both">
+        <div style="font-size:19px;font-weight:700;letter-spacing:-.3px">Painel de Indicadores</div>
+        <div style="font-size:12.5px;color:#5a6b80;margin-top:2px;margin-bottom:16px">Componente Qualidade APS · IGM SUS Paulista · drill-down por competência</div>
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:14px">
+          <!-- catalog list -->
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;overflow:hidden;align-self:start">
+            <div style="padding:13px 16px;border-bottom:1px solid #eef2f7;font-weight:600;font-size:13.5px;display:flex;justify-content:space-between;align-items:center">Catálogo<span style="font-size:10.5px;color:#8595a8;font-weight:500;font-family:'IBM Plex Mono',monospace">{{ indCount }} ativos</span></div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ indicadores }}" as="i" hint-placeholder-count="7">
+              <button onClick="{{ i.select }}" style="{{ i.rowStyle }}">
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;color:{{ i.color }};width:30px">{{ i.cod }}</span>
+                <span style="flex:1;text-align:left;font-size:12.5px;line-height:1.25">{{ i.nomeCurto }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ i.color }};font-weight:600">{{ i.execTxt }}</span>
+              </button>
+              </sc-for>
+            </div>
+          </div>
+          <!-- detail -->
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:20px 22px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+                <div>
+                  <div style="display:flex;align-items:center;gap:9px"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;background:{{ sel.colorBg }};color:{{ sel.color }};border-radius:7px;padding:3px 9px">{{ sel.cod }}</span><span style="font-size:11px;color:#8595a8;font-family:'IBM Plex Mono',monospace">{{ sel.categoria }}</span></div>
+                  <h2 style="font-size:18px;font-weight:700;margin-top:9px;letter-spacing:-.3px;max-width:36ch">{{ sel.nome }}</h2>
+                  <p style="font-size:12.5px;color:#5a6b80;margin-top:5px;max-width:52ch;line-height:1.5">{{ sel.descricao }}</p>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:11px;color:#8595a8">Executado</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;color:{{ sel.color }};letter-spacing:-1px">{{ sel.execTxt }}</div>
+                  <div style="font-size:11.5px;color:#8595a8;font-family:'IBM Plex Mono',monospace">meta {{ sel.metaTxt }} · {{ sel.statusTxt }}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:14px;margin-top:18px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#5a6b80;flex-wrap:wrap">
+                <div style="background:#f7f9fc;border-radius:8px;padding:8px 12px"><span style="color:#8595a8">Numerador</span> · {{ sel.num }}</div>
+                <div style="background:#f7f9fc;border-radius:8px;padding:8px 12px"><span style="color:#8595a8">Denominador</span> · {{ sel.den }}</div>
+                <div style="background:#f7f9fc;border-radius:8px;padding:8px 12px"><span style="color:#8595a8">Fonte</span> · {{ sel.fonte }}</div>
+                <div style="background:#f7f9fc;border-radius:8px;padding:8px 12px"><span style="color:#8595a8">Periodicidade</span> · {{ sel.periodicidade }}</div>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 22px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div style="font-weight:600;font-size:14px">Série histórica · executado vs. meta</div><div style="font-size:11px;color:#8595a8;font-family:'IBM Plex Mono',monospace">12 competências</div></div>
+              <svg viewBox="0 0 720 220" preserveAspectRatio="none" style="width:100%;height:200px">
+                <defs><linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{{ sel.color }}" stop-opacity=".2"/><stop offset="1" stop-color="{{ sel.color }}" stop-opacity="0"/></linearGradient></defs>
+                <line x1="24" y1="{{ sel.metaY }}" x2="696" y2="{{ sel.metaY }}" stroke="#0f1b2d" stroke-width="1.5" stroke-dasharray="5 5"></line>
+                <path d="{{ sel.serie.area }}" fill="url(#ig)"></path>
+                <polyline points="{{ sel.serie.points }}" fill="none" stroke="{{ sel.color }}" stroke-width="2.5" stroke-linejoin="round"></polyline>
+                <sc-for list="{{ sel.serie.dots }}" as="d" hint-placeholder-count="12"><circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3" fill="#fff" stroke="{{ sel.color }}" stroke-width="2"></circle></sc-for>
+              </svg>
+            </div>
+            <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 22px">
+              <div style="font-weight:600;font-size:14px;margin-bottom:14px">Comparação entre unidades</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ sel.porUnidade }}" as="u" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="width:150px;font-size:12px;font-weight:500">{{ u.nome }}</div>
+                  <div style="flex:1;height:18px;background:#eef2f7;border-radius:5px;overflow:hidden;position:relative">
+                    <div style="height:100%;width:{{ u.w }};background:{{ u.color }};border-radius:5px"></div>
+                    <div style="position:absolute;top:-3px;bottom:-3px;left:{{ sel.metaW }};width:2px;background:#0f1b2d"></div>
+                  </div>
+                  <div style="width:54px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ u.color }};font-weight:600">{{ u.txt }}</div>
+                </div>
+                </sc-for>
+              </div>
+              <div style="font-size:11px;color:#8595a8;margin-top:12px;display:flex;align-items:center;gap:6px"><span style="width:14px;height:2px;background:#0f1b2d;display:inline-block"></span>linha tracejada = meta regulamentada ({{ sel.metaTxt }})</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== METAS ===== -->
+      <sc-if value="{{ scrMetas }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:simpaRise .25s ease both">
+        <div style="font-size:19px;font-weight:700;letter-spacing:-.3px">Acompanhamento de Metas</div>
+        <div style="font-size:12.5px;color:#5a6b80;margin-top:2px;margin-bottom:16px">Meta vs. executado vs. % de atingimento · null = não apurado (nunca tratado como zero)</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px">
+          <sc-for list="{{ metasResumo }}" as="m" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:16px 18px">
+            <div style="font-size:12px;color:#5a6b80">{{ m.label }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;margin-top:5px;color:{{ m.color }}">{{ m.value }}</div>
+            <div style="font-size:11px;color:#8595a8;margin-top:1px">{{ m.sub }}</div>
+          </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;overflow:hidden">
+          <div style="padding:14px 20px;border-bottom:1px solid #eef2f7;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:600;font-size:14.5px">Metas por indicador · {{ competencia }}</div>
+            <div style="display:flex;gap:8px;font-size:11px;color:#5a6b80;align-items:center"><span style="width:9px;height:9px;border-radius:2px;background:#1f8a5b;display:inline-block"></span>atingida<span style="width:9px;height:9px;border-radius:2px;background:#c8862b;display:inline-block;margin-left:6px"></span>próxima<span style="width:9px;height:9px;border-radius:2px;background:#c0392b;display:inline-block;margin-left:6px"></span>abaixo</div>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ indicadores }}" as="i" hint-placeholder-count="7">
+            <div style="display:grid;grid-template-columns:230px 1fr 200px;gap:18px;align-items:center;padding:15px 20px;border-top:1px solid #eef2f7">
+              <div>
+                <div style="font-size:13px;font-weight:600"><span style="font-family:'IBM Plex Mono',monospace;color:{{ i.color }}">{{ i.cod }}</span> {{ i.nomeCurto }}</div>
+                <div style="font-size:11px;color:#8595a8;font-family:'IBM Plex Mono',monospace;margin-top:2px">{{ i.origem }}</div>
+              </div>
+              <div>
+                <div style="height:14px;background:#eef2f7;border-radius:6px;overflow:hidden;position:relative">
+                  <div style="height:100%;width:{{ i.execW }};background:{{ i.color }};border-radius:6px"></div>
+                  <div style="position:absolute;top:-3px;bottom:-3px;left:{{ i.metaW }};width:2.5px;background:#0f1b2d"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8595a8;margin-top:4px;font-family:'IBM Plex Mono',monospace"><span>executado {{ i.execTxt }}</span><span>meta {{ i.metaTxt }}</span></div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:{{ i.color }}">{{ i.atingTxt }}</div>
+                <div style="font-size:10.5px;color:{{ i.color }};font-weight:600">{{ i.statusTxt }}</div>
+              </div>
+            </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== IMPORTAÇÃO ===== -->
+      <sc-if value="{{ scrImport }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:simpaRise .25s ease both">
+        <div style="font-size:19px;font-weight:700;letter-spacing:-.3px">Importação · Histórico de Cargas</div>
+        <div style="font-size:12.5px;color:#5a6b80;margin-top:2px;margin-bottom:16px">ETL e-SUS APS · SIA (MAC) · SIHD/AIH · conversão ISO-8859-1 → UTF-8 automática</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
+          <sc-for list="{{ importCards }}" as="c" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 20px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:600;font-size:14px">{{ c.titulo }}</div><span style="font-size:10.5px;font-family:'IBM Plex Mono',monospace;background:{{ c.statusBg }};color:{{ c.statusColor }};border-radius:20px;padding:3px 10px;font-weight:600">{{ c.status }}</span></div>
+            <div style="font-size:12px;color:#5a6b80;line-height:1.5">{{ c.desc }}</div>
+            <button onClick="{{ c.action }}" style="margin-top:auto;align-self:flex-start;background:#e7eef6;color:#0b5fad;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600" style-hover="background:#0b5fad;color:#fff">{{ c.cta }}</button>
+          </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;overflow:hidden">
+          <div style="padding:14px 20px;border-bottom:1px solid #eef2f7;font-weight:600;font-size:14.5px;display:flex;justify-content:space-between;align-items:center">Cargas recentes<span style="font-size:11px;color:#8595a8;font-weight:500;font-family:'IBM Plex Mono',monospace">{{ cargasCount }} registros · esus_cargas</span></div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#f7f9fc;color:#5a6b80;text-align:left">
+              <th style="padding:10px 20px;font-weight:600">Tipo de relatório</th><th style="padding:10px 10px;font-weight:600">Comp.</th><th style="padding:10px 10px;font-weight:600">Unidade</th><th style="padding:10px 10px;font-weight:600">Equipe</th><th style="padding:10px 10px;font-weight:600;text-align:right">Registros</th><th style="padding:10px 10px;font-weight:600;text-align:right">Não ident.</th><th style="padding:10px 10px;font-weight:600">Status</th><th style="padding:10px 20px;font-weight:600">Ações</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ cargas }}" as="c" hint-placeholder-count="8">
+              <tr style="border-top:1px solid #eef2f7" style-hover="background:#f7f9fc">
+                <td style="padding:10px 20px"><div style="font-weight:500">{{ c.tipo }}</div><div style="font-size:10.5px;color:#8595a8;font-family:'IBM Plex Mono',monospace">{{ c.arquivo }}</div></td>
+                <td style="padding:10px 10px;font-family:'IBM Plex Mono',monospace">{{ c.comp }}</td>
+                <td style="padding:10px 10px">{{ c.unidade }}</td>
+                <td style="padding:10px 10px;font-family:'IBM Plex Mono',monospace">{{ c.equipe }}</td>
+                <td style="padding:10px 10px;text-align:right;font-family:'IBM Plex Mono',monospace">{{ c.registros }}</td>
+                <td style="padding:10px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:{{ c.naoIdColor }}">{{ c.naoId }}</td>
+                <td style="padding:10px 10px"><span style="font-size:10.5px;font-family:'IBM Plex Mono',monospace;background:{{ c.statusBg }};color:{{ c.statusColor }};border-radius:20px;padding:2px 9px;font-weight:600">{{ c.status }}</span></td>
+                <td style="padding:10px 20px;color:#0b5fad;font-size:11.5px;font-weight:600">ver · reprocessar</td>
+              </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== RELATÓRIOS ===== -->
+      <sc-if value="{{ scrRelat }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:simpaRise .25s ease both">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:19px;font-weight:700;letter-spacing:-.3px">Comparativo entre Unidades</div>
+            <div style="font-size:12.5px;color:#5a6b80;margin-top:2px;margin-bottom:16px">Benchmarking · {{ sel.cod }} {{ sel.nomeCurto }} · competência {{ competencia }}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button style="background:#fff;border:1.5px solid #dde5ee;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;color:#0f1b2d" style-hover="border-color:#0b5fad;color:#0b5fad">⤓ Excel</button>
+            <button style="background:#0b5fad;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;color:#fff" style-hover="background:#0a528f">⤓ PDF</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:14px">
+          <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;overflow:hidden">
+            <div style="padding:14px 20px;border-bottom:1px solid #eef2f7;font-weight:600;font-size:14.5px">Ranking de unidades</div>
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+              <thead><tr style="background:#f7f9fc;color:#5a6b80;text-align:left">
+                <th style="padding:10px 20px;font-weight:600;width:34px">#</th><th style="padding:10px 10px;font-weight:600">Unidade</th><th style="padding:10px 10px;font-weight:600">Tipo</th><th style="padding:10px 10px;font-weight:600;width:230px">Atingimento</th><th style="padding:10px 20px;font-weight:600;text-align:right">vs. média</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ benchUnidades }}" as="b" hint-placeholder-count="8">
+                <tr style="border-top:1px solid #eef2f7" style-hover="background:#f7f9fc">
+                  <td style="padding:11px 20px;font-family:'IBM Plex Mono',monospace;color:#8595a8;font-weight:600">{{ b.rank }}</td>
+                  <td style="padding:11px 10px;font-weight:500">{{ b.nome }}</td>
+                  <td style="padding:11px 10px"><span style="font-size:11px;background:#e7eef6;color:#0b5fad;border-radius:20px;padding:2px 9px;font-weight:600">{{ b.tipo }}</span></td>
+                  <td style="padding:11px 10px"><div style="display:flex;align-items:center;gap:9px"><div style="flex:1;height:9px;background:#eef2f7;border-radius:5px;overflow:hidden"><div style="height:100%;width:{{ b.w }};background:{{ b.color }};border-radius:5px"></div></div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ b.color }};font-weight:600;width:42px;text-align:right">{{ b.txt }}</span></div></td>
+                  <td style="padding:11px 20px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:600;color:{{ b.diffColor }}">{{ b.diff }}</td>
+                </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 20px">
+              <div style="font-weight:600;font-size:14px;margin-bottom:6px">Distribuição por unidade</div>
+              <div style="font-size:11.5px;color:#8595a8;margin-bottom:12px">11 unidades · APS Americana/SP</div>
+              <div style="position:relative;background:#f2f6fb;border:1px dashed #c3cedb;border-radius:10px;height:200px;overflow:hidden">
+                <svg viewBox="0 0 320 200" style="position:absolute;inset:0;width:100%;height:100%;opacity:.5"><defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#c3cedb" stroke-width="1"/></pattern></defs><rect width="320" height="200" fill="url(#hatch)"/></svg>
+                <sc-for list="{{ mapPins }}" as="p" hint-placeholder-count="8"><div style="position:absolute;left:{{ p.x }};top:{{ p.y }};transform:translate(-50%,-50%);width:{{ p.size }};height:{{ p.size }};border-radius:50%;background:{{ p.color }};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div></sc-for>
+                <div style="position:absolute;left:10px;bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8595a8;background:rgba(255,255,255,.85);border-radius:4px;padding:2px 6px">[ mapa georreferenciado · placeholder ]</div>
+              </div>
+              <div style="font-size:11px;color:#8595a8;margin-top:10px;line-height:1.5">Tamanho do ponto = volume de atendimentos · cor = atingimento da meta. Substituir por camada GeoJSON dos bairros.</div>
+            </div>
+            <div style="background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 20px">
+              <div style="font-weight:600;font-size:14px;margin-bottom:12px">Síntese municipal</div>
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <sc-for list="{{ relatSintese }}" as="s" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px"><span style="color:#5a6b80">{{ s.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:{{ s.color }}">{{ s.value }}</span></div></sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== GENERIC (Cadastros / Administração) ===== -->
+      <sc-if value="{{ scrGeneric }}" hint-placeholder-val="{{ false }}">
+      <div style="animation:simpaRise .25s ease both">
+        <div style="font-size:19px;font-weight:700;letter-spacing:-.3px">{{ genericTitle }}</div>
+        <div style="font-size:12.5px;color:#5a6b80;margin-top:2px;margin-bottom:16px">{{ genericSub }}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+          <sc-for list="{{ genericItems }}" as="g" hint-placeholder-count="6">
+          <button onClick="{{ g.go }}" style="text-align:left;background:#fff;border:1px solid #e2e9f1;border-radius:13px;padding:18px 20px;display:flex;flex-direction:column;gap:7px" style-hover="border-color:#0b5fad;box-shadow:0 4px 14px rgba(11,95,173,.08)">
+            <div style="display:flex;justify-content:space-between;align-items:center;width:100%"><div style="font-weight:600;font-size:14px">{{ g.titulo }}</div><span style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:#8595a8">{{ g.tabela }}</span></div>
+            <div style="font-size:12px;color:#5a6b80;line-height:1.5">{{ g.desc }}</div>
+            <div style="margin-top:6px;font-size:12px;color:#0b5fad;font-weight:600">Abrir CRUD →</div>
+          </button>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      </div>
+    </main>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'login',
+    perfil: 'Planejamento',
+    competencia: '05/2026',
+    unidadeFiltro: 'Todas as unidades',
+    equipeFiltro: 'Todas as equipes',
+    dashLayout: 'A',
+    selIndic: 'B1',
+  };
+
+  perfis = ['Administrador', 'Gestor Secretaria', 'Gestor de Unidade', 'Planejamento'];
+  competencias = ['01/2026', '02/2026', '03/2026', '04/2026', '05/2026'];
+
+  unidades = [
+    { nome: 'UBS Cidade Jardim', tipo: 'APS', atend: 4213, odonto: 980, cob: 0.91, metas: '6/7' },
+    { nome: 'USF São Vito', tipo: 'APS', atend: 3870, odonto: 742, cob: 0.86, metas: '5/7' },
+    { nome: 'USF Praia Azul', tipo: 'APS', atend: 3510, odonto: 690, cob: 0.83, metas: '4/7' },
+    { nome: 'UBS Antônio Zanaga', tipo: 'APS', atend: 4620, odonto: 1120, cob: 0.94, metas: '7/7' },
+    { nome: 'USF Mathiensen', tipo: 'APS', atend: 2980, odonto: 560, cob: 0.78, metas: '4/7' },
+    { nome: 'UBS Jardim da Paz', tipo: 'APS', atend: 3340, odonto: 705, cob: 0.81, metas: '5/7' },
+    { nome: 'USF Parque Gramado', tipo: 'APS', atend: 2710, odonto: 498, cob: 0.74, metas: '3/7' },
+    { nome: 'Hosp. Mun. Waldemar Tebaldi', tipo: 'Hospitalar', atend: 0, odonto: 0, cob: 0, metas: '—' },
+  ];
+
+  // indicadores: meta e executado em fração (0..1)
+  indicadores = [
+    { cod: 'B1', nomeCurto: 'Pré-natal (6+ consultas)', nome: 'Proporção de gestantes com pelo menos 6 consultas de pré-natal, sendo a 1ª até a 20ª semana', cat: 'Componente Qualidade', meta: 0.60, exec: 0.58, num: '1.412', den: '2.434', fonte: 'e-SUS · Atend. Individual', per: 'Quadrimestral', origem: 'Componente Qualidade APS' },
+    { cod: 'B2', nomeCurto: 'Sífilis e HIV na gestação', nome: 'Proporção de gestantes com exames de sífilis e HIV solicitados', cat: 'Componente Qualidade', meta: 0.60, exec: 0.71, num: '1.728', den: '2.434', fonte: 'e-SUS · Atend. Individual', per: 'Quadrimestral', origem: 'Componente Qualidade APS' },
+    { cod: 'B3', nomeCurto: 'Citopatológico (colo)', nome: 'Cobertura de exame citopatológico do colo do útero em mulheres de 25 a 64 anos', cat: 'Componente Qualidade', meta: 0.40, exec: 0.34, num: '9.840', den: '28.940', fonte: 'e-SUS · Proc. Individualizados', per: 'Quadrimestral', origem: 'Componente Qualidade APS' },
+    { cod: 'B4', nomeCurto: 'Cobertura vacinal infantil', nome: 'Cobertura vacinal de Poliomielite inativada e Pentavalente em menores de 1 ano', cat: 'Componente Qualidade', meta: 0.95, exec: 0.88, num: '2.024', den: '2.300', fonte: 'e-SUS · SI-PNI', per: 'Quadrimestral', origem: 'Componente Qualidade APS' },
+    { cod: 'B5', nomeCurto: 'Hipertensão — PA aferida', nome: 'Proporção de pessoas hipertensas com pressão arterial aferida em cada semestre', cat: 'Componente Qualidade', meta: 0.50, exec: 0.62, num: '7.440', den: '12.000', fonte: 'e-SUS · Atend. Individual', per: 'Semestral', origem: 'Componente Qualidade APS' },
+    { cod: 'B6', nomeCurto: 'Diabetes — hemoglobina glicada', nome: 'Proporção de pessoas com diabetes com solicitação de hemoglobina glicada', cat: 'Componente Qualidade', meta: 0.50, exec: 0.41, num: '2.460', den: '6.000', fonte: 'e-SUS · Proc. Individualizados', per: 'Semestral', origem: 'Componente Qualidade APS' },
+    { cod: 'IGM', nomeCurto: 'Índice Geral · SUS Paulista', nome: 'Índice Geral Municipal do SUS Paulista — desempenho consolidado da APS', cat: 'IGM SUS Paulista', meta: 0.70, exec: 0.66, num: '—', den: '—', fonte: 'SES-SP · IGM', per: 'Anual', origem: 'IGM SUS Paulista' },
+  ];
+
+  // sparkline-friendly base series per kpi (12 valores)
+  trendVals = [40120, 41330, 39880, 42010, 43500, 41990, 44210, 45120, 43980, 46010, 47230, 48213];
+
+  // ---- helpers ----
+  fmt(n) { return n.toLocaleString('pt-BR'); }
+  pct(f) { return (f * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'; }
+
+  buildLine(vals, w, h, px, py) {
+    const max = Math.max(...vals), min = Math.min(...vals);
+    const span = (max - min) || 1;
+    const n = vals.length;
+    const ix = (w - px * 2) / (n - 1);
+    const pts = vals.map((v, i) => {
+      const x = px + ix * i;
+      const y = h - py - ((v - min) / span) * (h - py * 2);
+      return [x, y];
+    });
+    const points = pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const inner = pts.map(p => 'L ' + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    const first = pts[0], last = pts[n - 1];
+    const area = 'M ' + first[0].toFixed(1) + ' ' + (h - py).toFixed(1) + ' '
+      + pts.map(p => 'L ' + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ')
+      + ' L ' + last[0].toFixed(1) + ' ' + (h - py).toFixed(1) + ' Z';
+    const dots = pts.map((p, i) => ({ cx: p[0].toFixed(1), cy: p[1].toFixed(1), val: vals[i] }));
+    return { points, area, dots };
+  }
+  spark(vals) {
+    return this.buildLine(vals, 120, 30, 2, 4).points;
+  }
+  jitter(base, amp, n, seed) {
+    const out = []; let s = seed || 1;
+    for (let i = 0; i < n; i++) {
+      s = (s * 9301 + 49297) % 233280;
+      const r = s / 233280;
+      out.push(base + (r - 0.5) * amp + (i - n / 2) * (amp * 0.04));
+    }
+    return out;
+  }
+  indColor(i) {
+    const r = i.exec / i.meta;
+    if (r >= 1) return '#1f8a5b';
+    if (r >= 0.9) return '#c8862b';
+    return '#c0392b';
+  }
+
+  go(screen) { return () => this.setState({ screen }); }
+
+  navStyle(active) {
+    return {
+      display: 'flex', alignItems: 'center', gap: '11px',
+      background: active ? '#0b5fad' : 'transparent',
+      color: active ? '#fff' : '#9fb3c8',
+      border: 'none', borderRadius: '9px', padding: '10px 12px',
+      fontSize: '13px', fontWeight: active ? 600 : 500, width: '100%',
+    };
+  }
+  icon(key) {
+    const c = 'currentColor';
+    const map = {
+      painel: '<svg width="15" height="15" viewBox="0 0 15 15"><rect x="0" y="0" width="6.5" height="6.5" rx="1.5" fill="' + c + '"/><rect x="8.5" y="0" width="6.5" height="6.5" rx="1.5" fill="' + c + '"/><rect x="0" y="8.5" width="6.5" height="6.5" rx="1.5" fill="' + c + '"/><rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5" fill="' + c + '"/></svg>',
+      cadastros: '<svg width="15" height="15" viewBox="0 0 15 15"><rect x="0" y="1" width="15" height="2.4" rx="1.2" fill="' + c + '"/><rect x="0" y="6.3" width="15" height="2.4" rx="1.2" fill="' + c + '"/><rect x="0" y="11.6" width="15" height="2.4" rx="1.2" fill="' + c + '"/></svg>',
+      importacao: '<svg width="15" height="15" viewBox="0 0 15 15"><polygon points="7.5,0 12,5.5 9.5,5.5 9.5,10 5.5,10 5.5,5.5 3,5.5" fill="' + c + '"/><rect x="1" y="12.5" width="13" height="2.2" rx="1.1" fill="' + c + '"/></svg>',
+      metas: '<svg width="15" height="15" viewBox="0 0 15 15"><circle cx="7.5" cy="7.5" r="6.5" fill="none" stroke="' + c + '" stroke-width="2"/><circle cx="7.5" cy="7.5" r="2.2" fill="' + c + '"/></svg>',
+      indicadores: '<svg width="15" height="15" viewBox="0 0 15 15"><rect x="0" y="8" width="3.5" height="7" rx="1" fill="' + c + '"/><rect x="5.7" y="4" width="3.5" height="11" rx="1" fill="' + c + '"/><rect x="11.5" y="0" width="3.5" height="15" rx="1" fill="' + c + '"/></svg>',
+      relatorios: '<svg width="15" height="15" viewBox="0 0 15 15"><rect x="1.5" y="0" width="12" height="15" rx="2" fill="none" stroke="' + c + '" stroke-width="1.8"/><rect x="4" y="3.5" width="7" height="1.6" rx=".8" fill="' + c + '"/><rect x="4" y="6.7" width="7" height="1.6" rx=".8" fill="' + c + '"/><rect x="4" y="9.9" width="4.5" height="1.6" rx=".8" fill="' + c + '"/></svg>',
+      admin: '<svg width="15" height="15" viewBox="0 0 15 15"><circle cx="7.5" cy="7.5" r="6.2" fill="none" stroke="' + c + '" stroke-width="1.8"/><circle cx="7.5" cy="7.5" r="2" fill="' + c + '"/></svg>',
+    };
+    return this.html(map[key]);
+  }
+  html(s) { return React.createElement('span', { dangerouslySetInnerHTML: { __html: s }, style: { display: 'flex' } }); }
+
+  renderVals() {
+    const st = this.state;
+    const screen = st.screen;
+    const v = {};
+
+    v.isLogin = screen === 'login';
+    v.isSituacao = screen === 'situacao';
+    v.isApp = !v.isLogin && !v.isSituacao;
+    v.perfil = st.perfil;
+    v.perfis = this.perfis;
+    v.competencia = st.competencia;
+    v.competencias = this.competencias;
+    v.unidadeFiltro = st.unidadeFiltro;
+    v.equipeFiltro = st.equipeFiltro;
+    v.unidadeOpc = ['Todas as unidades'].concat(this.unidades.filter(u => u.tipo === 'APS').map(u => u.nome));
+    v.equipeOpc = ['Todas as equipes', 'ESF 12', 'ESF 07', 'EAP 03', 'ESF 21'];
+
+    // handlers
+    v.onPerfil = e => this.setState({ perfil: e.target.value });
+    v.onLogin = () => this.setState({ screen: 'painel' });
+    v.onLogout = () => this.setState({ screen: 'login' });
+    v.onComp = e => this.setState({ competencia: e.target.value });
+    v.onUnidade = e => this.setState({ unidadeFiltro: e.target.value });
+    v.onEquipe = e => this.setState({ equipeFiltro: e.target.value });
+    v.openSituacao = () => this.setState({ screen: 'situacao' });
+    v.closeSituacao = () => this.setState({ screen: 'painel' });
+
+    // screen flags
+    v.scrPainel = screen === 'painel';
+    v.scrIndic = screen === 'indicadores';
+    v.scrMetas = screen === 'metas';
+    v.scrImport = screen === 'importacao';
+    v.scrRelat = screen === 'relatorios';
+    v.scrGeneric = screen === 'cadastros' || screen === 'admin';
+    v.showFilters = v.scrPainel || v.scrIndic || v.scrMetas || v.scrRelat;
+
+    const titles = {
+      painel: ['Painel', 'Dashboard'], indicadores: ['Indicadores', 'Painel de Indicadores'],
+      metas: ['Metas', 'Acompanhamento'], importacao: ['Importação', 'Histórico de Cargas'],
+      relatorios: ['Relatórios', 'Comparativo entre Unidades'], cadastros: ['Cadastros', 'CRUD'],
+      admin: ['Administração', 'Usuários e Perfis'],
+    };
+    const tt = titles[screen] || ['Painel', 'Dashboard'];
+    v.screenTitle = tt[0]; v.screenCrumb = tt[1];
+
+    // nav
+    const navDef = [
+      { key: 'painel', label: 'Painel', icon: 'painel' },
+      { key: 'cadastros', label: 'Cadastros', icon: 'cadastros' },
+      { key: 'importacao', label: 'Importação', icon: 'importacao', badge: '2' },
+      { key: 'metas', label: 'Metas', icon: 'metas' },
+      { key: 'indicadores', label: 'Indicadores', icon: 'indicadores' },
+      { key: 'relatorios', label: 'Relatórios', icon: 'relatorios' },
+      { key: 'admin', label: 'Administração', icon: 'admin' },
+    ];
+    v.nav = navDef.map(n => {
+      const active = screen === n.key;
+      return {
+        label: n.label, go: this.go(n.key), badge: n.badge || '',
+        style: this.navStyle(active), icon: this.icon(n.icon),
+        iconColor: active ? '#fff' : '#6f86a3',
+      };
+    });
+
+    // KPIs
+    const kpiDef = [
+      { label: 'Atendimentos individuais', value: '48.213', delta: '▲ 6,2%', dir: 1, base: this.trendVals },
+      { label: 'Cobertura APS', value: '78,4%', delta: '▲ 1,1 p.p.', dir: 1, base: this.jitter(74, 6, 12, 3) },
+      { label: 'Equipes ativas', value: '42', delta: '0 estável', dir: 0, base: this.jitter(40, 4, 12, 5) },
+      { label: 'Metas atingidas', value: '5 / 7', delta: 'Comp. Qualidade', dir: 1, base: this.jitter(4.5, 2, 12, 7) },
+      { label: 'Produção odontológica', value: '9.847', delta: '▼ 2,4%', dir: -1, base: this.jitter(9800, 1200, 12, 9) },
+      { label: 'Atividades coletivas', value: '612', delta: '▲ 11%', dir: 1, base: this.jitter(560, 140, 12, 11) },
+    ];
+    const dColor = d => d > 0 ? '#1f8a5b' : (d < 0 ? '#c0392b' : '#8595a8');
+    v.kpis = kpiDef.map(k => ({
+      label: k.label, value: k.value, delta: k.delta,
+      deltaColor: dColor(k.dir), spark: this.spark(k.base),
+      sparkColor: k.dir > 0 ? '#1f8a5b' : (k.dir < 0 ? '#c0392b' : '#8595a8'),
+    }));
+    v.kpisB = v.kpis.slice(3, 6);
+
+    // trend (painel + situacao)
+    v.trend = this.buildLine(this.trendVals, 720, 220, 24, 22);
+    v.trendHero = this.buildLine(this.trendVals, 360, 180, 6, 14);
+    v.gridY = [40, 90, 140, 190];
+
+    // ranking (top 6 by atend)
+    const aps = this.unidades.filter(u => u.tipo === 'APS').slice().sort((a, b) => b.atend - a.atend);
+    const maxAtend = aps[0].atend;
+    const rankColors = ['#0b5fad', '#0b5fad', '#3a7fc0', '#3a7fc0', '#6fa3d4', '#6fa3d4'];
+    v.ranking = aps.slice(0, 6).map((u, i) => ({
+      nome: u.nome, valTxt: this.fmt(u.atend),
+      w: Math.round((u.atend / maxAtend) * 100) + '%', color: rankColors[i],
+    }));
+
+    // tabela unidades (layout C)
+    v.tabelaUnidades = this.unidades.map(u => ({
+      nome: u.nome, tipo: u.tipo,
+      atend: u.atend ? this.fmt(u.atend) : '—',
+      odonto: u.odonto ? this.fmt(u.odonto) : '—',
+      cob: u.cob ? this.pct(u.cob) : '—',
+      metas: u.metas,
+      metaColor: u.metas === '7/7' ? '#1f8a5b' : (u.metas === '—' ? '#8595a8' : (parseInt(u.metas) >= 5 ? '#1f8a5b' : '#c8862b')),
+    }));
+
+    // layout switcher
+    v.dashLayout = st.dashLayout;
+    v.layoutA = st.dashLayout === 'A';
+    v.layoutB = st.dashLayout === 'B';
+    v.layoutC = st.dashLayout === 'C';
+    const layBtn = active => ({
+      background: active ? '#fff' : 'transparent', color: active ? '#0b5fad' : '#5a6b80',
+      border: 'none', borderRadius: '7px', padding: '6px 13px', fontSize: '12.5px',
+      fontWeight: 600, boxShadow: active ? '0 1px 3px rgba(0,0,0,.12)' : 'none',
+    });
+    v.layoutOpc = [
+      { label: 'A · Cards', go: () => this.setState({ dashLayout: 'A' }), style: layBtn(st.dashLayout === 'A') },
+      { label: 'B · Foco', go: () => this.setState({ dashLayout: 'B' }), style: layBtn(st.dashLayout === 'B') },
+      { label: 'C · Tabela', go: () => this.setState({ dashLayout: 'C' }), style: layBtn(st.dashLayout === 'C') },
+    ];
+
+    // indicadores (shared) — enrich
+    v.indCount = this.indicadores.length;
+    const enrich = i => {
+      const color = this.indColor(i);
+      const ating = i.exec / i.meta;
+      const execW = Math.min(100, i.exec * 100).toFixed(0) + '%';
+      const metaW = Math.min(100, i.meta * 100).toFixed(0) + '%';
+      let statusTxt = ating >= 1 ? 'atingida' : (ating >= 0.9 ? 'próxima' : 'abaixo');
+      return Object.assign({}, i, {
+        color, colorBg: color === '#1f8a5b' ? '#e6f3ec' : (color === '#c8862b' ? '#fbf0dd' : '#fbe6e3'),
+        execTxt: this.pct(i.exec), metaTxt: this.pct(i.meta),
+        execW, metaW, atingTxt: (ating * 100).toFixed(0) + '%',
+        statusTxt, origem: i.origem,
+      });
+    };
+    v.indicadores = this.indicadores.map((i, idx) => {
+      const e = enrich(i);
+      e.select = () => this.setState({ selIndic: i.cod });
+      const isSel = st.selIndic === i.cod;
+      e.rowStyle = {
+        display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+        background: isSel ? '#eef5fc' : 'transparent', border: 'none',
+        borderLeft: isSel ? '3px solid #0b5fad' : '3px solid transparent',
+        padding: '11px 14px 11px 13px', borderBottom: idx < this.indicadores.length - 1 ? '1px solid #f1f4f8' : 'none',
+      };
+      return e;
+    });
+
+    // selected indicador detail
+    const baseI = this.indicadores.find(i => i.cod === st.selIndic) || this.indicadores[0];
+    const selE = enrich(baseI);
+    // série histórica oscilando em torno do executado
+    const sVals = this.jitter(baseI.exec * 100, baseI.exec * 100 * 0.28, 12, baseI.cod.charCodeAt(0));
+    const line = this.buildLine(sVals, 720, 220, 24, 22);
+    // meta Y dentro do gráfico
+    const allMax = Math.max(...sVals, baseI.meta * 100), allMin = Math.min(...sVals, baseI.meta * 100);
+    const span = (allMax - allMin) || 1;
+    const metaY = (220 - 22 - ((baseI.meta * 100 - allMin) / span) * (220 - 44)).toFixed(1);
+    // por unidade
+    const puColors = ['#0b5fad', '#3a7fc0', '#6fa3d4'];
+    const puVals = this.jitter(baseI.exec, baseI.exec * 0.4, aps.length, baseI.cod.charCodeAt(1) || 50);
+    const puMax = Math.max(...puVals, baseI.meta);
+    v.sel = Object.assign({}, selE, {
+      categoria: baseI.cat, descricao: baseI.nome, num: baseI.num, den: baseI.den,
+      fonte: baseI.fonte, periodicidade: baseI.per,
+      serie: this.buildLine(sVals, 720, 220, 24, 22), metaY,
+      metaW: Math.min(100, (baseI.meta / puMax) * 100).toFixed(0) + '%',
+      porUnidade: aps.map((u, i) => {
+        const val = Math.max(0.02, puVals[i]);
+        const c = val >= baseI.meta ? '#1f8a5b' : (val >= baseI.meta * 0.9 ? '#c8862b' : '#c0392b');
+        return { nome: u.nome, w: ((val / puMax) * 100).toFixed(0) + '%', txt: this.pct(val), color: c };
+      }),
+    });
+
+    // metas resumo
+    const atingidas = this.indicadores.filter(i => i.exec / i.meta >= 1).length;
+    const proximas = this.indicadores.filter(i => { const r = i.exec / i.meta; return r >= 0.9 && r < 1; }).length;
+    const abaixo = this.indicadores.filter(i => i.exec / i.meta < 0.9).length;
+    v.metasResumo = [
+      { label: 'Metas monitoradas', value: String(this.indicadores.length), sub: 'indicadores ativos', color: '#0f1b2d' },
+      { label: 'Atingidas', value: String(atingidas), sub: '≥ 100% da meta', color: '#1f8a5b' },
+      { label: 'Próximas', value: String(proximas), sub: '90–99% da meta', color: '#c8862b' },
+      { label: 'Abaixo', value: String(abaixo), sub: '< 90% da meta', color: '#c0392b' },
+    ];
+
+    // importação cards
+    v.importCards = [
+      { titulo: 'e-SUS APS', status: 'ATIVO', statusBg: '#e6f3ec', statusColor: '#1f8a5b', desc: 'Upload dos 5 CSVs (atend. individual, odontológico, atividade coletiva, marcadores alimentares, proc. individualizados).', cta: 'Importar CSV', action: () => {} },
+      { titulo: 'SIA · MAC', status: 'SINCRONIZANDO', statusBg: '#fbf0dd', statusColor: '#c8862b', desc: 'Upload manual ou sincronização com instância MySQL/XAMPP (somente leitura). Instabilidade conhecida.', cta: 'Sincronizar', action: () => {} },
+      { titulo: 'SIHD · AIH', status: 'PENDING_AIH_FILE', statusBg: '#fbe6e3', statusColor: '#c0392b', desc: 'Aguardando arquivo de exportação AIH (DBF/CSV). Importação bloqueada até o envio.', cta: 'Enviar arquivo', action: () => {} },
+    ];
+    const cargasDef = [
+      { tipo: 'Atendimento Individual', arquivo: 'AI_052026_cidadejardim.csv', comp: '05/2026', unidade: 'UBS Cidade Jardim', equipe: 'ESF 12', registros: 4213, naoId: 18, status: 'Processado' },
+      { tipo: 'Atend. Odontológico', arquivo: 'ODO_052026_zanaga.csv', comp: '05/2026', unidade: 'UBS Antônio Zanaga', equipe: 'ESF 07', registros: 1120, naoId: 4, status: 'Processado' },
+      { tipo: 'Proc. Individualizados', arquivo: 'PI_052026_saovito.csv', comp: '05/2026', unidade: 'USF São Vito', equipe: 'ESF 21', registros: 2980, naoId: 142, status: 'Processando' },
+      { tipo: 'Atividade Coletiva', arquivo: 'AC_052026_praiazul.csv', comp: '05/2026', unidade: 'USF Praia Azul', equipe: '—', registros: 312, naoId: 0, status: 'Processado' },
+      { tipo: 'Marcadores Alimentares', arquivo: 'MCA_052026_mathiensen.csv', comp: '05/2026', unidade: 'USF Mathiensen', equipe: 'ESF 03', registros: 540, naoId: 67, status: 'Erro' },
+      { tipo: 'Atendimento Individual', arquivo: 'AI_042026_cidadejardim.csv', comp: '04/2026', unidade: 'UBS Cidade Jardim', equipe: 'ESF 12', registros: 4090, naoId: 22, status: 'Processado' },
+      { tipo: 'SIA · Produção MAC', arquivo: 'sia_mac_052026.dbf', comp: '05/2026', unidade: 'Município', equipe: '—', registros: 18742, naoId: 0, status: 'Processado' },
+      { tipo: 'SIHD · AIH', arquivo: '—', comp: '05/2026', unidade: 'Hosp. Waldemar Tebaldi', equipe: '—', registros: 0, naoId: 0, status: 'Pendente' },
+    ];
+    const stBg = { Processado: ['#e6f3ec', '#1f8a5b'], Processando: ['#e7eef6', '#0b5fad'], Erro: ['#fbe6e3', '#c0392b'], Pendente: ['#f0f2f5', '#8595a8'] };
+    v.cargasCount = cargasDef.length;
+    v.cargas = cargasDef.map(c => ({
+      tipo: c.tipo, arquivo: c.arquivo, comp: c.comp, unidade: c.unidade, equipe: c.equipe,
+      registros: c.registros ? this.fmt(c.registros) : '—',
+      naoId: c.naoId ? this.fmt(c.naoId) : '0',
+      naoIdColor: c.naoId > 50 ? '#c0392b' : (c.naoId > 0 ? '#c8862b' : '#8595a8'),
+      status: c.status, statusBg: stBg[c.status][0], statusColor: stBg[c.status][1],
+    }));
+
+    // relatórios / benchmark (usa indicador selecionado)
+    const benchVals = this.jitter(baseI.exec, baseI.exec * 0.45, aps.length, 77).map(x => Math.max(0.05, x));
+    const media = benchVals.reduce((a, b) => a + b, 0) / benchVals.length;
+    const benchMax = Math.max(...benchVals);
+    const benchSorted = aps.map((u, i) => ({ u, val: benchVals[i] })).sort((a, b) => b.val - a.val);
+    v.benchUnidades = benchSorted.map((row, i) => {
+      const c = row.val >= baseI.meta ? '#1f8a5b' : (row.val >= baseI.meta * 0.9 ? '#c8862b' : '#c0392b');
+      const diff = (row.val - media) * 100;
+      return {
+        rank: String(i + 1).padStart(2, '0'), nome: row.u.nome, tipo: row.u.tipo,
+        w: ((row.val / benchMax) * 100).toFixed(0) + '%', txt: this.pct(row.val), color: c,
+        diff: (diff >= 0 ? '+' : '') + diff.toFixed(1) + ' p.p.', diffColor: diff >= 0 ? '#1f8a5b' : '#c0392b',
+      };
+    });
+    v.relatSintese = [
+      { label: 'Média municipal', value: this.pct(media), color: '#0b5fad' },
+      { label: 'Meta regulamentada', value: this.pct(baseI.meta), color: '#0f1b2d' },
+      { label: 'Melhor unidade', value: this.pct(benchSorted[0].val), color: '#1f8a5b' },
+      { label: 'Unidades acima da meta', value: benchVals.filter(x => x >= baseI.meta).length + ' / ' + benchVals.length, color: '#0f1b2d' },
+    ];
+    // map pins
+    const pinPos = [[22, 30], [45, 20], [68, 35], [80, 60], [60, 72], [38, 65], [25, 78], [55, 48]];
+    v.mapPins = aps.map((u, i) => {
+      const val = benchVals[i] || baseI.exec;
+      const c = val >= baseI.meta ? '#1f8a5b' : (val >= baseI.meta * 0.9 ? '#c8862b' : '#c0392b');
+      const p = pinPos[i] || [50, 50];
+      return { x: p[0] + '%', y: p[1] + '%', size: (10 + (u.atend / maxAtend) * 14).toFixed(0) + 'px', color: c };
+    });
+
+    // generic CRUD screens
+    if (screen === 'cadastros') {
+      v.genericTitle = 'Cadastros';
+      v.genericSub = 'CRUD com soft delete · integridade referencial com cargas históricas';
+      v.genericItems = [
+        { titulo: 'Unidades de Saúde', tabela: 'unidades_saude', desc: 'Código, nome, tipo, CNES, endereço, esfera (própria/OSS), status.' },
+        { titulo: 'Equipes', tabela: 'equipes', desc: 'Código (equipe_codigo e-SUS), nome, unidade vinculada, tipo (ESF/EAP), status.' },
+        { titulo: 'Procedimentos', tabela: 'procedimentos', desc: 'Código SIGTAP, descrição, tipo, tabela de referência (SIGTAP/SUS Paulista).' },
+        { titulo: 'Prestadores MAC', tabela: 'prestadores_mac', desc: 'Nome, CNES, tipo de contrato, status. Fonte: SIA/SUS.' },
+        { titulo: 'Hospitais', tabela: 'hospitais', desc: 'Nome, CNES, tipo, nº de leitos, status. Fonte: SIHD/AIH.' },
+        { titulo: 'Emendas Parlamentares', tabela: 'emendas_parlamentares', desc: 'id_emenda, esfera, tipo, autor, objeto, valor repassado, status.' },
+      ];
+    } else if (screen === 'admin') {
+      v.genericTitle = 'Administração';
+      v.genericSub = 'Gestão de contas, escopo de acesso e auditoria';
+      v.genericItems = [
+        { titulo: 'Usuários e Perfis', tabela: 'usuarios', desc: 'Gestão de contas e escopo (unidade/equipe). 4 perfis de acesso.' },
+        { titulo: 'Auditoria / Logs', tabela: 'audit_log', desc: 'Quem acessou o quê, quando. Conformidade LGPD.' },
+        { titulo: 'Configurações Gerais', tabela: 'config', desc: 'Competência ativa padrão, parâmetros do sistema.' },
+      ];
+    }
+    if (v.genericItems) v.genericItems = v.genericItems.map(g => Object.assign({}, g, { go: () => {} }));
+
+    return v;
+  }
+}
+</script>
+</body>
+</html>

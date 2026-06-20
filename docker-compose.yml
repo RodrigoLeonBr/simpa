@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB:-simpa}
+      POSTGRES_USER: ${PG_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_PASS:?Set PG_PASS in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema_full.sql:/docker-entrypoint-initdb.d/01-schema_full.sql:ro
+      - ./migration_002_auth.sql:/docker-entrypoint-initdb.d/02-migration_002_auth.sql:ro
+      - ./migration_003_cadastros_fase2.sql:/docker-entrypoint-initdb.d/03-migration_003_cadastros_fase2.sql:ro
+    ports:
+      - '${PG_PUBLISH_PORT:-5433}:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${PG_USER:-postgres} -d ${PG_DB:-simpa}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - simpa-net
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      NODE_ENV: production
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - uploads:/app/uploads
+      - ./parse_esus_csv.py:/app/parse_esus_csv.py:ro
+      - ./consolidate_dashboard.py:/app/consolidate_dashboard.py:ro
+      - ./sync_sia_mysql.py:/app/sync_sia_mysql.py:ro
+      - ./etl_contract.py:/app/etl_contract.py:ro
+      - ./etl_db.py:/app/etl_db.py:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - simpa-net
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-80}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - simpa-net
+
+volumes:
+  pgdata:
+  uploads:
+
+networks:
+  simpa-net:
+    driver: bridge

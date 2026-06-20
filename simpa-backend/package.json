@@ -1,0 +1,17 @@
+{
+  "name": "simpa-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SIMPA API — Express + PostgreSQL",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}

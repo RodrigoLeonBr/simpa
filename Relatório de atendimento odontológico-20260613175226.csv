@@ -1,0 +1,211 @@
+e-SUS - Atenção Primária
+MINISTÉRIO DA SAÚDE
+ESTADO DE SÃO PAULO
+MUNICÍPIO DE AMERICANA
+UNIDADE DE SAÚDE CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO
+
+Relatório de atendimento odontológico - Analítico
+
+FILTROS
+Período;01/05/2026 a 31/05/2026
+Equipe;Todas
+Profissional;Todos
+CBO;Todos
+Filtros personalizados;Nenhum
+
+
+Dados processados em ;13/06/2026; às ;00:45;
+Gerado em ;13/06/2026; às ;17:52; por ;Rodrigo Alexander Diaz Leon
+
+
+Resumo de produção
+Descrição;Quantidade;
+Registros identificados;209;
+Registros não identificados;0;
+
+Dados gerais
+Descrição;Quantidade;
+Gestante;7;
+Paciente com necessidades especiais;0;
+
+Turno
+Descrição;Quantidade;
+Manhã;108;
+Tarde;101;
+Noite;0;
+Não informado;0;
+
+Faixa etária
+Descrição;Masculino;Feminino;Indeterminado;Não informado;
+Menos de 01 ano;0;0;0;0;
+01 ano;0;0;0;0;
+02 anos;0;0;0;0;
+03 anos;0;0;0;0;
+04 anos;0;5;0;0;
+05 a 09 anos;7;6;0;0;
+10 a 14 anos;1;1;0;0;
+15 a 19 anos;0;6;0;0;
+20 a 24 anos;2;9;0;0;
+25 a 29 anos;3;7;0;0;
+30 a 34 anos;5;0;0;0;
+35 a 39 anos;1;6;0;0;
+40 a 44 anos;12;7;0;0;
+45 a 49 anos;5;6;0;0;
+50 a 54 anos;6;10;0;0;
+55 a 59 anos;6;18;0;0;
+60 a 64 anos;7;9;0;0;
+65 a 69 anos;7;4;0;0;
+70 a 74 anos;10;15;0;0;
+75 a 79 anos;5;11;0;0;
+80 anos ou mais;11;1;0;0;
+Não informado;0;0;0;0;
+
+Sexo
+Descrição;Quantidade;
+Masculino;88;
+Feminino;121;
+Indeterminado;0;
+Não informado;0;
+
+Local de atendimento
+Descrição;Quantidade;
+Domicílio;0;
+Escola / Creche;0;
+Instituição / Abrigo;0;
+Polo (Academia da saúde);0;
+Rua;0;
+UBS;209;
+Unidade móvel;0;
+Unidade prisional ou congêneres;0;
+Unidade socioeducativa;0;
+Outros;0;
+Não informado;0;
+
+Tipo de atendimento
+Descrição;Quantidade;
+Consulta agendada;161;
+Escuta inicial / Orientação;2;
+Consulta no dia;13;
+Atendimento de urgência;33;
+Não informado;0;
+
+Tipo de consulta
+Descrição;Quantidade;
+Primeira consulta odontológica programática;47;
+Consulta de retorno em odontologia;110;
+Consulta de manutenção em odontologia;21;
+Não informado;31;
+
+Vigilância em saúde bucal
+Descrição;Quantidade;
+Abscesso dentoalveolar;1;
+Alteração em tecidos moles;1;
+Dor de dente;8;
+Fendas ou fissuras labiopalatais;0;
+Fluorose dentária moderada ou severa;0;
+Traumatismo dentoalveolar;0;
+Não identificado;197;
+Não informado;2;
+
+Procedimentos
+Descrição;Quantidade;
+Acesso à polpa dentária e medicação (por dente);14;
+Adaptação de prótese dentária;0;
+Aplicação de cariostático (por dente);0;
+Aplicação de selante (por dente);3;
+Aplicação tópica de flúor (individual por sessão);20;
+Capeamento pulpar;21;
+Cimentação de prótese dentária;0;
+Curativo de demora com ou sem preparo biomecânico;2;
+Drenagem de abscesso;0;
+Evidenciação de placa bacteriana;0;
+Exodontia de dente decíduo;1;
+Exodontia de dente permanente;6;
+Instalação de prótese dentária;0;
+Moldagem dentogengival para construção de prótese dentária;0;
+Orientação de higiene bucal;172;
+Profilaxia / Remoção da placa bacteriana;21;
+Pulpotomia dentária;6;
+Radiografia interproximal (bite wing);0;
+Radiografia periapical;0;
+Raspagem alisamento e polimento supragengivais (por sextante);78;
+Raspagem alisamento subgengivais (por sextante);10;
+Restauração de dente permanente anterior com resina composta;19;
+Restauração de dente permanente posterior com resina composta;52;
+Retirada de pontos de cirurgias básicas (por paciente);8;
+Selamento provisório de cavidade dentária;16;
+Tratamento de alveolite;0;
+Ulotomia / Ulectomia;0;
+
+Outros procedimentos (SIGTAP)
+Descrição;Quantidade;
+0301010030 - CONSULTA DE PROFISSIONAIS DE NÍVEL SUPERIOR NA ATENÇÃO PRIMÁRIA (EXCETO MÉDICO);130;
+0301010153 - PRIMEIRA CONSULTA ODONTOLOGICA PROGRAMÁTICA;47;
+0301060037 - ATENDIMENTO DE URGÊNCIA EM ATENÇÃO BÁSICA;30;
+0307010074 - TRATAMENTO RESTAURADOR ATRAUMÁTICO (TRA/ART);14;
+0307010082 - RESTAURAÇÃO DE DENTE DECÍDUO POSTERIOR COM RESINA COMPOSTA;1;
+0307030032 - RASPAGEM CORONO-RADICULAR (POR SEXTANTE);16;
+0307030075 - TRATAMENTO DE LESÕES DA MUCOSA ORAL;2;
+0307040151 - AJUSTE OCLUSAL;32;
+0307050017 - FOTOBIOMODULAÇÃO A LASER DE BAIXA POTÊNCIA PARA O TRATAMENTO DA MUCOSITE ORAL RADIOINDUZIDA E/OU QUIMIOINDUZIDA;9;
+0309050049 - SESSÃO DE AURICULOTERAPIA;1;
+0401010066 - EXCISÃO E/OU SUTURA SIMPLES DE PEQUENAS LESÕES / FERIMENTOS DE PELE / ANEXOS E MUCOSA;5;
+
+Fornecimento
+Descrição;Quantidade;
+Escova dental;0;
+Creme dental;0;
+Fio dental;0;
+Não informado;209;
+
+Conduta / Desfecho
+Descrição;Quantidade;
+Retorno para consulta agendada;144;
+Agendamento para outros profissionais AB;1;
+Agendamento para NASF;0;
+Agendamento para eMulti;0;
+Agendamento para grupos;0;
+Alta do episódio;31;
+Tratamento concluído;38;
+
+Encaminhamento
+Descrição;Quantidade;
+Atendimento a pacientes com necessidades especiais;0;
+Cirurgia BMF;8;
+Endodontia;6;
+Estomatologia;0;
+Implantodontia;0;
+Odontopediatria;1;
+Ortodontia / Ortopedia;0;
+Periodontia;0;
+Prótese dentária;4;
+Radiologia;10;
+Outros;0;
+Não informado;180;
+
+Problemas / Condições avaliadas - CIAP2
+Descrição;Quantidade;
+A97 - SEM DOENÇA;2;
+D82 - DOENÇA DOS DENTES/GENGIVAS;98;
+
+Problemas / Condições avaliadas - CID10
+Descrição;Quantidade;
+K01 - DENTES INCLUSOS E IMPACTADOS;1;
+K011 - DENTES IMPACTADOS;1;
+K02 - CÁRIE DENTÁRIA;16;
+K031 - ABRASÃO DENTÁRIA;8;
+K036 - DEPÓSITOS NOS DENTES;18;
+K04 - DOENÇAS DA POLPA E DOS TECIDOS PERIAPICAIS;18;
+K041 - NECROSE DA POLPA;1;
+K06 - OUTROS TRANSTORNOS DA GENGIVA E DO REBORDO ALVEOLAR SEM DENTES;2;
+K08 - OUTROS TRANSTORNOS DOS DENTES E DE SUAS ESTRUTURAS DE SUSTENTAÇÃO;12;
+K080 - EXFOLIAÇÃO DOS DENTES DEVIDA A CAUSAS SISTÊMICAS;1;
+K081 - PERDA DE DENTES DEVIDA A ACIDENTE, EXTRAÇÃO OU A DOENÇAS PERIODONTAIS LOCALIZADAS;1;
+K083 - RAIZ DENTÁRIA RETIDA;13;
+K121 - OUTRAS FORMAS DE ESTOMATITE;1;
+R600 - EDEMA LOCALIZADO;3;
+S025 - FRATURA DE DENTES;9;
+Z012 - EXAME DENTÁRIO;5;
+
+Ofertas de Cuidados Integrados - OCI (código do SIGTAP)
+Descrição;Quantidade Solicitada;

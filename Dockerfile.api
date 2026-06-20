@@ -1,0 +1,33 @@
+FROM node:18-bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-venv \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt || \
+    pip3 install --no-cache-dir python-dotenv psycopg2-binary
+
+COPY parse_esus_csv.py consolidate_dashboard.py sync_sia_mysql.py etl_contract.py etl_db.py ./
+COPY simpa-backend/package.json simpa-backend/package-lock.json* ./simpa-backend/
+RUN cd simpa-backend && npm install --omit=dev
+
+COPY simpa-backend/ ./simpa-backend/
+
+RUN mkdir -p /app/uploads
+
+ENV NODE_ENV=production
+ENV UPLOAD_DIR=/app/uploads
+WORKDIR /app/simpa-backend
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=20s \
+  CMD wget -q --spider http://localhost:3001/api/health || exit 1
+
+CMD ["node", "src/app.js"]

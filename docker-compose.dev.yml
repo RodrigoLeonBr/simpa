@@ -1,0 +1,17 @@
+# Development overrides — use: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  postgres:
+    ports:
+      - '${PG_PORT:-5432}:5432'
+
+  api:
+    ports:
+      - '${PORT:-3001}:3001'
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./simpa-backend/src:/app/simpa-backend/src:ro
+
+  web:
+    ports:
+      - '${WEB_PORT:-8080}:80'

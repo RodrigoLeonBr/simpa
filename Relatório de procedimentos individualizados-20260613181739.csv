@@ -1,0 +1,147 @@
+e-SUS - Atenção Primária
+MINISTÉRIO DA SAÚDE
+ESTADO DE SÃO PAULO
+MUNICÍPIO DE AMERICANA
+UNIDADE DE SAÚDE CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO
+
+Relatório de procedimentos individualizados - Analítico
+
+FILTROS
+Período;01/05/2026 a 31/05/2026
+Equipe;0002200376 - EQUIPE 9 EAP
+Profissional;Todos
+CBO;Todos
+Filtros personalizados;Nenhum
+
+
+Dados processados em ;13/06/2026; às ;00:45;
+Gerado em ;13/06/2026; às ;18:17; por ;Rodrigo Alexander Diaz Leon
+
+
+Resumo de produção
+Descrição;Quantidade;
+Registros identificados;1426;
+Registros não identificados;0;
+
+Turno
+Descrição;Quantidade;
+Manhã;882;
+Tarde;543;
+Noite;0;
+Não informado;1;
+
+Faixa etária
+Descrição;Masculino;Feminino;Indeterminado;Não informado;
+Menos de 01 ano;14;17;0;0;
+01 ano;1;4;0;0;
+02 anos;5;4;0;0;
+03 anos;2;2;0;0;
+04 anos;0;3;0;0;
+05 a 09 anos;19;20;0;0;
+10 a 14 anos;10;13;0;0;
+15 a 19 anos;5;17;0;0;
+20 a 24 anos;7;12;0;0;
+25 a 29 anos;8;28;0;0;
+30 a 34 anos;10;27;0;0;
+35 a 39 anos;15;36;0;0;
+40 a 44 anos;17;56;0;0;
+45 a 49 anos;16;62;0;0;
+50 a 54 anos;23;67;0;0;
+55 a 59 anos;25;56;0;0;
+60 a 64 anos;39;82;0;0;
+65 a 69 anos;60;136;0;0;
+70 a 74 anos;50;105;0;0;
+75 a 79 anos;48;108;0;0;
+80 anos ou mais;59;138;0;0;
+Não informado;0;0;0;0;
+
+Sexo
+Descrição;Quantidade;
+Masculino;433;
+Feminino;993;
+Indeterminado;0;
+Não informado;0;
+
+Local de atendimento
+Descrição;Quantidade;
+Domicílio;0;
+Escola / Creche;0;
+Instituição / Abrigo;0;
+Polo (Academia da saúde);0;
+Rua;0;
+UBS;1426;
+Unidade móvel;0;
+Unidade prisional ou congêneres;0;
+Unidade socioeducativa;0;
+Outros;0;
+
+Dados gerais
+Descrição;Quantidade;
+Escuta inicial / Orientação;70;
+
+Procedimentos / Pequenas cirurgias
+Descrição;Quantidade;
+Acupuntura com inserção de agulhas;0;
+Administração de vitamina A;0;
+Cateterismo vesical de alívio;0;
+Cauterização química de pequenas lesões;0;
+Cirurgia de unha (cantoplastia);0;
+Coleta de citopatológico de colo uterino;15;
+Cuidado de estomas;0;
+Curativo especial;8;
+Drenagem de abscesso;0;
+Eletrocardiograma;0;
+Exame de fundo de olho (Fundoscopia);0;
+Exame do pé diabético;29;
+Exérese / Biópsia / Punção de tumores superficiais de pele;0;
+Infiltração em cavidade sinovial;0;
+Remoção de corpo estranho da cavidade auditiva e nasal;0;
+Remoção de corpo estranho subcutâneo;0;
+Retirada de cerume;0;
+Retirada de pontos de cirurgias básicas (por paciente);6;
+Sutura simples;0;
+Tamponamento de epistaxe;0;
+Teste do olhinho (TRV);0;
+Triagem oftalmológica;0;
+
+Procedimentos - Teste rápido
+Descrição;Quantidade;
+De gravidez;1;
+Dosagem de proteinúria;0;
+Para HIV;0;
+Para hepatite C;0;
+Para sífilis;1;
+
+Procedimentos - Administração de medicamentos
+Descrição;Quantidade;
+Endovenosa;37;
+Inalação / Nebulização;0;
+Intramuscular;77;
+Oral;5;
+Penicilina para tratamento de sífilis;3;
+Subcutânea (SC);7;
+Tópica;0;
+
+Outros procedimentos (SIGTAP)
+Descrição;Quantidade;
+0101040024 - AVALIAÇÃO ANTROPOMÉTRICA;268;
+0101040075 - MEDIÇÃO DE ALTURA;1;
+0101040083 - MEDIÇÃO DE PESO;5;
+0201020041 - COLETA DE MATERIAL PARA EXAME LABORATORIAL;91;
+0214010015 - GLICEMIA CAPILAR;153;
+0214010120 - TESTE RÁPIDO PARA DENGUE IGG/IGM;1;
+0214010163 - TESTE RÁPIDO PARA DETECÇÃO DE SARS-COVID-2;3;
+0214010279 - TESTE RÁPIDO PARA DETECÇÃO DE ANTICORPOS ANTI-HIV EM GESTANTE;1;
+0301010030 - CONSULTA DE PROFISSIONAIS DE NÍVEL SUPERIOR NA ATENÇÃO PRIMÁRIA (EXCETO MÉDICO);231;
+0301010064 - CONSULTA MEDICA EM ATENÇÃO PRIMÁRIA;299;
+0301010110 - CONSULTA PRÉ-NATAL;2;
+0301010269 - AVALIAÇÃO DO CRESCIMENTO NA PUERICULTURA;13;
+0301010277 - AVALIAÇÃO DO DESENVOLVIMENTO DA CRIANÇA NA PUERICULTURA;14;
+0301050139 - BUSCA ATIVA;121;
+0301060037 - ATENDIMENTO DE URGÊNCIA EM ATENÇÃO BÁSICA;5;
+0301090033 - AVALIAÇÃO MULTIDIMENSIONAL DA PESSOA IDOSA;9;
+0301100039 - AFERIÇÃO DE PRESSÃO ARTERIAL;464;
+0301100250 - AFERIÇÃO DE TEMPERATURA;6;
+0301100268 - PREPARAÇÃO PARA O ELETROCARDIOGRAMA;12;
+0301100284 - CURATIVO SIMPLES;31;
+CDS - ORIENTAÇÃO INDIVIDUAL EM SAÚDE;181;
