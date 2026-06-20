@@ -8,12 +8,15 @@
     "start": "node src/app.js",
     "dev": "node --watch src/app.js",
     "test": "jest --coverage",
-    "test:integration": "jest tests/integration --coverage=false"
+    "test:integration": "jest tests/integration --coverage=false",
+    "seed:admin": "node scripts/seed-admin.js"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.13.1"
   },
   "devDependencies": {

@@ -1,10 +1,11 @@
 module.exports = {
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/tests/setupEnv.js'],
   testMatch: ['**/tests/**/*.test.js'],
   collectCoverageFrom: [
     'src/services/**/*.js',
     'src/middleware/**/*.js',
-    'src/routes/health.js',
+    'src/routes/**/*.js',
   ],
   coverageThreshold: {
     global: {

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Auth JWT backend
 type: backend
 complexity: medium
@@ -30,10 +30,10 @@ Implement JWT authentication: `usuarios` table, bcrypt password hashing, login/l
 </requirements>
 
 ## Subtasks
-- [ ] 4.1 Create auth routes and bcrypt password verification
-- [ ] 4.2 Implement verifyJWT middleware injecting req.user
-- [ ] 4.3 Apply middleware to existing route registration pattern
-- [ ] 4.4 Seed script for default admin user
+- [x] 4.1 Create auth routes and bcrypt password verification
+- [x] 4.2 Implement verifyJWT middleware injecting req.user
+- [x] 4.3 Apply middleware to existing route registration pattern
+- [x] 4.4 Seed script for default admin user
 
 ## Implementation Details
 
@@ -57,12 +57,12 @@ See auth design spec Section 12 and TechSpec **API Endpoints — Auth**.
 
 ## Tests
 - Unit tests:
-  - [ ] verifyJWT rejects expired/malformed tokens
-  - [ ] bcrypt verifies correct password
-  - [ ] login returns generic error for bad credentials (no user enumeration)
+  - [x] verifyJWT rejects expired/malformed tokens
+  - [x] bcrypt verifies correct password
+  - [x] login returns generic error for bad credentials (no user enumeration)
 - Integration tests:
-  - [ ] POST /auth/login → GET /auth/me with Bearer token
-  - [ ] GET /api/v1/dashboard/planejamento without token → 401
+  - [x] POST /auth/login → GET /auth/me with Bearer token
+  - [x] GET /api/v1/dashboard/planejamento without token → 401
 - Test coverage target: >=80%
 - All tests must pass
 

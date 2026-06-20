@@ -10,7 +10,10 @@ const express = require('express');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
 const requestLogger = require('./middleware/requestLogger');
+const verifyJWT = require('./middleware/verifyJWT');
+const authRoutes = require('./routes/auth');
 const healthRoutes = require('./routes/health');
+const apiRoutes = require('./routes/api');
 
 const app = express();
 
@@ -18,7 +21,9 @@ app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
 
+app.use('/auth', authRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api', verifyJWT, apiRoutes);
 
 app.use(errorHandler);
 
