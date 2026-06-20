@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Importação API
 type: backend
 complexity: high
@@ -32,10 +32,10 @@ Build the e-SUS CSV import API: file upload to `uploads/`, preview without persi
 </requirements>
 
 ## Subtasks
-- [ ] 6.1 Implement storage service for upload paths and hash
-- [ ] 6.2 Parser service spawning parse_esus_csv.py
-- [ ] 6.3 Import routes with preview and full pipeline
-- [ ] 6.4 Cargas list/detail/reprocess/delete endpoints
+- [x] 6.1 Implement storage service for upload paths and hash
+- [x] 6.2 Parser service spawning parse_esus_csv.py
+- [x] 6.3 Import routes with preview and full pipeline
+- [x] 6.4 Cargas list/detail/reprocess/delete endpoints
 
 ## Implementation Details
 
@@ -59,12 +59,12 @@ See Plano B importacao routes and `estrutura_simpa.md` Section 3.3.
 
 ## Tests
 - Unit tests:
-  - [ ] Storage generates correct path from competencia
-  - [ ] Preview parses metadata without DB write
+  - [x] Storage generates correct path from competencia
+  - [x] Preview parses metadata without DB write
 - Integration tests:
-  - [ ] Upload fixture CSV creates esus_cargas row
-  - [ ] Delete cascades esus_indicadores_raw
-  - [ ] Reprocess is idempotent (ON CONFLICT)
+  - [x] Upload fixture CSV creates esus_cargas row
+  - [x] Delete cascades esus_indicadores_raw
+  - [x] Reprocess is idempotent (ON CONFLICT)
 - Test coverage target: >=80%
 - All tests must pass
 

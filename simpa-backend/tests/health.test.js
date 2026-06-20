@@ -1,12 +1,17 @@
 jest.mock('../src/services/db');
+jest.mock('../src/services/mysqlProbe', () => ({
+  probeMysql: jest.fn(),
+}));
 
 const request = require('supertest');
 const { query } = require('../src/services/db');
+const { probeMysql } = require('../src/services/mysqlProbe');
 const app = require('../src/app');
 
 describe('GET /api/health', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    probeMysql.mockResolvedValue({ configured: true, status: 'connected' });
   });
 
   it('returns 200 when postgres is reachable', async () => {
@@ -25,6 +30,8 @@ describe('GET /api/health', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.postgres).toBe('connected');
+    expect(res.body.mysql).toBe('connected');
+    expect(res.body.mysql_configured).toBe(true);
     expect(res.body.schema_tables).toEqual([
       'esus_cargas',
       'unidades_saude',

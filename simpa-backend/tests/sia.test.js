@@ -1,0 +1,87 @@
+const { EventEmitter } = require('events');
+
+jest.mock('child_process', () => ({
+  spawn: jest.fn(),
+}));
+
+const { spawn } = require('child_process');
+const { sincronizar, parseSyncOutput } = require('../src/services/sia');
+
+function mockSpawn({ code = 0, stdout = '', stderr = '' } = {}) {
+  const proc = new EventEmitter();
+  proc.stdout = new EventEmitter();
+  proc.stderr = new EventEmitter();
+  spawn.mockImplementationOnce(() => {
+    process.nextTick(() => {
+      if (stdout) proc.stdout.emit('data', Buffer.from(stdout));
+      if (stderr) proc.stderr.emit('data', Buffer.from(stderr));
+      proc.emit('close', code);
+    });
+    return proc;
+  });
+}
+
+describe('sia service', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('parseSyncOutput unwraps single-item arrays', () => {
+    expect(parseSyncOutput('[{"status":"ok","registros":3}]')).toEqual({
+      status: 'ok',
+      registros: 3,
+    });
+  });
+
+  it('parses JSON stdout on success', async () => {
+    mockSpawn({
+      stdout: JSON.stringify([
+        {
+          sincronizacao_id: 1,
+          competencia: '2026-05-01',
+          registros: 10,
+          erros: 0,
+          status: 'ok',
+        },
+      ]),
+    });
+
+    const result = await sincronizar('2026-05');
+
+    expect(result).toEqual(
+      expect.objectContaining({ status: 'ok', registros: 10 })
+    );
+    expect(spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining(['--competencia', '2026-05', '--pg-write']),
+      expect.any(Object)
+    );
+  });
+
+  it('handles subprocess failure gracefully', async () => {
+    mockSpawn({ code: 1, stderr: 'MySQL connection refused' });
+
+    await expect(sincronizar('2026-05')).rejects.toMatchObject({
+      status: 502,
+      message: /connection refused/i,
+    });
+  });
+
+  it('rejects empty stdout', async () => {
+    mockSpawn({ stdout: '' });
+
+    await expect(sincronizar('2026-05')).rejects.toMatchObject({
+      status: 502,
+      message: /vazia/i,
+    });
+  });
+
+  it('rejects invalid JSON stdout', async () => {
+    mockSpawn({ stdout: 'not-json' });
+
+    await expect(sincronizar('2026-05')).rejects.toMatchObject({
+      status: 502,
+      message: /JSON inválida/i,
+    });
+  });
+});

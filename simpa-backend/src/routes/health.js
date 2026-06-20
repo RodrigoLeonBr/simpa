@@ -1,5 +1,6 @@
 const express = require('express');
 const { query } = require('../services/db');
+const { probeMysql } = require('../services/mysqlProbe');
 
 const router = express.Router();
 
@@ -12,12 +13,15 @@ router.get('/', async (_req, res) => {
         AND tablename IN ('esus_cargas', 'usuarios', 'unidades_saude')
       ORDER BY tablename
     `);
+    const mysql = await probeMysql();
 
     res.json({
       ok: true,
       service: 'simpa-api',
       postgres: 'connected',
       schema_tables: tables.rows.map((row) => row.tablename),
+      mysql: mysql.status,
+      mysql_configured: mysql.configured,
     });
   } catch (err) {
     res.status(503).json({

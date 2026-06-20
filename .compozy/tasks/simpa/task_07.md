@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: SIA sync API
 type: backend
 complexity: medium
@@ -31,10 +31,10 @@ Expose REST endpoints to trigger SIA MySQL synchronization and query production 
 </requirements>
 
 ## Subtasks
-- [ ] 7.1 SIA service spawning sync_sia_mysql.py
-- [ ] 7.2 Sync and history routes
-- [ ] 7.3 Producao query with competencia/unidade filters
-- [ ] 7.4 Health check optional MySQL probe
+- [x] 7.1 SIA service spawning sync_sia_mysql.py
+- [x] 7.2 Sync and history routes
+- [x] 7.3 Producao query with competencia/unidade filters
+- [x] 7.4 Health check optional MySQL probe
 
 ## Implementation Details
 
@@ -54,10 +54,10 @@ See Plano B sia routes and ADR-003.
 
 ## Tests
 - Unit tests:
-  - [ ] Sync service handles subprocess failure gracefully
+  - [x] Sync service handles subprocess failure gracefully
 - Integration tests:
-  - [ ] POST sincronizar records row in sia_sincronizacoes
-  - [ ] GET producao returns filtered rows from seed
+  - [x] POST sincronizar records row in sia_sincronizacoes
+  - [x] GET producao returns filtered rows from seed
 - Test coverage target: >=80%
 - All tests must pass
 
