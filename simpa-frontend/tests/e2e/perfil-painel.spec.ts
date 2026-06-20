@@ -9,7 +9,7 @@
  * Requires docker test stack on :8080, admin seed, and seed-e2e-estabelecimentos.
  */
 import { expect, test } from '@playwright/test';
-import { login, openEstabelecimentos } from './helpers';
+import { login, openEstabelecimentos, searchEstabelecimentos } from './helpers';
 
 const E2E_CODIGO = 'E2E001';
 
@@ -50,6 +50,8 @@ test.describe('Cadastros perfil edit', () => {
   test('change perfil in drawer updates dedicated E2E row and filter chip', async ({
     page,
   }) => {
+    await searchEstabelecimentos(page, E2E_CODIGO);
+
     const table = page.getByTestId('cadastro-readonly-table');
     const targetRow = table.locator('tbody tr').filter({ hasText: E2E_CODIGO });
     await expect(targetRow).toBeVisible({ timeout: 30_000 });

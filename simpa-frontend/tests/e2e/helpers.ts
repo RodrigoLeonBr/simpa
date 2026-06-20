@@ -18,3 +18,8 @@ export async function openEstabelecimentos(page: Page) {
   await page.getByTestId('cadastro-card-estabelecimentos').click();
   await expect(page.getByTestId('estabelecimentos-page')).toBeVisible();
 }
+
+export async function searchEstabelecimentos(page: Page, query: string) {
+  await page.getByTestId('estabelecimentos-search').fill(query);
+  await page.getByRole('button', { name: 'Buscar' }).click();
+}

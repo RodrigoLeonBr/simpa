@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Seed estabelecimentos for Playwright E2E (one row per Painel perfil + Outro).
- * Idempotent: skips rows that already exist by codigo_externo.
+ * Idempotent: inserts or reactivates rows by codigo_externo (sync may inactivate them).
  */
 const path = require('path');
 const fs = require('fs');
@@ -29,6 +29,7 @@ async function main() {
   });
 
   let inserted = 0;
+  let reactivated = 0;
 
   for (const row of ROWS) {
     const result = await pool.query(
@@ -36,20 +37,26 @@ async function main() {
          codigo_externo, nome, tipouni, perfil, status, perfil_editado, sincronizado_em
        )
        VALUES ($1, $2, $3, $4, 'ativo', false, now())
-       ON CONFLICT (codigo_externo) DO NOTHING
-       RETURNING id`,
+       ON CONFLICT (codigo_externo) DO UPDATE SET
+         nome = EXCLUDED.nome,
+         tipouni = EXCLUDED.tipouni,
+         perfil = EXCLUDED.perfil,
+         status = 'ativo',
+         perfil_editado = false,
+         sincronizado_em = now()
+       RETURNING id, (xmax = 0) AS inserted`,
       [row.codigo_externo, row.nome, row.tipouni, row.perfil],
     );
 
-    if (result.rowCount > 0) {
+    if (result.rows[0]?.inserted) {
       inserted += 1;
+    } else if (result.rowCount > 0) {
+      reactivated += 1;
     }
   }
 
   console.log(
-    inserted > 0
-      ? `E2E estabelecimentos: ${inserted} inserido(s), ${ROWS.length - inserted} já existente(s).`
-      : `E2E estabelecimentos: todos os ${ROWS.length} registros já existiam.`,
+    `E2E estabelecimentos: ${inserted} inserido(s), ${reactivated} reativado(s)/atualizado(s).`,
   );
 
   await pool.end();
