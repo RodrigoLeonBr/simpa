@@ -15,7 +15,7 @@ vi.mock('../api/cadastros', () => ({
 }));
 
 import { fetchDashboard } from '../api/dashboard';
-import { fetchEquipes, fetchEstabelecimentos } from '../api/cadastros';
+import { fetchEstabelecimentos } from '../api/cadastros';
 
 function Wrapper({ children }: { children: ReactNode }) {
   return <FiltersProvider>{children}</FiltersProvider>;
@@ -34,7 +34,6 @@ describe('useDashboard', () => {
       const perfil = String(query?.perfil ?? 'APS');
       return mockEstabelecimentosForPerfil(perfil) as never;
     });
-    vi.mocked(fetchEquipes).mockResolvedValue(mockDb.equipes as never);
     vi.mocked(fetchDashboard).mockResolvedValue(mockDb.planejamento[0] as never);
   });
 
@@ -63,7 +62,7 @@ describe('useDashboard', () => {
     });
   });
 
-  it('with painelPerfil MAC calls fetch with perfil=MAC', async () => {
+  it('with painelPerfil MAC calls fetchEstabelecimentos with perfil=MAC', async () => {
     const { result } = renderHook(
       () => ({
         dashboard: useDashboard(),
@@ -138,7 +137,7 @@ describe('useDashboard', () => {
     });
   });
 
-  it('passes resolved unidade and equipe names to fetchDashboard', async () => {
+  it('passes estabelecimentoId and equipeId when both filters are set', async () => {
     const { result } = renderHook(
       () => ({
         dashboard: useDashboard(),
@@ -155,15 +154,49 @@ describe('useDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalledWith(
-        '2026-05',
-        'CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO',
-        'EQUIPE 9 EAP',
-      );
+      expect(fetchDashboard).toHaveBeenCalledWith('2026-05', {
+        estabelecimentoId: 1,
+        equipeId: 1,
+      });
     });
   });
 
-  it('waits for unidades before applying unit filter to dashboard', async () => {
+  it('passes estabelecimentoId only when unidade selected without equipe', async () => {
+    const { result } = renderHook(
+      () => ({
+        dashboard: useDashboard(),
+        filters: useFilters(),
+      }),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => expect(result.current.dashboard.loading).toBe(false));
+    vi.mocked(fetchDashboard).mockClear();
+
+    act(() => {
+      result.current.filters.setUnidadeId(1);
+    });
+
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenCalledWith('2026-05', { estabelecimentoId: 1 });
+    });
+  });
+
+  it('omits ID params for municipal aggregate when filters are null', async () => {
+    const { result } = renderHook(
+      () => ({
+        dashboard: useDashboard(),
+        filters: useFilters(),
+      }),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => expect(result.current.dashboard.loading).toBe(false));
+
+    expect(fetchDashboard).toHaveBeenCalledWith('2026-05', undefined);
+  });
+
+  it('fetches dashboard with IDs without waiting for unidades catalog', async () => {
     vi.mocked(fetchDashboard).mockClear();
     let resolveEstabelecimentos: (value: unknown) => void = () => {};
     vi.mocked(fetchEstabelecimentos).mockReturnValue(
@@ -182,21 +215,22 @@ describe('useDashboard', () => {
 
     act(() => {
       result.current.filters.setUnidadeId(1);
+      result.current.filters.setEquipeId(1);
     });
 
-    const callsWithUnit = () =>
-      vi.mocked(fetchDashboard).mock.calls.filter(
-        (call) => call[1] === 'CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO',
-      );
-
-    expect(callsWithUnit()).toHaveLength(0);
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenCalledWith('2026-05', {
+        estabelecimentoId: 1,
+        equipeId: 1,
+      });
+    });
 
     await act(async () => {
       resolveEstabelecimentos(mockEstabelecimentosForPerfil('APS'));
     });
 
     await waitFor(() => {
-      expect(callsWithUnit().length).toBeGreaterThan(0);
+      expect(result.current.dashboard.unidades.length).toBeGreaterThan(0);
     });
   });
 
@@ -272,6 +306,47 @@ describe('useDashboard', () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBe('Falha API');
+    });
+  });
+
+  it('keeps empty unidades when estabelecimentos fetch fails', async () => {
+    vi.mocked(fetchEstabelecimentos).mockRejectedValueOnce(new Error('catalog down'));
+
+    const { result } = renderHook(() => useDashboard(), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.unidades).toEqual([]);
+    });
+  });
+
+  it('stores error message on 404 without crashing', async () => {
+    vi.mocked(fetchDashboard).mockReset();
+    vi.mocked(fetchDashboard).mockRejectedValue(
+      new Error('Dados não encontrados para os filtros informados'),
+    );
+
+    const { result } = renderHook(
+      () => ({
+        dashboard: useDashboard(),
+        filters: useFilters(),
+      }),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => expect(result.current.dashboard.loading).toBe(false));
+
+    act(() => {
+      result.current.filters.setUnidadeId(1);
+      result.current.filters.setEquipeId(1);
+    });
+
+    await waitFor(() => {
+      expect(result.current.dashboard.loading).toBe(false);
+      expect(result.current.dashboard.error).toBe(
+        'Dados não encontrados para os filtros informados',
+      );
+      expect(result.current.dashboard.data).toBeNull();
     });
   });
 });

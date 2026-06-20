@@ -37,16 +37,35 @@ Express em `simpa-backend/src/`. Entry: `app.js` → `server.js`.
 | GET | `/api/v1/dashboard/planejamento` | `dashboardService.fetchDashboard` |
 | POST | `/api/v1/dashboard/consolidar` | `consolidator.runConsolidation` |
 
-Query: `competencia`, `unidade`, `equipe` (YYYY-MM). Consolidar: `all=true` ou trio obrigatório.
+Query GET `planejamento`:
+
+| Param | Obrigatório | Notas |
+|-------|-------------|-------|
+| `competencia` | sim | `YYYY-MM` |
+| `estabelecimento_id` | par | Com `equipe_id` — consulta `dados_consolidados` por FK (MVP pós de-para) |
+| `equipe_id` | par | Deve vir junto com `estabelecimento_id` |
+| `unidade`, `equipe` | legado | Fallback por texto para linhas sem FK |
+
+404 quando não há linha consolidada para os filtros. Consolidar POST: `all=true` ou trio texto `competencia` + `unidade` + `equipe`.
 
 ### Importação (`routes/importacao.js`)
 
-| Método | Path | Notas |
-|--------|------|-------|
-| POST | `/api/importacao/preview` | multer, `parser.preview` |
-| POST | `/api/importacao/processar` | `parser.processar` + storage |
-| GET | `/api/importacao/cargas` | lista `esus_cargas` |
-| DELETE | `/api/importacao/cargas/:id` | remove carga |
+| Método | Path | Auth | Notas |
+|--------|------|------|-------|
+| POST | `/api/importacao/preview` | JWT | multer `files[]`; preview enriquecido (`mapeamento_status`, sugestões) |
+| POST | `/api/importacao/upload` | JWT + `requirePlanningStaff` | multer + `resolucoes` JSON; parser/consolidator com IDs |
+| GET | `/api/importacao/mapeamentos` | JWT | lista de-para (`?q=`, paginação) |
+| POST | `/api/importacao/mapeamentos` | JWT + planning | criar/atualizar mapeamento |
+| PUT | `/api/importacao/mapeamentos/:id` | JWT + planning | editar mapeamento |
+| DELETE | `/api/importacao/mapeamentos/:id` | JWT + planning | soft-delete (`status=inativo`) |
+| GET | `/api/importacao/cargas` | JWT | histórico com JOIN cadastro |
+| POST | `/api/importacao/:id/reprocessar` | JWT | reprocessa carga existente |
+| PUT | `/api/importacao/:id/substituir` | JWT | substitui CSV |
+| DELETE | `/api/importacao/:id` | JWT | remove carga |
+
+**Fluxo upload:** preview → cliente envia `resolucoes[]` (`arquivo`, `estabelecimento_id`, `equipe_id`, `salvar_mapeamento`, `confirmar_remocao_todas?`) → `importMappingService.resolveForUpload` → `parser.processar` + `consolidator.runConsolidation` com IDs.
+
+Regras `"Todas"`: conflito detectado no preview; purge exige confirmação explícita.
 
 Limite upload: `UPLOAD_MAX_BYTES` (default 50MB).
 
@@ -87,9 +106,10 @@ Ver **[auth-roles.md](auth-roles.md#admin)**.
 |---------|------------------|
 | `db.js` | Pool PG, `query(sql, params)` |
 | `authService.js` | Login, bcrypt, JWT |
-| `dashboardService.js` | Lê `dados_consolidados`, monta resposta |
-| `consolidator.js` | Spawn `consolidate_dashboard.py` |
-| `parser.js` | Spawn `parse_esus_csv.py` |
+| `dashboardService.js` | Lê `dados_consolidados` por IDs ou texto legado |
+| `importMappingService.js` | De-para, sugestões, `ensureEquipe`, regras Todas |
+| `consolidator.js` | Spawn `consolidate_dashboard.py` (aceita IDs) |
+| `parser.js` | Spawn `parse_esus_csv.py` (aceita IDs) |
 | `storage.js` | Paths de upload em disco |
 | `siaSync.js` | Spawn `sync_sia_mysql.py` |
 | `cadastrosSync.js` | Spawn `sync_cadastros_mysql.py` |

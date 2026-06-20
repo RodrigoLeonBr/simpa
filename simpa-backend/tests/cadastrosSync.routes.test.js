@@ -10,7 +10,7 @@ const {
   listSyncHistory,
   getLatestSync,
 } = require('../src/services/cadastrosSync');
-const { listEstabelecimentos } = require('../src/services/estabelecimentosService');
+const { listEstabelecimentos, getEstabelecimentoById } = require('../src/services/estabelecimentosService');
 const { logAudit } = require('../src/services/auditService');
 const { authHeader, unidadeHeader } = require('./helpers/auth');
 const app = require('../src/app');
@@ -45,6 +45,9 @@ describe('cadastros sync routes', () => {
       estabelecimentos: { inserted: 2, updated: 5, inactivated: 0 },
       procedimentos: { inserted: 10, updated: 20, inactivated: 1 },
     });
+    getEstabelecimentoById.mockRejectedValue(
+      Object.assign(new Error('Estabelecimento não encontrado'), { status: 404 })
+    );
   });
 
   it('POST /sincronizar triggers sync and returns counts', async () => {
@@ -106,6 +109,18 @@ describe('cadastros sync routes', () => {
     expect(listSyncHistory).toHaveBeenCalledWith({ page: '1', limit: '10' });
   });
 
+  it('GET /sincronizacoes propagates service errors', async () => {
+    const err = new Error('db down');
+    err.status = 500;
+    listSyncHistory.mockRejectedValueOnce(err);
+
+    const res = await request(app)
+      .get('/api/cadastros/sincronizacoes')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(500);
+  });
+
   it('GET /sincronizacoes/ultima returns latest ok sync', async () => {
     const res = await request(app)
       .get('/api/cadastros/sincronizacoes/ultima')
@@ -114,6 +129,42 @@ describe('cadastros sync routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(getLatestSync).toHaveBeenCalledTimes(1);
+  });
+
+  it('GET /sincronizacoes/ultima propagates 404 when none found', async () => {
+    const err = new Error('Nenhuma sincronização bem-sucedida encontrada');
+    err.status = 404;
+    getLatestSync.mockRejectedValueOnce(err);
+
+    const res = await request(app)
+      .get('/api/cadastros/sincronizacoes/ultima')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(404);
+  });
+
+  it('GET /estabelecimentos/:id propagates service errors', async () => {
+    const err = new Error('Estabelecimento não encontrado');
+    err.status = 404;
+    getEstabelecimentoById.mockRejectedValueOnce(err);
+
+    const res = await request(app)
+      .get('/api/cadastros/estabelecimentos/999')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(404);
+  });
+
+  it('GET /estabelecimentos propagates list errors', async () => {
+    const err = new Error('db down');
+    err.status = 500;
+    listEstabelecimentos.mockRejectedValueOnce(err);
+
+    const res = await request(app)
+      .get('/api/cadastros/estabelecimentos')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(500);
   });
 
   it('POST /sincronizar then GET /estabelecimentos returns synced rows', async () => {

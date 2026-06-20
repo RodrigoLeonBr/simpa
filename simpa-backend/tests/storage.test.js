@@ -8,6 +8,7 @@ const {
   hashFile,
   moveFile,
   removeFile,
+  removeTempFile,
   slugUnidade,
   uploadsRoot,
 } = require('../src/services/storage');
@@ -93,5 +94,43 @@ describe('storage', () => {
 
   it('removeFile ignores missing paths', () => {
     expect(() => removeFile(path.join(os.tmpdir(), 'nao-existe.csv'))).not.toThrow();
+  });
+
+  it('removeTempFile no-ops on falsy path', () => {
+    expect(() => removeTempFile(null)).not.toThrow();
+    expect(() => removeTempFile('')).not.toThrow();
+  });
+
+  it('removeTempFile removes existing temp file', () => {
+    const tmp = path.join(os.tmpdir(), `simpa-tmp-${Date.now()}.csv`);
+    fs.writeFileSync(tmp, 'x');
+    removeTempFile(tmp);
+    expect(fs.existsSync(tmp)).toBe(false);
+  });
+
+  it('moveFile rethrows non-EXDEV rename errors', () => {
+    const tmp = path.join(os.tmpdir(), `simpa-tmp-${Date.now()}.csv`);
+    const dest = buildPath('2026-05', 'U1', 'fail.csv');
+    fs.writeFileSync(tmp, 'fail');
+
+    const originalRename = fs.renameSync;
+    fs.renameSync = jest.fn(() => {
+      const err = new Error('permission denied');
+      err.code = 'EACCES';
+      throw err;
+    });
+
+    try {
+      expect(() => moveFile(tmp, dest)).toThrow(/permission denied/);
+      expect(fs.existsSync(tmp)).toBe(true);
+    } finally {
+      fs.renameSync = originalRename;
+      removeFile(tmp);
+    }
+  });
+
+  it('slugUnidade falls back for empty labels', () => {
+    expect(slugUnidade('')).toBe('sem_unidade');
+    expect(slugUnidade(null)).toBe('sem_unidade');
   });
 });

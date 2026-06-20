@@ -21,7 +21,7 @@ import {
   canViewEnrichment,
   formatLeitosSummary,
 } from '../../utils/enrichmentView';
-import { formatImportDate } from '../../utils/importacaoView';
+import { formatImportDate, canEditImportMappings } from '../../utils/importacaoView';
 
 interface EstabelecimentoDetailDrawerProps {
   estabelecimento: Estabelecimento;
@@ -63,6 +63,7 @@ export function EstabelecimentoDetailDrawer({
   const { user } = useAuth();
   const { toast, showToast } = useToast();
   const canEdit = canEditCadastrosEstabelecimento(user?.perfil);
+  const canManageImportMappings = canEditImportMappings(user?.perfil);
   const [perfilDraft, setPerfilDraft] = useState<EstabelecimentoPerfil>(estabelecimento.perfil);
   const [savingPerfil, setSavingPerfil] = useState(false);
   const [perfilError, setPerfilError] = useState<string | null>(null);
@@ -145,6 +146,22 @@ export function EstabelecimentoDetailDrawer({
                 />
               </div>
             </section>
+
+            {canManageImportMappings ? (
+              <section className="cadastro-detail-section">
+                <h4>Importação e-SUS</h4>
+                <p className="cadastro-detail-hint">
+                  Vínculos persistentes entre rótulos do e-SUS e este estabelecimento.
+                </p>
+                <Link
+                  to={`/importacao?tab=mapeamentos&q=${encodeURIComponent(estabelecimento.codigo_externo)}`}
+                  className="cadastro-btn ghost"
+                  data-testid="estabelecimento-mapeamentos-link"
+                >
+                  Ver mapeamentos e-SUS →
+                </Link>
+              </section>
+            ) : null}
 
             <section className="cadastro-detail-section">
               <h4>Perfil operacional</h4>

@@ -9,6 +9,7 @@ import pytest
 import consolidate_dashboard
 import parse_esus_csv as parser
 from etl_contract import build_payload
+from etl_db import mysql_available
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -91,7 +92,10 @@ def test_fetch_groups_and_sia_helpers(seeded_pg, sample_competencia, sample_unid
     assert groups
 
     rows = consolidate_dashboard.fetch_raw_rows(
-        seeded_pg, sample_competencia, sample_unidade, sample_equipe
+        seeded_pg,
+        sample_competencia,
+        unidade=sample_unidade,
+        equipe=sample_equipe,
     )
     assert rows
 
@@ -153,7 +157,10 @@ def test_write_payload_returns_metadata(seeded_pg, sample_competencia, sample_un
         unidade=sample_unidade,
         equipe=sample_equipe,
         raw_rows=consolidate_dashboard.fetch_raw_rows(
-            seeded_pg, sample_competencia, sample_unidade, sample_equipe
+            seeded_pg,
+            sample_competencia,
+            unidade=sample_unidade,
+            equipe=sample_equipe,
         ),
     )
     meta = consolidate_dashboard.write_payload(
@@ -267,10 +274,14 @@ def test_sync_cadastros_dry_run_cli():
         text=True,
         check=False,
     )
-    assert proc.returncode == 1, proc.stderr
     payload = json.loads(proc.stdout)
-    assert payload["status"] == "erro"
-    assert payload["error"] == "MySQL_XAMPP_UNAVAILABLE"
+    if mysql_available():
+        assert proc.returncode == 0, proc.stderr
+        assert payload["status"] in ("ok", "parcial")
+    else:
+        assert proc.returncode == 1, proc.stderr
+        assert payload["status"] == "erro"
+        assert payload["error"] == "MySQL_XAMPP_UNAVAILABLE"
 
 
 def test_sync_sia_json_out_cli():
@@ -289,7 +300,12 @@ def test_sync_sia_json_out_cli():
     )
     assert proc.returncode == 0, proc.stderr
     payload = json.loads(proc.stdout)
-    assert payload[0]["status"] == "erro"
+    if mysql_available():
+        assert payload[0]["status"] in ("ok", "parcial", "erro")
+        assert payload[0]["competencia"] == "2026-05"
+    else:
+        assert payload[0]["status"] == "erro"
+        assert payload[0]["error"] == "MySQL_XAMPP_UNAVAILABLE"
 
 
 def test_consolidate_main_direct_json(

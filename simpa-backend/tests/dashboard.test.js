@@ -38,6 +38,8 @@ describe('dashboard routes', () => {
       competencia: undefined,
       unidade: undefined,
       equipe: undefined,
+      estabelecimento_id: undefined,
+      equipe_id: undefined,
     });
   });
 
@@ -55,6 +57,28 @@ describe('dashboard routes', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.versao_schema).toBe('3.1.0');
+  });
+
+  it('GET /planejamento forwards estabelecimento_id and equipe_id', async () => {
+    fetchDashboard.mockResolvedValueOnce({ status: 200, body: samplePayload });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/planejamento')
+      .query({
+        competencia: '2026-05',
+        estabelecimento_id: '42',
+        equipe_id: '7',
+      })
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(fetchDashboard).toHaveBeenCalledWith({
+      competencia: '2026-05',
+      unidade: undefined,
+      equipe: undefined,
+      estabelecimento_id: '42',
+      equipe_id: '7',
+    });
   });
 
   it('POST /consolidar validates parameters', async () => {

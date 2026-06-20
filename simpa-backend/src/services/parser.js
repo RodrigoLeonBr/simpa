@@ -11,10 +11,21 @@ function pythonBin() {
   return process.env.PYTHON_BIN || 'python3';
 }
 
-function runParser(csvPath, flag) {
+function buildParserArgs(csvPath, flag, options = {}) {
+  const args = [scriptPath(), csvPath, flag];
+  if (options.estabelecimentoId != null) {
+    args.push('--estabelecimento-id', String(options.estabelecimentoId));
+  }
+  if (options.equipeId != null) {
+    args.push('--equipe-id', String(options.equipeId));
+  }
+  return args;
+}
+
+function runParser(csvPath, flag, options = {}) {
   return new Promise((resolve, reject) => {
     const script = scriptPath();
-    const proc = spawn(pythonBin(), [script, csvPath, flag], {
+    const proc = spawn(pythonBin(), buildParserArgs(csvPath, flag, options), {
       cwd: path.dirname(script),
       env: { ...process.env },
     });
@@ -60,12 +71,13 @@ function runParser(csvPath, flag) {
 }
 
 const preview = (csvPath) => runParser(csvPath, '--json-out');
-const processar = (csvPath) => runParser(csvPath, '--pg-write');
+const processar = (csvPath, options = {}) => runParser(csvPath, '--pg-write', options);
 
 module.exports = {
   preview,
   processar,
   runParser,
+  buildParserArgs,
   scriptPath,
   pythonBin,
 };

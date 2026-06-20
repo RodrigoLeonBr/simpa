@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { updateEnrichmentBySlug, updatePerfil } from '../../api/cadastros';
 import { AuthProvider } from '../../contexts/AuthContext';
@@ -41,13 +42,15 @@ function renderDrawer(
   onSaved = vi.fn(),
 ) {
   return render(
-    <AuthProvider>
-      <EstabelecimentoDetailDrawer
-        estabelecimento={estabelecimento}
-        onClose={vi.fn()}
-        onSaved={onSaved}
-      />
-    </AuthProvider>,
+    <MemoryRouter>
+      <AuthProvider>
+        <EstabelecimentoDetailDrawer
+          estabelecimento={estabelecimento}
+          onClose={vi.fn()}
+          onSaved={onSaved}
+        />
+      </AuthProvider>
+    </MemoryRouter>,
   );
 }
 

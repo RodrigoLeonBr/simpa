@@ -82,6 +82,16 @@ Roles de edição: Administrador, Gestor Secretaria, Planejamento.
 
 `useDashboard.ts` lista unidades via `fetchEstabelecimentos({ perfil: painelPerfil })` — ver [frontend.md](frontend.md#painel).
 
+**De-para importação:** rótulos e-SUS (unidade/equipe) mapeiam para `estabelecimentos.id` já sincronizados do MySQL — o operador escolhe entre sugestões do cadastro; não cria estabelecimento novo. Equipes ausentes podem ser auto-criadas em `equipes` durante o upload (`importMappingService.ensureEquipe`).
+
+---
+
+## Workflow: importacao-depara-unidade-equipe {#workflow-importacao-depara}
+
+Spec: `.compozy/tasks/importacao-depara-unidade-equipe/` · **Status: concluído (tasks 01–10)**
+
+Resumo: migration 006 + registry `esus_import_mapeamentos` + preview gate na UI + Painel consulta dashboard por `estabelecimento_id`/`equipe_id`. Detalhe de endpoints: [backend-api.md](backend-api.md) · UI: [frontend.md](frontend.md#importacao).
+
 ---
 
 ## Workflow: estabelecimentos-perfil-painel {#workflow-estabelecimentos-perfil-painel}

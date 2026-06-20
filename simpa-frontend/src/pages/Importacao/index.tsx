@@ -1,11 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchCargas } from '../../api/importacao';
+import { useAuth } from '../../contexts/AuthContext';
 import type { CargaEsus } from '../../types/contrato';
-import { CARGAS_UPDATED_EVENT } from '../../utils/importacaoView';
+import { canEditImportMappings, CARGAS_UPDATED_EVENT } from '../../utils/importacaoView';
 import { HistoricoCargas } from './HistoricoCargas';
+import { MapeamentosPanel } from './MapeamentosPanel';
 import { UploadZone } from './UploadZone';
 
+type ImportTab = 'importar' | 'mapeamentos';
+
 export default function ImportacaoPage() {
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const showMapeamentos = canEditImportMappings(user?.perfil);
+  const [tab, setTab] = useState<ImportTab>(() =>
+    searchParams.get('tab') === 'mapeamentos' ? 'mapeamentos' : 'importar',
+  );
+  const initialMapeamentosQuery = searchParams.get('q') ?? '';
   const [cargas, setCargas] = useState<CargaEsus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +36,12 @@ export default function ImportacaoPage() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'mapeamentos' && showMapeamentos) {
+      setTab('mapeamentos');
+    }
+  }, [searchParams, showMapeamentos]);
 
   useEffect(() => {
     const load = () => {
@@ -45,14 +63,41 @@ export default function ImportacaoPage() {
         </p>
       </div>
 
-      <UploadZone />
+      {showMapeamentos ? (
+        <nav className="import-subnav" aria-label="Importação" data-testid="import-subnav">
+          <button
+            type="button"
+            className={`import-subnav-link${tab === 'importar' ? ' active' : ''}`}
+            onClick={() => setTab('importar')}
+            data-testid="import-tab-importar"
+          >
+            Importar
+          </button>
+          <button
+            type="button"
+            className={`import-subnav-link${tab === 'mapeamentos' ? ' active' : ''}`}
+            onClick={() => setTab('mapeamentos')}
+            data-testid="import-tab-mapeamentos"
+          >
+            Mapeamentos
+          </button>
+        </nav>
+      ) : null}
 
-      {loading ? (
-        <div className="analytics-state">Carregando histórico…</div>
-      ) : error ? (
-        <div className="analytics-state analytics-state-error">{error}</div>
+      {tab === 'importar' ? (
+        <>
+          <UploadZone onUploadConcluido={carregar} />
+
+          {loading ? (
+            <div className="analytics-state">Carregando histórico…</div>
+          ) : error ? (
+            <div className="analytics-state analytics-state-error">{error}</div>
+          ) : (
+            <HistoricoCargas cargas={cargas} onAtualizar={carregar} />
+          )}
+        </>
       ) : (
-        <HistoricoCargas cargas={cargas} onAtualizar={carregar} />
+        <MapeamentosPanel initialQuery={initialMapeamentosQuery} />
       )}
     </div>
   );

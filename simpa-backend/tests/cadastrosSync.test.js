@@ -60,6 +60,19 @@ describe('cadastrosSync service', () => {
     expect(parseSyncOutput(JSON.stringify(payload))).toEqual(payload);
   });
 
+  it('parseSyncOutput keeps multi-item arrays intact', () => {
+    const payload = [
+      { status: 'ok', id: 1 },
+      { status: 'parcial', id: 2 },
+    ];
+    expect(parseSyncOutput(JSON.stringify(payload))).toEqual(payload);
+  });
+
+  it('mapSyncRow returns null for falsy input', () => {
+    expect(mapSyncRow(null)).toBeNull();
+    expect(mapSyncRow(undefined)).toBeNull();
+  });
+
   it('sincronizar parses JSON stdout on success', async () => {
     mockSpawn({
       stdout: JSON.stringify({
@@ -226,5 +239,58 @@ describe('cadastrosSync service', () => {
     query.mockResolvedValueOnce({ rows: [] });
 
     await expect(getLatestSync()).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('rejects spawn process errors', async () => {
+    const proc = new EventEmitter();
+    proc.stdout = new EventEmitter();
+    proc.stderr = new EventEmitter();
+    proc.kill = jest.fn();
+
+    spawn.mockImplementationOnce(() => {
+      process.nextTick(() => proc.emit('error', new Error('spawn failed')));
+      return proc;
+    });
+
+    await expect(sincronizar()).rejects.toThrow('spawn failed');
+  });
+
+  it('rejects invalid JSON stdout on zero exit', async () => {
+    mockSpawn({ stdout: 'not-json' });
+
+    await expect(sincronizar()).rejects.toMatchObject({
+      status: 502,
+    });
+  });
+
+  it('rejects on subprocess timeout', async () => {
+    jest.useFakeTimers();
+    const proc = new EventEmitter();
+    proc.stdout = new EventEmitter();
+    proc.stderr = new EventEmitter();
+    proc.kill = jest.fn();
+
+    spawn.mockImplementationOnce(() => proc);
+
+    const promise = sincronizar();
+    jest.advanceTimersByTime(301000);
+
+    await expect(promise).rejects.toMatchObject({
+      status: 504,
+      message: /Timeout/i,
+    });
+    expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+    jest.useRealTimers();
+  });
+
+  it('listSyncHistory clamps pagination bounds', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ total: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await listSyncHistory({ page: 0, limit: 999 });
+
+    expect(result.pagination.page).toBe(1);
+    expect(result.pagination.limit).toBe(100);
   });
 });

@@ -31,7 +31,7 @@ simpa/
 ├── docs/agent/            # referência modular (LEIA AQUI)
 ├── .compozy/tasks/        # PRD, TechSpec, tasks por feature
 ├── schema_full.sql        # schema base PG
-├── migration_002..005.sql # auth, cadastros, sync, perfil/enrichment
+├── migration_002..006.sql # auth, cadastros, sync, perfil/enrichment, import de-para
 ├── parse_esus_csv.py      # ETL e-SUS
 ├── consolidate_dashboard.py
 ├── sync_cadastros_mysql.py
@@ -91,7 +91,7 @@ Detalhes, scripts `.bat` e refresh: **[docs/agent/docker-env.md](docs/agent/dock
 
 ## Banco de dados
 
-- Init Docker: `schema_full.sql` + `migration_002` … `005` em `docker-compose.yml`.
+- Init Docker: `schema_full.sql` + `migration_002` … `006` em `docker-compose.yml`.
 - Tabelas-chave: `estabelecimentos`, `procedimentos`, `enriquecimento_*`, `esus_cargas`, `dados_consolidados`, `usuarios`.
 - Contrato dashboard lido de `dados_consolidados.dados_conteudo` (JSONB).
 
@@ -170,11 +170,20 @@ Workflows ativos em `.compozy/tasks/<slug>/`:
 
 | Slug | Estado | Conteúdo |
 |------|--------|----------|
+| `importacao-depara-unidade-equipe` | **concluído ✅** | De-para e-SUS, preview gate, Painel por IDs |
 | `estabelecimentos-perfil-painel` | **arquivado ✅** | Perfil editável, enriquecimento por perfil, Painel multi-perfil |
 
-Artefatos em `.compozy/tasks/_archived/*-estabelecimentos-perfil-painel/` (PRD, TechSpec, tasks, `memory/`, `reviews-001/`).
+Artefatos ativos: `.compozy/tasks/importacao-depara-unidade-equipe/`. Arquivados: `.compozy/tasks/_archived/*-estabelecimentos-perfil-painel/`.
 
 Guia: **[docs/agent/compozy.md](docs/agent/compozy.md)**.
+
+---
+
+## Feature concluída: importacao-depara-unidade-equipe
+
+**Entregue:** registry `esus_import_mapeamentos`; preview gate + upload com `resolucoes`; FKs em `esus_cargas`/`dados_consolidados`; Painel consulta dashboard por `estabelecimento_id`/`equipe_id`.
+
+Resumo: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-importacao-depara)** · Importação UI: **[frontend.md](docs/agent/frontend.md#importacao)** · API: **[backend-api.md](docs/agent/backend-api.md)**.
 
 ---
 
@@ -210,7 +219,9 @@ Resumo técnico: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-es
 | Pergunta | Arquivo |
 |----------|---------|
 | Como lista estabelecimentos? | `estabelecimentosService.js` → `listEstabelecimentos` |
-| Como Painel carrega unidades? | `useDashboard.ts` → `fetchEstabelecimentos(buildEstabelecimentosPerfilQuery(painelPerfil))` |
+| Como Painel carrega dashboard? | `useDashboard.ts` → `fetchDashboard(competencia, { estabelecimentoId, equipeId })` |
+| Como Painel lista unidades? | `useDashboard.ts` → `fetchEstabelecimentos(buildEstabelecimentosPerfilQuery(painelPerfil))` |
+| Como importação resolve de-para? | `importMappingService.js` + `routes/importacao.js` |
 | Como deriva perfil no sync? | `sync_cadastros_mysql.py` → `derive_perfil` |
 | Enriquecimento por perfil? | `PUT …/enriquecimento/:slug` + tabelas `enriquecimento_*` |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |
@@ -225,7 +236,7 @@ Resumo técnico: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-es
 | [README.md](docs/agent/README.md) | Índice e como usar |
 | [backend-api.md](docs/agent/backend-api.md) | Endpoints, services, middleware |
 | [frontend.md](docs/agent/frontend.md) | Páginas, hooks, componentes |
-| [cadastros.md](docs/agent/cadastros.md) | Estabelecimentos, procedimentos, sync |
+| [cadastros.md](docs/agent/cadastros.md) | Estabelecimentos, procedimentos, sync, de-para importação |
 | [database.md](docs/agent/database.md) | Tabelas, migrations, FKs |
 | [etl-python.md](docs/agent/etl-python.md) | Scripts ETL e fluxo de dados |
 | [docker-env.md](docs/agent/docker-env.md) | Compose, env, scripts refresh |

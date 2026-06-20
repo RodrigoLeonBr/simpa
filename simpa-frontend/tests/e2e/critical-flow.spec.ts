@@ -73,6 +73,16 @@ test.describe('SIMPA critical flow', () => {
     await page.getByTestId('upload-input').setInputFiles(csvFixture);
     await expect(page.getByTestId('preview-row').first()).toBeVisible({ timeout: 60_000 });
 
+    const mappingSelect = page.getByTestId('mapping-estabelecimento-select');
+    if (await mappingSelect.isVisible()) {
+      const optionValues = await mappingSelect.locator('option').evaluateAll((nodes) =>
+        nodes.map((node) => (node as HTMLOptionElement).value).filter(Boolean),
+      );
+      if (optionValues.length > 0) {
+        await mappingSelect.selectOption(optionValues[0]!);
+      }
+    }
+
     const uploadResponse = page.waitForResponse(
       (response) =>
         response.url().includes('/api/importacao/upload') &&

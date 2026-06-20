@@ -112,6 +112,35 @@ describe('estabelecimentosService', () => {
       });
       expect(result.ok).toBe(true);
     });
+
+    it('rejects invalid hospitalar leitos shape', () => {
+      expect(validateEnrichmentForSlug('hospitalar', { leitos: [] }).ok).toBe(false);
+      expect(validateEnrichmentForSlug('hospitalar', { leitos: null }).ok).toBe(false);
+    });
+
+    it('rejects misto capacidades_ambulatoriais when not string array', () => {
+      const result = validateEnrichmentForSlug('misto', {
+        capacidades_ambulatoriais: [123],
+      });
+      expect(result.ok).toBe(false);
+    });
+
+    it('rejects APS string fields with wrong type or length', () => {
+      expect(
+        validateEnrichmentForSlug('aps', { notas_territorio: 123 }).ok
+      ).toBe(false);
+      expect(
+        validateEnrichmentForSlug('aps', {
+          notas_territorio: 'x'.repeat(2001),
+        }).ok
+      ).toBe(false);
+    });
+
+    it('rejects unknown enrichment keys for slug', () => {
+      const result = validateEnrichmentForSlug('mac', { leitos: { clinico: 1 } });
+      expect(result.ok).toBe(false);
+      expect(result.error).toMatch(/inválidos/i);
+    });
   });
 
   it('listEstabelecimentos rejects invalid perfil', async () => {
@@ -199,6 +228,18 @@ describe('estabelecimentosService', () => {
     expect(query.mock.calls[1][1]).toContain('Misto');
   });
 
+  it('updatePerfil returns 404 when establishment missing', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(updatePerfil(999, 'APS')).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('getEstabelecimentoById returns 404 when not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(getEstabelecimentoById(999)).rejects.toMatchObject({ status: 404 });
+  });
+
   it('updatePerfil rejects invalid perfil string', async () => {
     await expect(updatePerfil(1, 'INVALIDO')).rejects.toMatchObject({ status: 400 });
     expect(query).not.toHaveBeenCalled();
@@ -274,6 +315,22 @@ describe('estabelecimentosService', () => {
     expect(
       mergeEnrichmentForSlug('aps', { notas: 'antes' }, { notas: 'depois' })
     ).toEqual({ notas: 'depois' });
+  });
+
+  it('mergeEnrichmentForSlug merges MAC capacidades', () => {
+    expect(
+      mergeEnrichmentForSlug('mac', { capacidades: ['A'] }, { capacidades: ['B'] })
+    ).toEqual({ capacidades: ['B'] });
+  });
+
+  it('mergeEnrichmentForSlug merges misto partial fields', () => {
+    expect(
+      mergeEnrichmentForSlug(
+        'misto',
+        { leitos: { clinico: 1 }, notas_mac: 'a' },
+        { notas_mac: 'b' }
+      )
+    ).toEqual({ leitos: { clinico: 1 }, notas_mac: 'b' });
   });
 
   it('mergeEnrichmentForSlug deep-merges partial leitos updates', () => {

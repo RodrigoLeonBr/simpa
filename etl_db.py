@@ -39,3 +39,15 @@ def mysql_configured() -> bool:
     load_env()
     required = ("MYSQL_HOST", "MYSQL_DB", "MYSQL_USER", "MYSQL_PASS")
     return all(os.environ.get(key) for key in required)
+
+
+def mysql_available() -> bool:
+    """True when MySQL env vars are set and a TCP connection succeeds."""
+    if not mysql_configured():
+        return False
+    try:
+        conn = mysql_connect()
+        conn.close()
+        return True
+    except Exception:
+        return False

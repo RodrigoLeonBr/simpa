@@ -64,6 +64,18 @@ describe('cadastrosService validation', () => {
     );
   });
 
+  it('listEntity omits estabelecimento filter when param absent', async () => {
+    query.mockResolvedValueOnce({ rows: [{ id: 1 }, { id: 2 }] });
+
+    const rows = await listEntity('equipes', {});
+
+    expect(rows).toHaveLength(2);
+    expect(query).toHaveBeenCalledWith(
+      expect.not.stringContaining('e.estabelecimento_id ='),
+      []
+    );
+  });
+
   it('updateEntity returns 404 when missing', async () => {
     query.mockResolvedValueOnce({ rows: [] });
 

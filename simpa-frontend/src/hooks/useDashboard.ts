@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchEquipes, fetchEstabelecimentos } from '../api/cadastros';
+import { fetchEstabelecimentos } from '../api/cadastros';
 import { fetchDashboard } from '../api/dashboard';
 import { useFilters } from './useFilters';
 import type { ContratoDashboard, Unidade } from '../types/contrato';
@@ -14,11 +14,23 @@ export interface DashboardViewModel {
   unidades: Unidade[];
 }
 
+function buildDashboardFilters(
+  unidadeId: number | null,
+  equipeId: number | null,
+): { estabelecimentoId: number; equipeId?: number } | undefined {
+  if (unidadeId == null) {
+    return undefined;
+  }
+  if (equipeId == null) {
+    return { estabelecimentoId: unidadeId };
+  }
+  return { estabelecimentoId: unidadeId, equipeId };
+}
+
 export function useDashboard() {
   const { competencia, unidadeId, equipeId, painelPerfil } = useFilters();
   const [data, setData] = useState<ContratoDashboard | null>(null);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
-  const [unidadesLoaded, setUnidadesLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,15 +39,9 @@ export function useDashboard() {
     [painelPerfil, competencia, unidadeId, equipeId],
   );
 
-  const unidadeNomeMap = useMemo(
-    () => new Map(unidades.map((item) => [item.id, item.nome])),
-    [unidades],
-  );
-
   useEffect(() => {
     let cancelled = false;
 
-    setUnidadesLoaded(false);
     setUnidades([]);
     setData(null);
     setLoading(true);
@@ -45,13 +51,11 @@ export function useDashboard() {
       .then((result) => {
         if (!cancelled) {
           setUnidades(mapEstabelecimentosToUnidades(result.data));
-          setUnidadesLoaded(true);
         }
       })
       .catch(() => {
         if (!cancelled) {
           setUnidades([]);
-          setUnidadesLoaded(true);
         }
       });
 
@@ -61,10 +65,6 @@ export function useDashboard() {
   }, [painelPerfil]);
 
   useEffect(() => {
-    if (unidadeId !== null && !unidadesLoaded) {
-      return;
-    }
-
     let cancelled = false;
 
     async function loadDashboard() {
@@ -80,15 +80,8 @@ export function useDashboard() {
       setError(null);
 
       try {
-        const unidadeNome = unidadeId ? unidadeNomeMap.get(unidadeId) : undefined;
-        let equipeNome: string | undefined;
-
-        if (equipeId && unidadeId) {
-          const equipes = await fetchEquipes(unidadeId);
-          equipeNome = equipes.find((item) => item.id === equipeId)?.nome;
-        }
-
-        const payload = await fetchDashboard(competencia, unidadeNome, equipeNome);
+        const filters = buildDashboardFilters(unidadeId, equipeId);
+        const payload = await fetchDashboard(competencia, filters);
 
         if (!cancelled) {
           setData(payload);
@@ -110,7 +103,7 @@ export function useDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [filterKey, competencia, unidadeId, equipeId, unidadesLoaded, unidadeNomeMap, painelPerfil]);
+  }, [filterKey, competencia, unidadeId, equipeId, painelPerfil]);
 
   return { data, unidades, loading, error };
 }

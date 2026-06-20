@@ -98,6 +98,19 @@ describe('cadastros manual CRUD routes', () => {
     expect(res.status).toBe(404);
   });
 
+  it('propagates PUT update errors', async () => {
+    const err = new Error('Equipe não encontrada');
+    err.status = 404;
+    updateEntity.mockRejectedValueOnce(err);
+
+    const res = await request(app)
+      .put('/api/cadastros/equipes/404')
+      .set('Authorization', authHeader())
+      .send({ nome: 'Nova' });
+
+    expect(res.status).toBe(404);
+  });
+
   it('requires JWT', async () => {
     const res = await request(app).get('/api/cadastros/equipes');
     expect(res.status).toBe(401);

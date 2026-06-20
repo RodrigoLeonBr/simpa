@@ -5,7 +5,7 @@ jest.mock('child_process', () => ({
 }));
 
 const { spawn } = require('child_process');
-const { preview, processar } = require('../src/services/parser');
+const { preview, processar, buildParserArgs } = require('../src/services/parser');
 
 function mockSpawn({ code = 0, stdout = '[]', stderr = '' } = {}) {
   const proc = new EventEmitter();
@@ -24,6 +24,22 @@ function mockSpawn({ code = 0, stdout = '[]', stderr = '' } = {}) {
 describe('parser service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('buildParserArgs omits ID flags when options empty', () => {
+    const args = buildParserArgs('/tmp/sample.csv', '--json-out');
+    expect(args).toEqual(expect.arrayContaining(['/tmp/sample.csv', '--json-out']));
+    expect(args).not.toContain('--estabelecimento-id');
+  });
+
+  it('buildParserArgs includes partial ID flags', () => {
+    const args = buildParserArgs('/tmp/sample.csv', '--pg-write', {
+      estabelecimentoId: 42,
+    });
+    expect(args).toEqual(
+      expect.arrayContaining(['--estabelecimento-id', '42'])
+    );
+    expect(args).not.toContain('--equipe-id');
   });
 
   it('preview parses JSON metadata without DB write flag', async () => {
@@ -59,6 +75,42 @@ describe('parser service', () => {
       expect.arrayContaining(['--pg-write']),
       expect.any(Object)
     );
+  });
+
+  it('processar forwards estabelecimento and equipe IDs to spawn', async () => {
+    mockSpawn({
+      stdout: JSON.stringify([
+        { carga_id: 1, status: 'ok', estabelecimento_id: 42, equipe_id: 7 },
+      ]),
+    });
+
+    await processar('/tmp/sample.csv', {
+      estabelecimentoId: 42,
+      equipeId: 7,
+    });
+
+    expect(spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining([
+        '/tmp/sample.csv',
+        '--pg-write',
+        '--estabelecimento-id',
+        '42',
+        '--equipe-id',
+        '7',
+      ]),
+      expect.any(Object)
+    );
+  });
+
+  it('preview does not pass ID flags', async () => {
+    mockSpawn({ stdout: '[]' });
+
+    await preview('/tmp/sample.csv');
+
+    const spawnArgs = spawn.mock.calls[0][1];
+    expect(spawnArgs).not.toContain('--estabelecimento-id');
+    expect(spawnArgs).not.toContain('--equipe-id');
   });
 
   it('rejects parser stderr with 422 status', async () => {

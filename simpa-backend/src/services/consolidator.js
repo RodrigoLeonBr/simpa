@@ -12,18 +12,44 @@ function pythonBin() {
   return process.env.PYTHON_BIN || 'python3';
 }
 
-function runConsolidation({ all = false, competencia, unidade, equipe } = {}) {
+function buildConsolidationArgs({ all, competencia, unidade, equipe, estabelecimentoId, equipeId } = {}) {
+  const args = [scriptPath(), '--pg-write'];
+
+  if (all) {
+    args.push('--all');
+    return args;
+  }
+
+  args.push('--competencia', competencia);
+
+  if (estabelecimentoId != null && equipeId != null) {
+    args.push('--estabelecimento-id', String(estabelecimentoId));
+    args.push('--equipe-id', String(equipeId));
+    return args;
+  }
+
+  args.push('--unidade', unidade, '--equipe', equipe);
+  return args;
+}
+
+function runConsolidation({
+  all = false,
+  competencia,
+  unidade,
+  equipe,
+  estabelecimentoId,
+  equipeId,
+} = {}) {
   return new Promise((resolve, reject) => {
     const script = scriptPath();
-    const args = [script, '--pg-write'];
-
-    if (all) {
-      args.push('--all');
-    } else {
-      args.push('--competencia', competencia, '--unidade', unidade, '--equipe', equipe);
-    }
-
-    const proc = spawn(pythonBin(), args, {
+    const proc = spawn(pythonBin(), buildConsolidationArgs({
+      all,
+      competencia,
+      unidade,
+      equipe,
+      estabelecimentoId,
+      equipeId,
+    }), {
       cwd: path.dirname(script),
       env: { ...process.env },
     });
@@ -67,4 +93,9 @@ function runConsolidation({ all = false, competencia, unidade, equipe } = {}) {
   });
 }
 
-module.exports = { runConsolidation, scriptPath, pythonBin };
+module.exports = {
+  runConsolidation,
+  buildConsolidationArgs,
+  scriptPath,
+  pythonBin,
+};

@@ -207,20 +207,52 @@ def parse_report(path: Path):
                 continue
         i += 1
 
-    # Indicadores de "Resumo de produção"
-    for sec_name, rows in sections:
-        if sec_name == "Resumo de produção":
-            for descricao, _, valores in rows:
-                qtd = valores.get("quantidade")
-                if descricao == "Registros identificados":
-                    meta["registros_identificados"] = qtd
-                elif descricao == "Registros não identificados":
-                    meta["registros_nao_identificados"] = qtd
-                elif descricao == "Total de registros":
-                    meta["registros_identificados"] = qtd
-                    meta.setdefault("registros_nao_identificados", 0)
+    _finalize_registros_meta(meta, sections)
 
     return meta, sections
+
+
+def _apply_registros_resumo(meta: dict, sections: list) -> None:
+    for sec_name, rows in sections:
+        if sec_name != "Resumo de produção":
+            continue
+        for descricao, _, valores in rows:
+            qtd = valores.get("quantidade")
+            if descricao == "Registros identificados":
+                meta["registros_identificados"] = qtd
+            elif descricao == "Registros não identificados":
+                meta["registros_nao_identificados"] = qtd
+            elif descricao == "Total de registros":
+                meta["registros_identificados"] = qtd
+                meta.setdefault("registros_nao_identificados", 0)
+
+
+def _infer_registros_from_turno(sections: list) -> tuple[int | None, int | None]:
+    """Fallback quando o export e-SUS omite a seção Resumo de produção."""
+    for sec_name, rows in sections:
+        if sec_name != "Turno":
+            continue
+        total = 0
+        found = False
+        for _, _, valores in rows:
+            qtd = valores.get("quantidade")
+            if qtd is not None:
+                total += int(qtd)
+                found = True
+        if found and total > 0:
+            return total, 0
+    return None, None
+
+
+def _finalize_registros_meta(meta: dict, sections: list) -> None:
+    _apply_registros_resumo(meta, sections)
+    if "registros_identificados" not in meta:
+        total, nao_id = _infer_registros_from_turno(sections)
+        if total is not None:
+            meta["registros_identificados"] = total
+            meta["registros_nao_identificados"] = nao_id
+    meta.setdefault("registros_identificados", None)
+    meta.setdefault("registros_nao_identificados", None)
 
 
 def sql_str(v):
@@ -315,7 +347,83 @@ def build_sql(reports):
     return "\n".join(out)
 
 
-def write_to_pg(reports):
+def build_carga_params(meta, estabelecimento_id=None, equipe_id=None):
+    params = {
+        "tipo_relatorio": meta["tipo_relatorio"],
+        "competencia": meta["competencia"],
+        "periodo_inicio": meta["periodo_inicio"],
+        "periodo_fim": meta["periodo_fim"],
+        "municipio": meta["municipio"],
+        "unidade": meta["unidade"],
+        "equipe_codigo": meta.get("equipe_codigo"),
+        "equipe_nome": meta["equipe_nome"],
+        "profissional": meta["profissional"],
+        "cbo": meta["cbo"],
+        "filtros_personalizados": meta["filtros_personalizados"],
+        "dados_processados_em": meta.get("dados_processados_em"),
+        "relatorio_gerado_em": meta.get("relatorio_gerado_em"),
+        "relatorio_gerado_por": meta.get("relatorio_gerado_por"),
+        "registros_identificados": meta.get("registros_identificados"),
+        "registros_nao_identificados": meta.get("registros_nao_identificados"),
+        "arquivo_origem": meta["arquivo_origem"],
+    }
+    if estabelecimento_id is not None:
+        params["estabelecimento_id"] = estabelecimento_id
+    if equipe_id is not None:
+        params["equipe_id"] = equipe_id
+    return params
+
+
+def carga_insert_sql(use_id_conflict):
+    fk_columns = ""
+    fk_values = ""
+    if use_id_conflict:
+        fk_columns = ", estabelecimento_id, equipe_id"
+        fk_values = ", %(estabelecimento_id)s, %(equipe_id)s"
+
+    conflict = (
+        """
+        ON CONFLICT (tipo_relatorio, competencia, estabelecimento_id, equipe_id)
+        WHERE estabelecimento_id IS NOT NULL AND equipe_id IS NOT NULL
+        DO UPDATE SET
+            unidade = EXCLUDED.unidade,
+            equipe_codigo = EXCLUDED.equipe_codigo,
+            equipe_nome = EXCLUDED.equipe_nome,
+            arquivo_origem = EXCLUDED.arquivo_origem,
+            importado_em = now()
+        """
+        if use_id_conflict
+        else """
+        ON CONFLICT (tipo_relatorio, competencia, unidade, equipe_nome)
+        DO UPDATE SET
+            arquivo_origem = EXCLUDED.arquivo_origem,
+            importado_em = now()
+        """
+    )
+
+    return f"""
+        INSERT INTO esus_cargas (
+            tipo_relatorio, competencia, periodo_inicio, periodo_fim,
+            municipio, unidade, equipe_codigo, equipe_nome,
+            profissional, cbo, filtros_personalizados,
+            dados_processados_em, relatorio_gerado_em,
+            relatorio_gerado_por, registros_identificados,
+            registros_nao_identificados, arquivo_origem{fk_columns}
+        ) VALUES (
+            %(tipo_relatorio)s, %(competencia)s, %(periodo_inicio)s,
+            %(periodo_fim)s, %(municipio)s, %(unidade)s,
+            %(equipe_codigo)s, %(equipe_nome)s, %(profissional)s,
+            %(cbo)s, %(filtros_personalizados)s,
+            %(dados_processados_em)s, %(relatorio_gerado_em)s,
+            %(relatorio_gerado_por)s, %(registros_identificados)s,
+            %(registros_nao_identificados)s, %(arquivo_origem)s{fk_values}
+        )
+        {conflict}
+        RETURNING id
+        """
+
+
+def write_to_pg(reports, estabelecimento_id=None, equipe_id=None):
     """Grava lista de (meta, sections) no PostgreSQL via psycopg2."""
     import psycopg2
 
@@ -328,36 +436,16 @@ def write_to_pg(reports):
         password=os.environ["PG_PASS"],
     )
     results = []
+    use_id_conflict = estabelecimento_id is not None and equipe_id is not None
+    insert_sql = carga_insert_sql(use_id_conflict)
     try:
         with conn:
             with conn.cursor() as cur:
                 for meta, sections in reports:
-                    cur.execute(
-                        """
-                        INSERT INTO esus_cargas (
-                            tipo_relatorio, competencia, periodo_inicio, periodo_fim,
-                            municipio, unidade, equipe_codigo, equipe_nome,
-                            profissional, cbo, filtros_personalizados,
-                            dados_processados_em, relatorio_gerado_em,
-                            relatorio_gerado_por, registros_identificados,
-                            registros_nao_identificados, arquivo_origem
-                        ) VALUES (
-                            %(tipo_relatorio)s, %(competencia)s, %(periodo_inicio)s,
-                            %(periodo_fim)s, %(municipio)s, %(unidade)s,
-                            %(equipe_codigo)s, %(equipe_nome)s, %(profissional)s,
-                            %(cbo)s, %(filtros_personalizados)s,
-                            %(dados_processados_em)s, %(relatorio_gerado_em)s,
-                            %(relatorio_gerado_por)s, %(registros_identificados)s,
-                            %(registros_nao_identificados)s, %(arquivo_origem)s
-                        )
-                        ON CONFLICT (tipo_relatorio, competencia, unidade, equipe_nome)
-                        DO UPDATE SET
-                            arquivo_origem = EXCLUDED.arquivo_origem,
-                            importado_em   = now()
-                        RETURNING id
-                        """,
-                        meta,
+                    carga_params = build_carga_params(
+                        meta, estabelecimento_id, equipe_id
                     )
+                    cur.execute(insert_sql, carga_params)
                     carga_id = cur.fetchone()[0]
 
                     for sec_name, rows in sections:
@@ -380,21 +468,23 @@ def write_to_pg(reports):
                             )
 
                     n_ind = sum(len(r) for _, r in sections)
-                    results.append(
-                        {
-                            "carga_id": carga_id,
-                            "tipo_relatorio": meta["tipo_relatorio"],
-                            "competencia": str(meta["competencia"]),
-                            "unidade": meta["unidade"],
-                            "equipe_nome": meta["equipe_nome"],
-                            "registros_identificados": meta.get("registros_identificados"),
-                            "registros_nao_identificados": meta.get(
-                                "registros_nao_identificados"
-                            ),
-                            "indicadores": n_ind,
-                            "status": "ok",
-                        }
-                    )
+                    result = {
+                        "carga_id": carga_id,
+                        "tipo_relatorio": meta["tipo_relatorio"],
+                        "competencia": str(meta["competencia"]),
+                        "unidade": meta["unidade"],
+                        "equipe_nome": meta["equipe_nome"],
+                        "registros_identificados": meta.get("registros_identificados"),
+                        "registros_nao_identificados": meta.get(
+                            "registros_nao_identificados"
+                        ),
+                        "indicadores": n_ind,
+                        "status": "ok",
+                    }
+                    if use_id_conflict:
+                        result["estabelecimento_id"] = estabelecimento_id
+                        result["equipe_id"] = equipe_id
+                    results.append(result)
     finally:
         conn.close()
     return results
@@ -430,6 +520,16 @@ def main():
         action="store_true",
         help="Grava direto no PostgreSQL via psycopg2",
     )
+    parser.add_argument(
+        "--estabelecimento-id",
+        type=int,
+        help="FK estabelecimentos.id (obrigatório com --pg-write)",
+    )
+    parser.add_argument(
+        "--equipe-id",
+        type=int,
+        help="FK equipes.id (obrigatório com --pg-write)",
+    )
     args = parser.parse_args()
 
     reports = collect_reports(Path(args.input))
@@ -447,8 +547,24 @@ def main():
         return
 
     if args.pg_write:
+        if args.estabelecimento_id is None:
+            print(
+                "Erro: --pg-write exige --estabelecimento-id",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        if args.equipe_id is None:
+            print(
+                "Erro: --pg-write exige --equipe-id",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         load_dotenv()
-        results = write_to_pg(reports)
+        results = write_to_pg(
+            reports,
+            estabelecimento_id=args.estabelecimento_id,
+            equipe_id=args.equipe_id,
+        )
         print(json.dumps(results, ensure_ascii=False, default=str))
         return
 

@@ -33,9 +33,9 @@ React 19 + Vite 8 + Tailwind 4. Raiz: `simpa-frontend/src/`.
 |---------|---------|
 | `client.ts` | `apiFetch`, base URL, Authorization header |
 | `auth.ts` | `login`, `getMe` |
-| `dashboard.ts` | `fetchDashboard` |
+| `dashboard.ts` | `fetchDashboard(competencia, { estabelecimentoId?, equipeId? })` |
 | `cadastros.ts` | `fetchEstabelecimentos`, `updatePerfil`, `updateEnrichmentBySlug`, … |
-| `importacao.ts` | preview, processar, cargas |
+| `importacao.ts` | `previewUpload`, `uploadCargas(files, resolucoes)`, mapeamentos CRUD, cargas |
 | `admin.ts` | usuários, audit log |
 | `config.ts` | feature flags |
 
@@ -46,7 +46,7 @@ Dev: Vite proxy `/api` e `/auth` → `http://localhost:3001` (`vite.config.ts`).
 | Hook | Uso |
 |------|-----|
 | `useFilters.ts` | competência, unidade, equipe, **`painelPerfil`** (default APS); sessionStorage |
-| `useDashboard.ts` | dashboard APS + unidades filtradas por `painelPerfil` |
+| `useDashboard.ts` | dashboard + unidades por `painelPerfil`; fetch por IDs de cadastro |
 | `useImportBadge.ts` | badge importação pendente |
 | `useDebounce.ts` | busca em listas |
 
@@ -66,11 +66,31 @@ components/layout/
 └── FilterBar.tsx          # competência, unidade, equipe (unidades do perfil)
 ```
 
-- **Dashboard KPIs:** contrato APS via `GET /api/v1/dashboard/planejamento` (MVP).
-- **Unidades:** `fetchEstabelecimentos({ perfil: painelPerfil })` → `mapEstabelecimentosToUnidades`.
+- **Dashboard KPIs:** `fetchDashboard(competencia, { estabelecimentoId, equipeId })` quando **unidadeId e equipeId** estão setados em `useFilters`; visão municipal (sem IDs) quando filtros vazios ou só unidade selecionada.
+- **Unidades:** `fetchEstabelecimentos({ perfil: painelPerfil })` → `mapEstabelecimentosToUnidades` (labels no FilterBar; não usados na query do dashboard).
 - **Catálogo KPI:** `utils/dashboardView.ts` → `PAINEL_KPI_CATALOGS`; APS `ready`, demais `pending`.
 - **Non-APS:** placeholder “Indicadores em definição”; sem flash de KPI APS (`isPainelCatalogReady`).
 - Tipos: `types/contrato.ts`, `types/painel.ts`.
+- 404 da API → `useDashboard.error` (sem crash).
+
+## Importação {#importacao}
+
+```
+pages/Importacao/
+├── index.tsx              # abas Importar | Mapeamentos (planning staff)
+├── UploadZone.tsx         # preview gate, pickers, modal Todas
+├── PreviewMappingRow.tsx  # badge status, e-SUS vs cadastro
+├── TodasConflictModal.tsx
+├── MapeamentosPanel.tsx   # CRUD de-para persistente
+└── HistoricoCargas.tsx
+```
+
+- **Preview:** `POST /api/importacao/preview` → linhas com `mapeamento_status` (`resolved` | `pending` | `blocked`), sugestões de estabelecimento.
+- **Upload:** botão Processar desabilitado enquanto houver `pending`; envia `resolucoes[]` em `POST /api/importacao/upload` (planning staff).
+- **Helpers:** `utils/importacaoView.ts` — gate Process, `buildResolucoesUpload`, labels e-SUS/cadastro.
+- **Tipos:** `types/importacao.ts`.
+
+Ver **[backend-api.md](backend-api.md#importação)** e de-para em **[cadastros.md](cadastros.md#workflow-importacao-depara)**.
 
 ## Cadastros
 
@@ -115,6 +135,7 @@ Ver **[cadastros.md](cadastros.md)**.
 | `types/contrato.ts` | Dashboard JSON v3.1.0 |
 | `types/cadastros.ts` | Estabelecimento, EnrichmentSlug, enrichment unions |
 | `types/painel.ts` | `PainelPerfil`, `PainelCatalogStatus` |
+| `types/importacao.ts` | preview enriquecido, `ResolucaoUpload`, mapeamentos |
 
 ## Estilo
 
@@ -123,6 +144,6 @@ Ver **[cadastros.md](cadastros.md)**.
 
 ## Testes
 
-- Vitest: `simpa-frontend/src/**/*.test.ts(x)` — ~206 testes.
+- Vitest: `simpa-frontend/src/**/*.test.ts(x)` — ~235 testes.
 - Playwright: `tests/e2e/perfil-painel.spec.ts`, `helpers.ts`.
 - `npm run test:web` na raiz.

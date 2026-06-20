@@ -36,11 +36,18 @@ CREATE TABLE IF NOT EXISTS esus_cargas (
     arquivo_path                VARCHAR(500),
     hash_arquivo                VARCHAR(64),
     importado_em                TIMESTAMP NOT NULL DEFAULT now(),
+    estabelecimento_id          BIGINT,
+    equipe_id                   BIGINT,
     UNIQUE (tipo_relatorio, competencia, unidade, equipe_nome)
 );
 
 CREATE INDEX IF NOT EXISTS idx_esus_cargas_competencia
     ON esus_cargas (competencia, tipo_relatorio, unidade, equipe_nome);
+CREATE INDEX IF NOT EXISTS idx_esus_cargas_estabelecimento
+    ON esus_cargas (competencia, estabelecimento_id, equipe_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_esus_cargas_ids
+    ON esus_cargas (tipo_relatorio, competencia, estabelecimento_id, equipe_id)
+    WHERE estabelecimento_id IS NOT NULL AND equipe_id IS NOT NULL;
 
 COMMENT ON TABLE esus_cargas IS
     'Uma linha por arquivo CSV do e-SUS importado. arquivo_path = caminho físico no servidor.';
@@ -80,11 +87,16 @@ CREATE TABLE IF NOT EXISTS dados_consolidados (
     versao_schema   VARCHAR(20) NOT NULL DEFAULT '3.1.0',
     dados_conteudo  JSONB NOT NULL,
     atualizado_em   TIMESTAMP NOT NULL DEFAULT now(),
+    estabelecimento_id BIGINT,
+    equipe_id          BIGINT,
     UNIQUE (competencia, unidade, equipe)
 );
 
 CREATE INDEX IF NOT EXISTS idx_dados_consolidados_gin
     ON dados_consolidados USING GIN (dados_conteudo);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_dados_consolidados_ids
+    ON dados_consolidados (competencia, estabelecimento_id, equipe_id)
+    WHERE estabelecimento_id IS NOT NULL AND equipe_id IS NOT NULL;
 
 COMMENT ON TABLE dados_consolidados IS
     'Payload final /api/v1/dashboard/planejamento por competência/unidade/equipe.';

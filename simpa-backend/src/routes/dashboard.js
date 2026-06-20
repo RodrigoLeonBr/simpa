@@ -6,8 +6,15 @@ const router = express.Router();
 
 router.get('/planejamento', async (req, res, next) => {
   try {
-    const { competencia, unidade, equipe } = req.query;
-    const result = await fetchDashboard({ competencia, unidade, equipe });
+    const { competencia, unidade, equipe, estabelecimento_id, equipe_id } =
+      req.query;
+    const result = await fetchDashboard({
+      competencia,
+      unidade,
+      equipe,
+      estabelecimento_id,
+      equipe_id,
+    });
     return res.status(result.status).json(result.body);
   } catch (err) {
     return next(err);

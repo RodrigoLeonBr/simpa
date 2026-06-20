@@ -33,6 +33,21 @@ describe('sia service', () => {
     });
   });
 
+  it('parseSyncOutput keeps multi-item arrays intact', () => {
+    const payload = [
+      { status: 'ok', registros: 1 },
+      { status: 'parcial', registros: 0 },
+    ];
+    expect(parseSyncOutput(JSON.stringify(payload))).toEqual(payload);
+  });
+
+  it('parseSyncOutput accepts plain object JSON', () => {
+    expect(parseSyncOutput('{"status":"ok","registros":5}')).toEqual({
+      status: 'ok',
+      registros: 5,
+    });
+  });
+
   it('parses JSON stdout on success', async () => {
     mockSpawn({
       stdout: JSON.stringify([
@@ -82,6 +97,28 @@ describe('sia service', () => {
     await expect(sincronizar('2026-05')).rejects.toMatchObject({
       status: 502,
       message: /JSON inválida/i,
+    });
+  });
+
+  it('rejects spawn process errors', async () => {
+    const proc = new EventEmitter();
+    proc.stdout = new EventEmitter();
+    proc.stderr = new EventEmitter();
+
+    spawn.mockImplementationOnce(() => {
+      process.nextTick(() => proc.emit('error', new Error('spawn failed')));
+      return proc;
+    });
+
+    await expect(sincronizar('2026-05')).rejects.toThrow('spawn failed');
+  });
+
+  it('uses stderr fallback when subprocess exits non-zero without message', async () => {
+    mockSpawn({ code: 2, stderr: '' });
+
+    await expect(sincronizar('2026-05')).rejects.toMatchObject({
+      status: 502,
+      message: /exit 2/i,
     });
   });
 });

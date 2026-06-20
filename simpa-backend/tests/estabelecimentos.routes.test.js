@@ -11,7 +11,7 @@ const {
   upsertEnrichment,
   updateEnriquecimento,
 } = require('../src/services/estabelecimentosService');
-const { listProcedimentos } = require('../src/services/procedimentosService');
+const { listProcedimentos, getProcedimentoById } = require('../src/services/procedimentosService');
 const { logAudit } = require('../src/services/auditService');
 const { authHeader, unidadeHeader } = require('./helpers/auth');
 const app = require('../src/app');
@@ -60,6 +60,11 @@ describe('estabelecimentos and procedimentos routes', () => {
     listProcedimentos.mockResolvedValue({
       data: [{ id: 2, codigo_sigtap: '0301010010', descricao: 'CONSULTA' }],
       pagination: { page: 1, limit: 50, total: 1, pages: 1 },
+    });
+    getProcedimentoById.mockResolvedValue({
+      id: 2,
+      codigo_sigtap: '0301010010',
+      descricao: 'CONSULTA',
     });
   });
 
@@ -171,6 +176,53 @@ describe('estabelecimentos and procedimentos routes', () => {
     expect(listProcedimentos).toHaveBeenCalled();
   });
 
+  it('GET /estabelecimentos propagates list errors', async () => {
+    const err = new Error('db down');
+    err.status = 500;
+    listEstabelecimentos.mockRejectedValueOnce(err);
+
+    const res = await request(app)
+      .get('/api/cadastros/estabelecimentos')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(500);
+  });
+
+  it('GET /procedimentos/:id returns detail', async () => {
+    const res = await request(app)
+      .get('/api/cadastros/procedimentos/2')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(res.body.codigo_sigtap).toBe('0301010010');
+    expect(getProcedimentoById).toHaveBeenCalledWith('2');
+  });
+
+  it('GET /procedimentos/:id propagates not found', async () => {
+    const err = new Error('Procedimento não encontrado');
+    err.status = 404;
+    getProcedimentoById.mockRejectedValueOnce(err);
+
+    const res = await request(app)
+      .get('/api/cadastros/procedimentos/999')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(404);
+  });
+
+  it('PUT /estabelecimentos/:id/perfil propagates validation errors', async () => {
+    const err = new Error('Perfil inválido');
+    err.status = 400;
+    updatePerfil.mockRejectedValueOnce(err);
+
+    const res = await request(app)
+      .put('/api/cadastros/estabelecimentos/1/perfil')
+      .set('Authorization', authHeader())
+      .send({ perfil: 'INVALIDO' });
+
+    expect(res.status).toBe(400);
+  });
+
   it('POST /procedimentos returns 405', async () => {
     const res = await request(app)
       .post('/api/cadastros/procedimentos')
@@ -179,6 +231,24 @@ describe('estabelecimentos and procedimentos routes', () => {
 
     expect(res.status).toBe(405);
     expect(res.body.error).toMatch(/somente leitura/i);
+  });
+
+  it('PUT /procedimentos/:id returns 405', async () => {
+    const res = await request(app)
+      .put('/api/cadastros/procedimentos/2')
+      .set('Authorization', authHeader())
+      .send({ descricao: 'X' });
+
+    expect(res.status).toBe(405);
+    expect(res.body.allow).toBe('GET');
+  });
+
+  it('DELETE /procedimentos/:id returns 405', async () => {
+    const res = await request(app)
+      .delete('/api/cadastros/procedimentos/2')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(405);
   });
 
   it('requires JWT', async () => {
