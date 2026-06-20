@@ -1,9 +1,8 @@
 const express = require('express');
+const dashboardRoutes = require('./dashboard');
 
 const router = express.Router();
 
-router.get('/v1/dashboard/planejamento', (_req, res) => {
-  res.status(501).json({ error: 'Dashboard em implementação (Task 05)' });
-});
+router.use('/v1/dashboard', dashboardRoutes);
 
 module.exports = router;

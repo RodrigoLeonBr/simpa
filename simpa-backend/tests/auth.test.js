@@ -107,7 +107,7 @@ describe('protected API routes', () => {
     expect(res.body.error).toMatch(/token/i);
   });
 
-  it('allows dashboard route with valid JWT', async () => {
+  it('returns 400 without competencia when authenticated', async () => {
     const jwt = require('jsonwebtoken');
     process.env.JWT_SECRET = 'test-secret-with-at-least-32-characters';
     const token = jwt.sign(
@@ -120,6 +120,7 @@ describe('protected API routes', () => {
       .get('/api/v1/dashboard/planejamento')
       .set('Authorization', `Bearer ${token}`);
 
-    expect(res.status).toBe(501);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/competencia/i);
   });
 });

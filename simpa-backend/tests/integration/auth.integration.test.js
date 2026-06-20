@@ -92,7 +92,8 @@ describeIfPg('auth integration', () => {
       .get('/api/v1/dashboard/planejamento')
       .set('Authorization', `Bearer ${login.body.token}`);
 
-    expect(res.status).toBe(501);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/competencia/i);
   });
 
   itIfPg('rejects invalid password with generic message', async () => {

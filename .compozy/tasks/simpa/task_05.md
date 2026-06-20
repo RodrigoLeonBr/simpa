@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Dashboard API
 type: backend
 complexity: medium
@@ -31,10 +31,10 @@ Implement the primary dashboard endpoint that reads `dados_consolidados` and ret
 </requirements>
 
 ## Subtasks
-- [ ] 5.1 Query builder for dados_consolidados with filters
-- [ ] 5.2 Envelope raw JSONB into full ContratoDashboard shape
-- [ ] 5.3 Consolidar endpoint with subprocess orchestration
-- [ ] 5.4 JSON schema test fixture from PRD Section 5
+- [x] 5.1 Query builder for dados_consolidados with filters
+- [x] 5.2 Envelope raw JSONB into full ContratoDashboard shape
+- [x] 5.3 Consolidar endpoint with subprocess orchestration
+- [x] 5.4 JSON schema test fixture from PRD Section 5
 
 ## Implementation Details
 
@@ -57,11 +57,11 @@ See PRD Section 5 and TechSpec **Core Interfaces** (ContratoDashboard).
 
 ## Tests
 - Unit tests:
-  - [ ] Envelope builder handles null KPIs correctly
-  - [ ] Missing competencia returns appropriate status
+  - [x] Envelope builder handles null KPIs correctly
+  - [x] Missing competencia returns appropriate status
 - Integration tests:
-  - [ ] GET dashboard with seed data matches JSON schema
-  - [ ] POST consolidar with mocked subprocess succeeds
+  - [x] GET dashboard with seed data matches JSON schema
+  - [x] POST consolidar with mocked subprocess succeeds
 - Test coverage target: >=80%
 - All tests must pass
 
