@@ -8,11 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "mock": "json-server --watch mock/db.json --port 3100 --routes mock/routes.json --middlewares mock/auth-middleware.cjs",
+    "mock": "node mock/server.cjs",
     "test": "vitest run --coverage",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "echarts": "^6.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.18.0"

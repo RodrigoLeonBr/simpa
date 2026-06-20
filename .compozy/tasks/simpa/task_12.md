@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Painel layouts A/B/C + ECharts
 type: frontend
 complexity: high
@@ -31,10 +31,10 @@ Implement the Painel module with three switchable layouts (A Cards+Trend, B Hero
 </requirements>
 
 ## Subtasks
-- [ ] 12.1 useDashboard hook wired to API/mock
-- [ ] 12.2 LayoutA: KPI grid + trend + ranking
-- [ ] 12.3 LayoutB: hero card + secondary KPIs + quality bars
-- [ ] 12.4 LayoutC: mini KPIs + dense unit table
+- [x] 12.1 useDashboard hook wired to API/mock
+- [x] 12.2 LayoutA: KPI grid + trend + ranking
+- [x] 12.3 LayoutB: hero card + secondary KPIs + quality bars
+- [x] 12.4 LayoutC: mini KPIs + dense unit table
 
 ## Implementation Details
 
@@ -56,10 +56,10 @@ See auth design spec Section 6 and SIMPA.dc.html scrPainel section.
 
 ## Tests
 - Unit tests:
-  - [ ] formatKpi(null) returns em dash
-  - [ ] Layout switcher changes visible panel
+  - [x] formatKpi(null) returns em dash
+  - [x] Layout switcher changes visible panel
 - Integration tests:
-  - [ ] useDashboard refetches on filter change
+  - [x] useDashboard refetches on filter change
 - Test coverage target: >=80%
 - All tests must pass
 

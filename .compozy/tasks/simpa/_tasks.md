@@ -15,7 +15,7 @@
 | 09 | Frontend scaffold + design system | completed | high | — |
 | 10 | Auth frontend + login page | completed | medium | task_04, task_09 |
 | 11 | App shell (Sidebar, Topbar, FilterBar) | completed | medium | task_09, task_10 |
-| 12 | Painel layouts A/B/C + ECharts | pending | high | task_05, task_11 |
+| 12 | Painel layouts A/B/C + ECharts | completed | high | task_05, task_11 |
 | 13 | Sala de Situação overlay | pending | medium | task_11, task_12 |
 | 14 | Indicadores, Metas e Relatórios | pending | high | task_11, task_12 |
 | 15 | Importação UI | pending | medium | task_06, task_11 |
