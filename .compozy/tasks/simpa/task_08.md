@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Cadastros & Admin API
 type: backend
 complexity: high
@@ -31,10 +31,10 @@ Implement CRUD REST APIs for all cadastro entities (Unidades, Equipes, Procedime
 </requirements>
 
 ## Subtasks
-- [ ] 8.1 Cadastros router with shared CRUD patterns
-- [ ] 8.2 Unidades and Equipes endpoints (existing schema)
-- [ ] 8.3 Phase 2 entity endpoints (procedimentos, prestadores, hospitais, emendas)
-- [ ] 8.4 Admin usuarios + audit + configuracoes routes
+- [x] 8.1 Cadastros router with shared CRUD patterns
+- [x] 8.2 Unidades and Equipes endpoints (existing schema)
+- [x] 8.3 Phase 2 entity endpoints (procedimentos, prestadores, hospitais, emendas)
+- [x] 8.4 Admin usuarios + audit + configuracoes routes
 
 ## Implementation Details
 
@@ -43,7 +43,6 @@ See `estrutura_simpa.md` Section 3.2 and auth design spec Sections 10–11.
 ### Relevant Files
 - `simpa-backend/src/routes/cadastros.js` — create
 - `simpa-backend/src/routes/admin.js` — create
-- `migration_003_cadastros_fase2.sql` — from Task 01
 
 ### Related ADRs
 - [ADR-004: Basic JWT Auth](../adrs/adr-004.md)
@@ -55,11 +54,11 @@ See `estrutura_simpa.md` Section 3.2 and auth design spec Sections 10–11.
 
 ## Tests
 - Unit tests:
-  - [ ] Validation rejects missing required CNES/SIGTAP fields
+  - [x] Validation rejects missing required CNES/SIGTAP fields
 - Integration tests:
-  - [ ] CRUD round-trip for unidades_saude
-  - [ ] Inactivate preserves row with status flag
-  - [ ] Non-admin cannot DELETE usuarios
+  - [x] CRUD round-trip for unidades_saude
+  - [x] Inactivate preserves row with status flag
+  - [x] Non-admin cannot DELETE usuarios
 - Test coverage target: >=80%
 - All tests must pass
 

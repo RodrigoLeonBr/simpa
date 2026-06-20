@@ -11,7 +11,7 @@
 | 05 | Dashboard API | completed | medium | task_02, task_03 |
 | 06 | Importação API | completed | high | task_02, task_03, task_04 |
 | 07 | SIA sync API | completed | medium | task_02, task_03, task_04 |
-| 08 | Cadastros & Admin API | pending | high | task_03, task_04 |
+| 08 | Cadastros & Admin API | completed | high | task_03, task_04 |
 | 09 | Frontend scaffold + design system | pending | high | — |
 | 10 | Auth frontend + login page | pending | medium | task_04, task_09 |
 | 11 | App shell (Sidebar, Topbar, FilterBar) | pending | medium | task_09, task_10 |
