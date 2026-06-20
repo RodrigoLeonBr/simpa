@@ -5,9 +5,16 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3001',
+      '/auth': 'http://localhost:3001',
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'tests/e2e/**', 'playwright.config.ts'],
     coverage: {
       provider: 'v8',
       include: [
@@ -25,8 +32,21 @@ export default defineConfig({
         'src/pages/Indicadores/**',
         'src/pages/Metas/**',
         'src/pages/Relatorios/**',
+        'src/pages/Importacao/**',
+        'src/pages/Cadastros/**',
+        'src/pages/Administracao/**',
+        'src/components/cadastros/**',
         'src/components/shared/**',
         'src/api/client.ts',
+        'src/api/cadastros.ts',
+        'src/api/importacao.ts',
+        'src/api/admin.ts',
+        'src/config/cadastroEntities.ts',
+        'src/utils/cadastroView.ts',
+        'src/utils/adminView.ts',
+        'src/utils/enrichmentView.ts',
+        'src/utils/estabelecimentosView.ts',
+        'src/hooks/useImportBadge.ts',
         'src/config/navigation.ts',
       ],
       thresholds: {

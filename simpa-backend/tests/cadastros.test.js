@@ -20,80 +20,61 @@ const {
 const { authHeader } = require('./helpers/auth');
 const app = require('../src/app');
 
-describe('cadastros routes', () => {
+describe('cadastros manual CRUD routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     listEntity.mockResolvedValue([]);
-    createEntity.mockResolvedValue({ id: 1, codigo: 'U01', nome: 'UBS' });
-    updateEntity.mockResolvedValue({ id: 1, nome: 'UBS Atualizada' });
+    createEntity.mockResolvedValue({ id: 1, codigo: 'EQ01', nome: 'Equipe 1' });
+    updateEntity.mockResolvedValue({ id: 1, nome: 'Equipe Atualizada' });
     inactivateEntity.mockResolvedValue({ inativado: true, id: 1 });
   });
 
-  it('GET /unidades lists active records', async () => {
-    listEntity.mockResolvedValueOnce([{ id: 1, nome: 'UBS' }]);
+  it('GET /equipes lists active records', async () => {
+    listEntity.mockResolvedValueOnce([{ id: 1, nome: 'Equipe 1' }]);
 
     const res = await request(app)
-      .get('/api/cadastros/unidades')
+      .get('/api/cadastros/equipes')
       .set('Authorization', authHeader());
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
-    expect(listEntity).toHaveBeenCalledWith('unidades', {});
+    expect(listEntity).toHaveBeenCalledWith('equipes', {});
   });
 
-  it('POST /unidades creates record', async () => {
+  it('POST /equipes creates record', async () => {
     const res = await request(app)
-      .post('/api/cadastros/unidades')
+      .post('/api/cadastros/equipes')
       .set('Authorization', authHeader())
-      .send({ codigo: 'U01', nome: 'UBS Centro', cnes: '1234567' });
+      .send({ codigo: 'EQ01', nome: 'Equipe 1' });
 
     expect(res.status).toBe(201);
-    expect(createEntity).toHaveBeenCalledWith('unidades', expect.any(Object));
+    expect(createEntity).toHaveBeenCalledWith('equipes', expect.any(Object));
   });
 
-  it('DELETE /unidades soft inactivates', async () => {
+  it('DELETE /equipes soft inactivates', async () => {
     const res = await request(app)
-      .delete('/api/cadastros/unidades/1')
+      .delete('/api/cadastros/equipes/1')
       .set('Authorization', authHeader());
 
     expect(res.status).toBe(200);
     expect(res.body.inativado).toBe(true);
-    expect(inactivateEntity).toHaveBeenCalledWith('unidades', '1');
+    expect(inactivateEntity).toHaveBeenCalledWith('equipes', '1');
   });
 
-  it('GET /procedimentos is available', async () => {
-    const res = await request(app)
-      .get('/api/cadastros/procedimentos')
-      .set('Authorization', authHeader());
-
-    expect(res.status).toBe(200);
-    expect(listEntity).toHaveBeenCalledWith('procedimentos', {});
-  });
-
-  it('PUT /unidades updates record', async () => {
-    const res = await request(app)
-      .put('/api/cadastros/unidades/1')
-      .set('Authorization', authHeader())
-      .send({ nome: 'UBS Atualizada', tipo: 'APS' });
-
-    expect(res.status).toBe(200);
-    expect(updateEntity).toHaveBeenCalledWith('unidades', '1', expect.any(Object));
-  });
-
-  it('propagates service errors', async () => {
+  it('propagates service errors for emendas', async () => {
     const err = new Error('db down');
     err.status = 500;
     listEntity.mockRejectedValueOnce(err);
 
     const res = await request(app)
-      .get('/api/cadastros/hospitais')
+      .get('/api/cadastros/emendas')
       .set('Authorization', authHeader());
 
     expect(res.status).toBe(500);
   });
 
   it('propagates POST validation errors', async () => {
-    const err = new Error('codigo é obrigatório');
+    const err = new Error('id_emenda é obrigatório');
     err.status = 400;
     createEntity.mockRejectedValueOnce(err);
 
@@ -118,7 +99,22 @@ describe('cadastros routes', () => {
   });
 
   it('requires JWT', async () => {
-    const res = await request(app).get('/api/cadastros/unidades');
+    const res = await request(app).get('/api/cadastros/equipes');
     expect(res.status).toBe(401);
+  });
+
+  it.each([
+    ['GET', '/api/cadastros/unidades'],
+    ['POST', '/api/cadastros/unidades'],
+    ['GET', '/api/cadastros/prestadores-mac'],
+    ['POST', '/api/cadastros/prestadores-mac'],
+    ['GET', '/api/cadastros/hospitais'],
+    ['POST', '/api/cadastros/hospitais'],
+  ])('%s %s returns 404 for removed legacy entity', async (method, path) => {
+    const res = await request(app)[method.toLowerCase()](path)
+      .set('Authorization', authHeader())
+      .send({ codigo: 'X', nome: 'Y' });
+
+    expect(res.status).toBe(404);
   });
 });

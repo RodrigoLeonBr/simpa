@@ -12,20 +12,42 @@ describe('FilterBar', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation((url: string) => {
-        if (url.includes('/cadastros/unidades')) {
+        if (url.includes('/cadastros/estabelecimentos?') && url.includes('perfil=APS')) {
           return Promise.resolve({
             ok: true,
-            json: async () => [
-              { id: 1, codigo: 'A', nome: 'Unidade A', tipo: 'APS', status: 'ativo' },
-              { id: 2, codigo: 'B', nome: 'Unidade B', tipo: 'APS', status: 'inativo' },
-            ],
+            json: async () => ({
+              data: [
+                {
+                  id: 1,
+                  codigo_externo: 'A',
+                  nome: 'Unidade A',
+                  perfil: 'APS',
+                  status: 'ativo',
+                },
+                {
+                  id: 2,
+                  codigo_externo: 'B',
+                  nome: 'Unidade B',
+                  perfil: 'APS',
+                  status: 'inativo',
+                },
+              ],
+              pagination: { page: 1, limit: 200, total: 2, pages: 1 },
+            }),
           });
         }
-        if (url.includes('/cadastros/equipes?unidade_id=1')) {
+        if (url.includes('/cadastros/equipes?estabelecimento_id=1')) {
           return Promise.resolve({
             ok: true,
             json: async () => [
-              { id: 10, codigo: 'E1', nome: 'Equipe 1', tipo: 'ESF', unidade_id: 1, status: 'ativo' },
+              {
+                id: 10,
+                codigo: 'E1',
+                nome: 'Equipe 1',
+                tipo: 'ESF',
+                estabelecimento_id: 1,
+                status: 'ativo',
+              },
             ],
           });
         }
@@ -34,7 +56,7 @@ describe('FilterBar', () => {
     );
   });
 
-  it('loads unidades and cascades equipe options', async () => {
+  it('loads APS estabelecimentos and cascades equipe options', async () => {
     render(
       <FiltersProvider>
         <FilterBar />

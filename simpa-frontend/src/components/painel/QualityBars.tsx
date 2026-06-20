@@ -2,7 +2,7 @@ import type { ContratoDashboard } from '../../types/contrato';
 import { formatPercent } from '../../utils/kpi';
 
 export function QualityBars({ data }: { data: ContratoDashboard }) {
-  return data.indicadores_qualidade.map((item) => {
+  return (data.indicadores_qualidade ?? []).map((item) => {
     const execPct = item.exec === null ? null : item.exec * 100;
     const metaPct = item.meta === null ? null : item.meta * 100;
     const width = execPct ?? 0;

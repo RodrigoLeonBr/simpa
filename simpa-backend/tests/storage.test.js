@@ -65,6 +65,28 @@ describe('storage', () => {
     expect(uploadsRoot()).toBe(process.env.UPLOAD_DIR);
   });
 
+  it('moveFile falls back to copy when rename crosses devices', () => {
+    const tmp = path.join(os.tmpdir(), `simpa-tmp-${Date.now()}.csv`);
+    const dest = buildPath('2026-05', 'U1', 'cross-device.csv');
+    fs.writeFileSync(tmp, 'cross-device');
+
+    const originalRename = fs.renameSync;
+    fs.renameSync = jest.fn(() => {
+      const err = new Error('cross-device link not permitted');
+      err.code = 'EXDEV';
+      throw err;
+    });
+
+    try {
+      moveFile(tmp, dest);
+      expect(fs.existsSync(dest)).toBe(true);
+      expect(fs.existsSync(tmp)).toBe(false);
+    } finally {
+      fs.renameSync = originalRename;
+      removeFile(dest);
+    }
+  });
+
   it('competenciaParts rejects invalid value', () => {
     expect(() => competenciaParts('invalid')).toThrow(/competencia/i);
   });

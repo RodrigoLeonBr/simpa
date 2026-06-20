@@ -1,5 +1,9 @@
 export function apiBase(): string {
-  return import.meta.env.VITE_API_BASE || 'http://localhost:3100';
+  const configured = import.meta.env.VITE_API_BASE;
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+  return import.meta.env.DEV ? 'http://localhost:3001' : '';
 }
 
 type UnauthorizedHandler = () => void;
@@ -17,7 +21,10 @@ export function setTokenProvider(provider: (() => string | null) | null): void {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
-  headers.set('Content-Type', 'application/json');
+  const isFormData = init?.body instanceof FormData;
+  if (!isFormData && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   const token = tokenProvider?.();
   if (token) {

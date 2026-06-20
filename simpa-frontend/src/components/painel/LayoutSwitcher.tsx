@@ -22,6 +22,7 @@ export function LayoutSwitcher({ layout, onChange }: LayoutSwitcherProps) {
             type="button"
             className={`painel-layout-btn${layout === option.id ? ' active' : ''}`}
             aria-pressed={layout === option.id}
+            data-testid={`layout-switch-${option.id.toLowerCase()}`}
             onClick={() => onChange(option.id)}
           >
             {option.label}

@@ -30,7 +30,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page" data-testid="login-page">
       <div className="login-left">
         <div className="login-left-glow" />
         <div className="login-brand">
@@ -70,7 +70,7 @@ export default function LoginPage() {
       </div>
 
       <div className="login-right">
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="login-form" onSubmit={handleSubmit} data-testid="login-form">
           <div className="login-form-kicker">Acesso restrito</div>
           <h2 className="login-form-title">Entrar na plataforma</h2>
           <p className="login-form-subtitle">Use suas credenciais institucionais.</p>
@@ -84,6 +84,7 @@ export default function LoginPage() {
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
                 required
+                data-testid="login-username"
               />
             </label>
 
@@ -96,12 +97,13 @@ export default function LoginPage() {
                 onChange={(event) => setSenha(event.target.value)}
                 autoComplete="current-password"
                 required
+                data-testid="login-password"
               />
             </label>
 
             {error ? <div className="login-error">{error}</div> : null}
 
-            <button type="submit" className="login-submit" disabled={loading}>
+            <button type="submit" className="login-submit" disabled={loading} data-testid="login-submit">
               {loading ? 'Entrando…' : 'Entrar'}
             </button>
           </div>

@@ -1,8 +1,10 @@
-# Development overrides — use: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Development overrides — use: docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.dev.yml up
+# Web stays published on WEB_PORT (default 8080), matching the Docker default on machines with Apache/XAMPP on :80.
+# Para hot-reload do frontend, use na raiz: npm run dev:api + npm run dev:web (Vite :5173).
 services:
   postgres:
     ports:
-      - '${PG_PORT:-5432}:5432'
+      - '${PG_PUBLISH_PORT:-5433}:5432'
 
   api:
     ports:

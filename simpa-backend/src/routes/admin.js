@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { query } = require('../services/db');
 const requireAdmin = require('../middleware/requireAdmin');
+const requireAdminOrPlanning = require('../middleware/requireAdminOrPlanning');
 const { logAudit } = require('../services/auditService');
 
 const router = express.Router();
@@ -13,11 +14,70 @@ const VALID_PERFIS = [
   'Planejamento',
 ];
 
-router.use(requireAdmin);
-
 function clientIp(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || null;
 }
+
+function validateSenha(senha) {
+  if (!senha || String(senha).length < 8) {
+    return 'senha deve ter ao menos 8 caracteres';
+  }
+  return null;
+}
+
+router.get('/audit-log', requireAdminOrPlanning, async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
+    const offset = (page - 1) * limit;
+
+    const conditions = [];
+    const params = [];
+
+    if (req.query.usuario_id) {
+      params.push(req.query.usuario_id);
+      conditions.push(`a.usuario_id = $${params.length}`);
+    }
+    if (req.query.acao) {
+      params.push(req.query.acao);
+      conditions.push(`a.acao = $${params.length}`);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const countResult = await query(
+      `SELECT COUNT(*)::int AS total FROM audit_log a ${where}`,
+      params
+    );
+    const total = countResult.rows[0].total;
+
+    params.push(limit, offset);
+    const { rows } = await query(
+      `SELECT a.id, a.usuario_id, u.username, a.acao, a.recurso,
+              a.detalhes, a.ip, a.criado_em
+       FROM audit_log a
+       LEFT JOIN usuarios u ON u.id = a.usuario_id
+       ${where}
+       ORDER BY a.criado_em DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    return res.json({
+      data: rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit) || 1,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.use(requireAdmin);
 
 router.get('/usuarios', async (req, res, next) => {
   try {
@@ -44,6 +104,11 @@ router.post('/usuarios', async (req, res, next) => {
 
     if (!VALID_PERFIS.includes(perfil)) {
       return res.status(400).json({ error: 'perfil inválido' });
+    }
+
+    const senhaError = validateSenha(senha);
+    if (senhaError) {
+      return res.status(400).json({ error: senhaError });
     }
 
     const senhaHash = await bcrypt.hash(senha, 10);
@@ -95,6 +160,10 @@ router.put('/usuarios/:id', async (req, res, next) => {
       sets.push(`ativo=$${params.length}`);
     }
     if (senha) {
+      const senhaError = validateSenha(senha);
+      if (senhaError) {
+        return res.status(400).json({ error: senhaError });
+      }
       const senhaHash = await bcrypt.hash(senha, 10);
       params.push(senhaHash);
       sets.push(`senha_hash=$${params.length}`);
@@ -102,6 +171,10 @@ router.put('/usuarios/:id', async (req, res, next) => {
 
     if (!sets.length) {
       return res.status(400).json({ error: 'Nenhum campo para atualizar' });
+    }
+
+    if (ativo === false && String(req.params.id) === String(req.user.id)) {
+      return res.status(403).json({ error: 'Não é possível inativar a própria conta' });
     }
 
     params.push(req.params.id);
@@ -131,6 +204,18 @@ router.put('/usuarios/:id', async (req, res, next) => {
 
 router.delete('/usuarios/:id', async (req, res, next) => {
   try {
+    const targetId = String(req.params.id);
+    if (targetId === String(req.user.id)) {
+      return res.status(403).json({ error: 'Não é possível inativar a própria conta' });
+    }
+
+    const admins = await query(
+      `SELECT id FROM usuarios WHERE perfil = 'Administrador' AND ativo = true`,
+    );
+    if (admins.rows.length === 1 && String(admins.rows[0].id) === targetId) {
+      return res.status(403).json({ error: 'Não é possível inativar o último administrador' });
+    }
+
     const { rows } = await query(
       `UPDATE usuarios SET ativo=false WHERE id=$1
        RETURNING id, username, ativo`,
@@ -150,58 +235,6 @@ router.delete('/usuarios/:id', async (req, res, next) => {
     });
 
     return res.json({ inativado: true, id: rows[0].id });
-  } catch (err) {
-    return next(err);
-  }
-});
-
-router.get('/audit-log', async (req, res, next) => {
-  try {
-    const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
-    const offset = (page - 1) * limit;
-
-    const conditions = [];
-    const params = [];
-
-    if (req.query.usuario_id) {
-      params.push(req.query.usuario_id);
-      conditions.push(`a.usuario_id = $${params.length}`);
-    }
-    if (req.query.acao) {
-      params.push(req.query.acao);
-      conditions.push(`a.acao = $${params.length}`);
-    }
-
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const countResult = await query(
-      `SELECT COUNT(*)::int AS total FROM audit_log a ${where}`,
-      params
-    );
-    const total = countResult.rows[0].total;
-
-    params.push(limit, offset);
-    const { rows } = await query(
-      `SELECT a.id, a.usuario_id, u.username, a.acao, a.recurso,
-              a.detalhes, a.ip, a.criado_em
-       FROM audit_log a
-       LEFT JOIN usuarios u ON u.id = a.usuario_id
-       ${where}
-       ORDER BY a.criado_em DESC
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
-    );
-
-    return res.json({
-      data: rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit) || 1,
-      },
-    });
   } catch (err) {
     return next(err);
   }

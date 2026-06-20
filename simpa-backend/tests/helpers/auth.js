@@ -27,4 +27,20 @@ function gestorHeader() {
   return `Bearer ${token}`;
 }
 
-module.exports = { authHeader, gestorHeader };
+function unidadeHeader() {
+  process.env.JWT_SECRET =
+    process.env.JWT_SECRET || 'test-secret-with-at-least-32-characters';
+  const token = jwt.sign(
+    {
+      sub: 3,
+      username: 'gestor-unidade',
+      nome: 'Gestor Unidade',
+      perfil: 'Gestor de Unidade',
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+  return `Bearer ${token}`;
+}
+
+module.exports = { authHeader, gestorHeader, unidadeHeader };

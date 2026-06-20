@@ -1,0 +1,31 @@
+{
+  "name": "simpa",
+  "private": true,
+  "description": "SIMPA — fullstack (API + React + Docker)",
+  "scripts": {
+    "install:all": "npm install --prefix simpa-backend && npm install --prefix simpa-frontend",
+    "build": "npm run build --prefix simpa-frontend",
+    "build:all": "npm run build --prefix simpa-frontend",
+    "dev:api": "npm run dev --prefix simpa-backend",
+    "dev:web": "npm run dev --prefix simpa-frontend",
+    "test": "npm test --prefix simpa-backend && npm test --prefix simpa-frontend",
+    "test:api": "npm test --prefix simpa-backend",
+    "test:web": "npm test --prefix simpa-frontend",
+    "test:py": "pytest -m \"not integration\"",
+    "test:py:integration": "pytest -m integration",
+    "test:e2e": "npm run test:e2e --prefix simpa-frontend",
+    "ci": "bash scripts/ci.sh",
+    "docker:build": "docker compose --env-file .env.docker build",
+    "docker:up": "docker compose --env-file .env.docker up -d --build",
+    "docker:prod:refresh": "powershell -ExecutionPolicy Bypass -File scripts/docker-prod-refresh.ps1",
+    "docker:down": "docker compose --env-file .env.docker down",
+    "docker:dev": "docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.dev.yml up --build",
+    "docker:dev:up": "docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.dev.yml up -d --build",
+    "docker:dev:refresh": "powershell -ExecutionPolicy Bypass -File scripts/docker-dev-refresh.ps1",
+    "docker:logs": "docker compose --env-file .env.docker logs -f",
+    "docker:smoke": "powershell -ExecutionPolicy Bypass -File scripts/smoke-compose.ps1",
+    "docker:test": "docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait",
+    "docker:test:down": "docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.test.yml down -v",
+    "seed:admin": "npm run seed:admin --prefix simpa-backend"
+  }
+}

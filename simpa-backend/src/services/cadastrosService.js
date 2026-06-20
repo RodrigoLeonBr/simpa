@@ -44,6 +44,30 @@ function buildUpdate(table, fields, values, id) {
   };
 }
 
+async function assertActiveEstabelecimento(estabelecimentoId) {
+  const { rows } = await query(
+    `SELECT id FROM estabelecimentos WHERE id = $1 AND status = 'ativo'`,
+    [estabelecimentoId]
+  );
+
+  if (!rows.length) {
+    const error = new Error('estabelecimento_id inválido ou inativo');
+    error.status = 400;
+    throw error;
+  }
+}
+
+async function validateEntityFk(key, data) {
+  const config = ENTITIES[key];
+  if (!config?.validateEstabelecimentoFk) {
+    return;
+  }
+
+  if (data.estabelecimento_id !== undefined && data.estabelecimento_id !== null) {
+    await assertActiveEstabelecimento(data.estabelecimento_id);
+  }
+}
+
 async function listEntity(key, queryParams = {}) {
   const config = ENTITIES[key];
   if (!config) {
@@ -52,20 +76,41 @@ async function listEntity(key, queryParams = {}) {
     throw error;
   }
 
-  let sql = config.listSql;
-  const params = [];
+  const params = { ...queryParams };
 
-  if (config.listFilterUnidade && queryParams.unidade_id) {
-    params.push(queryParams.unidade_id);
+  // Compat: FilterBar ainda envia unidade_id; IDs do shim = estabelecimento_id.
+  if (
+    key === 'equipes' &&
+    params.unidade_id &&
+    !params.estabelecimento_id
+  ) {
+    params.estabelecimento_id = params.unidade_id;
+  }
+
+  let sql = config.listSql;
+  const sqlParams = [];
+
+  if (config.listFilterEstabelecimento && params.estabelecimento_id) {
+    sqlParams.push(params.estabelecimento_id);
     sql = sql.replace(
-      '{{FILTER_UNIDADE}}',
-      `AND e.unidade_id = $${params.length}`
+      '{{FILTER_ESTABELECIMENTO}}',
+      `AND e.estabelecimento_id = $${sqlParams.length}`
     );
   } else {
+    sql = sql.replace('{{FILTER_ESTABELECIMENTO}}', '');
+  }
+
+  if (config.listFilterUnidade && params.unidade_id) {
+    sqlParams.push(params.unidade_id);
+    sql = sql.replace(
+      '{{FILTER_UNIDADE}}',
+      `AND e.unidade_id = $${sqlParams.length}`
+    );
+  } else if (sql.includes('{{FILTER_UNIDADE}}')) {
     sql = sql.replace('{{FILTER_UNIDADE}}', '');
   }
 
-  const { rows } = await query(sql, params);
+  const { rows } = await query(sql, sqlParams);
   return rows;
 }
 
@@ -79,6 +124,8 @@ async function createEntity(key, body) {
   }
 
   const data = pickFields(body, config.createFields);
+  await validateEntityFk(key, data);
+
   const fields = Object.keys(data);
   const { sql, params } = buildInsert(config.table, fields, fields.map((f) => data[f] ?? null));
   const { rows } = await query(sql, params);
@@ -94,6 +141,8 @@ async function updateEntity(key, id, body) {
     error.status = 400;
     throw error;
   }
+
+  await validateEntityFk(key, data);
 
   if (data.status === undefined) {
     data.status = 'ativo';
@@ -135,6 +184,8 @@ async function inactivateEntity(key, id) {
 
 module.exports = {
   validateRequired,
+  assertActiveEstabelecimento,
+  validateEntityFk,
   listEntity,
   createEntity,
   updateEntity,

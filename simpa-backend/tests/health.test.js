@@ -20,7 +20,7 @@ describe('GET /api/health', () => {
       .mockResolvedValueOnce({
         rows: [
           { tablename: 'esus_cargas' },
-          { tablename: 'unidades_saude' },
+          { tablename: 'estabelecimentos' },
           { tablename: 'usuarios' },
         ],
       });
@@ -34,7 +34,7 @@ describe('GET /api/health', () => {
     expect(res.body.mysql_configured).toBe(true);
     expect(res.body.schema_tables).toEqual([
       'esus_cargas',
-      'unidades_saude',
+      'estabelecimentos',
       'usuarios',
     ]);
     expect(res.headers['x-request-id']).toBeDefined();

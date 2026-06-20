@@ -43,6 +43,7 @@ export function Topbar({ title, crumb }: TopbarProps) {
           type="button"
           className="topbar-logout-btn"
           title="Sair"
+          data-testid="topbar-logout-btn"
           onClick={() => logout()}
         >
           ⏻

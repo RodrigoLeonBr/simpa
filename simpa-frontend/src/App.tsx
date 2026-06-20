@@ -35,7 +35,7 @@ export default function App() {
               <Route path="/metas" element={<MetasPage />} />
               <Route path="/indicadores" element={<IndicadoresPage />} />
               <Route path="/relatorios" element={<RelatoriosPage />} />
-              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/*" element={<AdminPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

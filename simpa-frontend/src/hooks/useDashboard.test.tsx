@@ -10,12 +10,12 @@ vi.mock('../api/dashboard', () => ({
 }));
 
 vi.mock('../api/cadastros', () => ({
-  fetchUnidades: vi.fn(),
+  fetchEstabelecimentosAps: vi.fn(),
   fetchEquipes: vi.fn(),
 }));
 
 import { fetchDashboard } from '../api/dashboard';
-import { fetchEquipes, fetchUnidades } from '../api/cadastros';
+import { fetchEquipes, fetchEstabelecimentosAps } from '../api/cadastros';
 
 function Wrapper({ children }: { children: ReactNode }) {
   return <FiltersProvider>{children}</FiltersProvider>;
@@ -23,7 +23,9 @@ function Wrapper({ children }: { children: ReactNode }) {
 
 describe('useDashboard', () => {
   beforeEach(() => {
-    vi.mocked(fetchUnidades).mockResolvedValue(mockDb.unidades as never);
+    vi.mocked(fetchEstabelecimentosAps).mockResolvedValue(
+      mockDb.estabelecimentos.filter((item) => item.perfil === 'APS') as never,
+    );
     vi.mocked(fetchEquipes).mockResolvedValue(mockDb.equipes as never);
     vi.mocked(fetchDashboard).mockResolvedValue(mockDb.planejamento[0] as never);
   });
@@ -75,6 +77,43 @@ describe('useDashboard', () => {
         'CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO',
         'EQUIPE 9 EAP',
       );
+    });
+  });
+
+  it('waits for unidades before applying unit filter to dashboard', async () => {
+    vi.mocked(fetchDashboard).mockClear();
+    let resolveAps: (value: unknown) => void = () => {};
+    vi.mocked(fetchEstabelecimentosAps).mockReturnValue(
+      new Promise((resolve) => {
+        resolveAps = resolve;
+      }) as never,
+    );
+
+    const { result } = renderHook(
+      () => ({
+        dashboard: useDashboard(),
+        filters: useFilters(),
+      }),
+      { wrapper: Wrapper },
+    );
+
+    act(() => {
+      result.current.filters.setUnidadeId(1);
+    });
+
+    const callsWithUnit = () =>
+      vi.mocked(fetchDashboard).mock.calls.filter(
+        (call) => call[1] === 'CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO',
+      );
+
+    expect(callsWithUnit()).toHaveLength(0);
+
+    await act(async () => {
+      resolveAps(mockDb.estabelecimentos.filter((item) => item.perfil === 'APS'));
+    });
+
+    await waitFor(() => {
+      expect(callsWithUnit().length).toBeGreaterThan(0);
     });
   });
 

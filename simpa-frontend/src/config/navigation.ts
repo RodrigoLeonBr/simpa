@@ -18,7 +18,7 @@ export type NavIconKey =
 export const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Painel', icon: 'painel', end: true },
   { to: '/cadastros', label: 'Cadastros', icon: 'cadastros' },
-  { to: '/importacao', label: 'Importação', icon: 'importacao', badge: '2' },
+  { to: '/importacao', label: 'Importação', icon: 'importacao' },
   { to: '/metas', label: 'Metas', icon: 'metas' },
   { to: '/indicadores', label: 'Indicadores', icon: 'indicadores' },
   { to: '/relatorios', label: 'Relatórios', icon: 'relatorios' },
@@ -44,6 +44,10 @@ const ROUTE_META: Record<string, RouteMeta> = {
 export function resolveRouteMeta(pathname: string): RouteMeta {
   if (pathname.startsWith('/cadastros')) {
     return ROUTE_META['/cadastros']!;
+  }
+
+  if (pathname.startsWith('/admin')) {
+    return ROUTE_META['/admin']!;
   }
 
   return ROUTE_META[pathname] ?? ROUTE_META['/']!;

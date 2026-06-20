@@ -11,6 +11,8 @@ services:
       - ./schema_full.sql:/docker-entrypoint-initdb.d/01-schema_full.sql:ro
       - ./migration_002_auth.sql:/docker-entrypoint-initdb.d/02-migration_002_auth.sql:ro
       - ./migration_003_cadastros_fase2.sql:/docker-entrypoint-initdb.d/03-migration_003_cadastros_fase2.sql:ro
+      - ./migration_004_cadastros_sync.sql:/docker-entrypoint-initdb.d/04-migration_004_cadastros_sync.sql:ro
+      - ./migration_005_estabelecimentos_perfil_enrichment.sql:/docker-entrypoint-initdb.d/05-migration_005_estabelecimentos_perfil_enrichment.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:
@@ -28,7 +30,7 @@ services:
       dockerfile: Dockerfile.api
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.docker
     environment:
       PG_HOST: postgres
       PG_PORT: 5432
@@ -40,6 +42,7 @@ services:
       - ./parse_esus_csv.py:/app/parse_esus_csv.py:ro
       - ./consolidate_dashboard.py:/app/consolidate_dashboard.py:ro
       - ./sync_sia_mysql.py:/app/sync_sia_mysql.py:ro
+      - ./sync_cadastros_mysql.py:/app/sync_cadastros_mysql.py:ro
       - ./etl_contract.py:/app/etl_contract.py:ro
       - ./etl_db.py:/app/etl_db.py:ro
     depends_on:
@@ -58,6 +61,12 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider http://127.0.0.1/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - simpa-net
 

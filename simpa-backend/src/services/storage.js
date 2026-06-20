@@ -39,7 +39,17 @@ function hashFile(filePath) {
 
 function moveFile(tmpPath, destPath) {
   fs.mkdirSync(path.dirname(destPath), { recursive: true });
-  fs.renameSync(tmpPath, destPath);
+  try {
+    fs.renameSync(tmpPath, destPath);
+  } catch (err) {
+    // Windows: multer temp dir (often C:) and UPLOAD_DIR may live on another drive.
+    if (err.code === 'EXDEV') {
+      fs.copyFileSync(tmpPath, destPath);
+      fs.unlinkSync(tmpPath);
+      return;
+    }
+    throw err;
+  }
 }
 
 function removeFile(filePath) {

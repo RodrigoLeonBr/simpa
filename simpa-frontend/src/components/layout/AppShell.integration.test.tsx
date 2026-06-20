@@ -37,12 +37,21 @@ describe('AppShell integration', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation((url: string) => {
-        if (url.includes('/cadastros/unidades')) {
+        if (url.includes('/cadastros/estabelecimentos?') && url.includes('perfil=APS')) {
           return Promise.resolve({
             ok: true,
-            json: async () => [
-              { id: 1, codigo: 'CAFI001', nome: 'CAFI', tipo: 'APS', status: 'ativo' },
-            ],
+            json: async () => ({
+              data: [
+                {
+                  id: 1,
+                  codigo_externo: 'CAFI001',
+                  nome: 'CAFI',
+                  perfil: 'APS',
+                  status: 'ativo',
+                },
+              ],
+              pagination: { page: 1, limit: 200, total: 1, pages: 1 },
+            }),
           });
         }
         if (url.includes('/cadastros/equipes')) {

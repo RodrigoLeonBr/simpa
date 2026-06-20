@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchEquipes, fetchUnidades } from '../api/cadastros';
+import { fetchEquipes, fetchEstabelecimentosAps } from '../api/cadastros';
 import { fetchDashboard } from '../api/dashboard';
 import { useFilters } from './useFilters';
 import type { ContratoDashboard, Unidade } from '../types/contrato';
+import { mapEstabelecimentosToUnidades } from '../utils/estabelecimentosView';
 
 export interface DashboardViewModel {
   data: ContratoDashboard;
@@ -13,6 +14,7 @@ export function useDashboard() {
   const { competencia, unidadeId, equipeId } = useFilters();
   const [data, setData] = useState<ContratoDashboard | null>(null);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
+  const [unidadesLoaded, setUnidadesLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,13 +23,38 @@ export function useDashboard() {
     [competencia, unidadeId, equipeId],
   );
 
+  const unidadeNomeMap = useMemo(
+    () => new Map(unidades.map((item) => [item.id, item.nome])),
+    [unidades],
+  );
+
   useEffect(() => {
-    fetchUnidades()
-      .then(setUnidades)
-      .catch(() => setUnidades([]));
+    let cancelled = false;
+
+    fetchEstabelecimentosAps()
+      .then((items) => {
+        if (!cancelled) {
+          setUnidades(mapEstabelecimentosToUnidades(items));
+          setUnidadesLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUnidades([]);
+          setUnidadesLoaded(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
+    if (unidadeId !== null && !unidadesLoaded) {
+      return;
+    }
+
     let cancelled = false;
 
     async function loadDashboard() {
@@ -35,9 +62,7 @@ export function useDashboard() {
       setError(null);
 
       try {
-        const unidadeNome = unidadeId
-          ? unidades.find((item) => item.id === unidadeId)?.nome
-          : undefined;
+        const unidadeNome = unidadeId ? unidadeNomeMap.get(unidadeId) : undefined;
         let equipeNome: string | undefined;
 
         if (equipeId && unidadeId) {
@@ -67,7 +92,7 @@ export function useDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [filterKey, competencia, unidadeId, equipeId, unidades.length]);
+  }, [filterKey, competencia, unidadeId, equipeId, unidadesLoaded, unidadeNomeMap]);
 
   return { data, unidades, loading, error };
 }

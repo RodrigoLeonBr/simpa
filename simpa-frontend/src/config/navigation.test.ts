@@ -3,7 +3,7 @@ import { resolveRouteMeta } from './navigation';
 
 describe('navigation config', () => {
   it('resolves cadastros sub-routes to cadastros metadata', () => {
-    expect(resolveRouteMeta('/cadastros/unidades')).toEqual({
+    expect(resolveRouteMeta('/cadastros/estabelecimentos')).toEqual({
       title: 'Cadastros',
       crumb: 'CRUD',
       showFilters: false,

@@ -259,6 +259,20 @@ def test_consolidate_missing_filters(pg_dsn):
     assert proc.returncode == 1
 
 
+def test_sync_cadastros_dry_run_cli():
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / "sync_cadastros_mysql.py"), "--dry-run"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 1, proc.stderr
+    payload = json.loads(proc.stdout)
+    assert payload["status"] == "erro"
+    assert payload["error"] == "MySQL_XAMPP_UNAVAILABLE"
+
+
 def test_sync_sia_json_out_cli():
     proc = subprocess.run(
         [

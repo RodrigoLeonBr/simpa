@@ -23,7 +23,7 @@ export default function PainelPage() {
   const moduleStatuses = buildModuleStatuses(data);
 
   return (
-    <div className="painel-page simpa-rise">
+    <div className="painel-page simpa-rise" data-testid="painel-page">
       <div className="painel-header">
         <div>
           <h2 className="painel-title">Painel gerencial</h2>

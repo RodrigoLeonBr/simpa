@@ -13,6 +13,7 @@ const requestLogger = require('./middleware/requestLogger');
 const verifyJWT = require('./middleware/verifyJWT');
 const authRoutes = require('./routes/auth');
 const healthRoutes = require('./routes/health');
+const configRoutes = require('./routes/config');
 const apiRoutes = require('./routes/api');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(requestLogger);
 
 app.use('/auth', authRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/config', configRoutes);
 app.use('/api', verifyJWT, apiRoutes);
 
 app.use(errorHandler);

@@ -10,7 +10,7 @@ router.get('/', async (_req, res) => {
     const tables = await query(`
       SELECT tablename FROM pg_tables
       WHERE schemaname = 'public'
-        AND tablename IN ('esus_cargas', 'usuarios', 'unidades_saude')
+        AND tablename IN ('esus_cargas', 'usuarios', 'estabelecimentos')
       ORDER BY tablename
     `);
     const mysql = await probeMysql();

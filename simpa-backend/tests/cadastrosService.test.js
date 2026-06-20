@@ -17,52 +17,33 @@ describe('cadastrosService validation', () => {
     jest.clearAllMocks();
   });
 
-  it('rejects missing required CNES context fields for unidades', () => {
-    const result = validateRequired({ nome: 'UBS Centro' }, ['codigo', 'nome']);
+  it('rejects missing required fields for emendas', () => {
+    const result = validateRequired({ esfera: 'federal' }, ['id_emenda', 'esfera']);
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/codigo/i);
+    expect(result.error).toMatch(/id_emenda/i);
   });
 
-  it('rejects missing codigo_sigtap for procedimentos', async () => {
-    await expect(
-      createEntity('procedimentos', { descricao: 'Consulta médica' })
-    ).rejects.toMatchObject({
-      status: 400,
-      message: /codigo_sigtap/i,
-    });
-    expect(query).not.toHaveBeenCalled();
-  });
-
-  it('rejects missing descricao for procedimentos', async () => {
-    await expect(
-      createEntity('procedimentos', { codigo_sigtap: '0301010072' })
-    ).rejects.toMatchObject({
-      status: 400,
-      message: /descricao/i,
-    });
-  });
-
-  it('creates procedimento when SIGTAP fields are present', async () => {
+  it('creates emenda when required fields are present', async () => {
     query.mockResolvedValueOnce({
-      rows: [{ id: 1, codigo_sigtap: '0301010072', descricao: 'Consulta' }],
+      rows: [{ id: 1, id_emenda: 'EM-2026-01', esfera: 'federal' }],
     });
 
-    const row = await createEntity('procedimentos', {
-      codigo_sigtap: '0301010072',
-      descricao: 'Consulta',
+    const row = await createEntity('emendas', {
+      id_emenda: 'EM-2026-01',
+      esfera: 'federal',
     });
 
-    expect(row.codigo_sigtap).toBe('0301010072');
+    expect(row.id_emenda).toBe('EM-2026-01');
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO procedimentos'),
-      expect.arrayContaining(['0301010072', 'Consulta'])
+      expect.stringContaining('INSERT INTO emendas_parlamentares'),
+      expect.arrayContaining(['EM-2026-01', 'federal'])
     );
   });
 
   it('inactivate preserves row with status flag', async () => {
     query.mockResolvedValueOnce({ rows: [{ id: 9 }] });
 
-    const result = await inactivateEntity('unidades', 9);
+    const result = await inactivateEntity('equipes', 9);
 
     expect(result).toEqual({ inativado: true, id: 9 });
     expect(query).toHaveBeenCalledWith(
@@ -71,14 +52,14 @@ describe('cadastrosService validation', () => {
     );
   });
 
-  it('listEntity filters equipes by unidade_id', async () => {
+  it('listEntity filters equipes by estabelecimento_id', async () => {
     query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
 
-    const rows = await listEntity('equipes', { unidade_id: '5' });
+    const rows = await listEntity('equipes', { estabelecimento_id: '5' });
 
     expect(rows).toHaveLength(1);
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('e.unidade_id = $1'),
+      expect.stringContaining('e.estabelecimento_id = $1'),
       ['5']
     );
   });
@@ -87,12 +68,12 @@ describe('cadastrosService validation', () => {
     query.mockResolvedValueOnce({ rows: [] });
 
     await expect(
-      updateEntity('unidades', 404, { nome: 'X' })
+      updateEntity('emendas', 404, { autor: 'X' })
     ).rejects.toMatchObject({ status: 404 });
   });
 
   it('updateEntity rejects empty payload', async () => {
-    await expect(updateEntity('unidades', 1, {})).rejects.toMatchObject({
+    await expect(updateEntity('equipes', 1, {})).rejects.toMatchObject({
       status: 400,
     });
   });
@@ -105,7 +86,20 @@ describe('cadastrosService validation', () => {
     });
   });
 
+  it('requires estabelecimento_id on equipe create', async () => {
+    await expect(
+      createEntity('equipes', { codigo: 'EQ1', nome: 'Equipe' })
+    ).rejects.toMatchObject({
+      status: 400,
+      message: /estabelecimento_id/i,
+    });
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('listEntity throws for unknown resource', async () => {
-    await expect(listEntity('invalid')).rejects.toMatchObject({ status: 404 });
+    await expect(listEntity('unidades')).rejects.toMatchObject({ status: 404 });
+    await expect(listEntity('procedimentos')).rejects.toMatchObject({
+      status: 404,
+    });
   });
 });

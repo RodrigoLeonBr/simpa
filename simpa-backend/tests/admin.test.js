@@ -26,6 +26,22 @@ function gestorHeader() {
   return `Bearer ${token}`;
 }
 
+function planejamentoHeader() {
+  process.env.JWT_SECRET =
+    process.env.JWT_SECRET || 'test-secret-with-at-least-32-characters';
+  const token = jwt.sign(
+    {
+      sub: 5,
+      username: 'plan',
+      nome: 'Planejamento',
+      perfil: 'Planejamento',
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+  return `Bearer ${token}`;
+}
+
 describe('admin routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -104,6 +120,28 @@ describe('admin routes', () => {
     expect(res.body.pagination.total).toBe(1);
   });
 
+  it('Planejamento can read audit-log', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ total: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/admin/audit-log')
+      .set('Authorization', planejamentoHeader());
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+  });
+
+  it('Planejamento cannot list usuarios', async () => {
+    const res = await request(app)
+      .get('/api/admin/usuarios')
+      .set('Authorization', planejamentoHeader());
+
+    expect(res.status).toBe(403);
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('PUT /configuracoes upserts settings', async () => {
     query.mockResolvedValueOnce({
       rows: [{ chave: 'competencia_ativa_padrao', valor: '2026-05' }],
@@ -136,9 +174,11 @@ describe('admin routes', () => {
   });
 
   it('DELETE /usuarios/:id inactivates user', async () => {
-    query.mockResolvedValueOnce({
-      rows: [{ id: 4, username: 'old', ativo: false }],
-    });
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }, { id: 4 }] })
+      .mockResolvedValueOnce({
+        rows: [{ id: 4, username: 'old', ativo: false }],
+      });
 
     const res = await request(app)
       .delete('/api/admin/usuarios/4')
@@ -270,5 +310,29 @@ describe('admin routes', () => {
       });
 
     expect(res.status).toBe(400);
+  });
+
+  it('rejects short password on create', async () => {
+    const res = await request(app)
+      .post('/api/admin/usuarios')
+      .set('Authorization', authHeader())
+      .send({
+        username: 'novo',
+        senha: '123',
+        nome: 'Novo',
+        perfil: 'Planejamento',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/8 caracteres/);
+  });
+
+  it('blocks admin from inactivating own account', async () => {
+    const res = await request(app)
+      .delete('/api/admin/usuarios/1')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(403);
+    expect(query).not.toHaveBeenCalled();
   });
 });

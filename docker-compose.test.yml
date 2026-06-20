@@ -1,0 +1,15 @@
+# CI / E2E test overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait
+services:
+  postgres:
+    ports:
+      - '${PG_PUBLISH_PORT:-5433}:5432'
+
+  api:
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-test-secret-with-at-least-32-characters-for-ci}
+      NODE_ENV: production
+
+  web:
+    ports:
+      - '${WEB_PORT:-8080}:80'

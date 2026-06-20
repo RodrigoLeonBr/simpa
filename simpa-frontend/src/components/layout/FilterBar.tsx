@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchEquipes, fetchUnidades, type Equipe, type Unidade } from '../../api/cadastros';
+import { fetchEquipes, fetchEstabelecimentosAps, type Equipe } from '../../api/cadastros';
+import type { Estabelecimento } from '../../types/cadastros';
+import { activeEstabelecimentos } from '../../utils/estabelecimentosView';
 import { useFilters } from '../../hooks/useFilters';
 
 export function FilterBar() {
   const { competencia, unidadeId, equipeId, competencias, setCompetencia, setUnidadeId, setEquipeId } =
     useFilters();
-  const [unidades, setUnidades] = useState<Unidade[]>([]);
+  const [estabelecimentos, setEstabelecimentos] = useState<Estabelecimento[]>([]);
   const [equipes, setEquipes] = useState<Equipe[]>([]);
 
   useEffect(() => {
-    fetchUnidades()
-      .then(setUnidades)
-      .catch(() => setUnidades([]));
+    fetchEstabelecimentosAps()
+      .then(setEstabelecimentos)
+      .catch(() => setEstabelecimentos([]));
   }, []);
 
   useEffect(() => {
@@ -25,9 +27,9 @@ export function FilterBar() {
       .catch(() => setEquipes([]));
   }, [unidadeId]);
 
-  const unidadeOptions = useMemo(
-    () => unidades.filter((item) => item.status !== 'inativo'),
-    [unidades],
+  const estabelecimentoOptions = useMemo(
+    () => activeEstabelecimentos(estabelecimentos),
+    [estabelecimentos],
   );
 
   const equipeOptions = useMemo(
@@ -36,13 +38,14 @@ export function FilterBar() {
   );
 
   return (
-    <div className="filter-bar">
+    <div className="filter-bar" data-testid="filter-bar">
       <label className="filter-field">
         <span className="filter-label">Competência</span>
         <select
           className="filter-select mono"
           value={competencia}
           onChange={(event) => setCompetencia(event.target.value)}
+          data-testid="filter-competencia"
         >
           {competencias.map((item) => (
             <option key={item} value={item}>
@@ -61,9 +64,10 @@ export function FilterBar() {
             const next = event.target.value ? Number(event.target.value) : null;
             setUnidadeId(next);
           }}
+          data-testid="filter-unidade"
         >
           <option value="">Todas as unidades</option>
-          {unidadeOptions.map((item) => (
+          {estabelecimentoOptions.map((item) => (
             <option key={item.id} value={item.id}>
               {item.nome}
             </option>

@@ -112,6 +112,17 @@
       "registros_identificados": 540,
       "registros_nao_identificados": 0,
       "importado_em": "2026-06-13T17:50:00"
+    },
+    {
+      "id": 2,
+      "tipo_relatorio": "atendimento_individual",
+      "competencia": "2026-04-01",
+      "unidade": "UBS JARDIM SAO PAULO",
+      "equipe_nome": "ESF 07",
+      "arquivo_origem": "atend-ind-202604.csv",
+      "registros_identificados": null,
+      "registros_nao_identificados": null,
+      "importado_em": "2026-06-12T10:00:00"
     }
   ],
   "unidades": [
@@ -120,6 +131,7 @@
       "codigo": "CAFI001",
       "nome": "CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO",
       "tipo": "APS",
+      "cnes": "1234567",
       "status": "ativo"
     },
     {
@@ -127,6 +139,7 @@
       "codigo": "UBS002",
       "nome": "UBS JARDIM SAO PAULO",
       "tipo": "APS",
+      "cnes": "7654321",
       "status": "ativo"
     },
     {
@@ -134,7 +147,52 @@
       "codigo": "HOSP001",
       "nome": "HOSPITAL MUNICIPAL DR. SYLVIO DE MATTOS",
       "tipo": "Hospitalar",
+      "cnes": "9988776",
       "status": "ativo"
+    }
+  ],
+  "estabelecimentos": [
+    {
+      "id": 1,
+      "codigo_externo": "CAFI001",
+      "nome": "CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO",
+      "cnpj": null,
+      "re_tipo": "A",
+      "tipouni": "1",
+      "perfil": "APS",
+      "area": 1,
+      "relatorio": null,
+      "status": "ativo",
+      "sincronizado_em": "2026-06-20T12:00:00Z",
+      "enriquecimento": {}
+    },
+    {
+      "id": 2,
+      "codigo_externo": "UBS002",
+      "nome": "UBS JARDIM SAO PAULO",
+      "cnpj": null,
+      "re_tipo": "A",
+      "tipouni": "1",
+      "perfil": "APS",
+      "area": 1,
+      "relatorio": null,
+      "status": "ativo",
+      "sincronizado_em": "2026-06-20T12:00:00Z",
+      "enriquecimento": {}
+    },
+    {
+      "id": 3,
+      "codigo_externo": "HOSP001",
+      "nome": "HOSPITAL MUNICIPAL DR. SYLVIO DE MATTOS",
+      "cnpj": null,
+      "re_tipo": "H",
+      "tipouni": "3",
+      "perfil": "Hospitalar",
+      "area": 1,
+      "relatorio": null,
+      "status": "ativo",
+      "sincronizado_em": "2026-06-20T12:00:00Z",
+      "enriquecimento": { "leitos": { "clinico": 50 } }
     }
   ],
   "equipes": [
@@ -168,6 +226,29 @@
       "nome": "EAP 03",
       "tipo": "EAP",
       "unidade_id": 2,
+      "status": "ativo"
+    }
+  ],
+  "procedimentos": [
+    {
+      "id": 1,
+      "codigo_sigtap": "0301010072",
+      "descricao": "Consulta médica em atenção primária",
+      "tipo": "Consulta",
+      "tabela_referencia": "SIGTAP",
+      "valor_referencia": 10,
+      "status": "ativo"
+    }
+  ],
+  "emendas": [
+    {
+      "id": 1,
+      "id_emenda": "EM2026-001",
+      "esfera": "Federal",
+      "tipo": "Emenda Individual",
+      "autor": "Dep. Silva",
+      "objeto": "Aquisição de equipamentos APS",
+      "valor_repassado": 250000,
       "status": "ativo"
     }
   ]
