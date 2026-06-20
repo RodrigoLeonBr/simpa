@@ -1,0 +1,6 @@
+{
+  "/api/importacao/cargas": "/cargas",
+  "/api/cadastros/unidades": "/unidades",
+  "/api/cadastros/equipes": "/equipes",
+  "/api/v1/dashboard/planejamento": "/planejamento/2026-05_CAFI_EQ9"
+}

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Frontend scaffold + design system
 type: frontend
 complexity: high
@@ -29,10 +29,10 @@ Bootstrap `simpa-frontend/` with Vite, React 18, TypeScript, Tailwind, React Rou
 </requirements>
 
 ## Subtasks
-- [ ] 9.1 Initialize Vite project and Tailwind
-- [ ] 9.2 Port design tokens to index.css (:root and [data-theme="dark"])
-- [ ] 9.3 Create contrato.ts types and mock/db.json
-- [ ] 9.4 Setup React Router skeleton with placeholder routes
+- [x] 9.1 Initialize Vite project and Tailwind
+- [x] 9.2 Port design tokens to index.css (:root and [data-theme="dark"])
+- [x] 9.3 Create contrato.ts types and mock/db.json
+- [x] 9.4 Setup React Router skeleton with placeholder routes
 
 ## Implementation Details
 
@@ -54,10 +54,10 @@ See auth design spec Section 2 and Plano C Task 1.
 
 ## Tests
 - Unit tests:
-  - [ ] Theme toggle sets data-theme on documentElement
-  - [ ] Contrato types compile against mock fixture
+  - [x] Theme toggle sets data-theme on documentElement
+  - [x] Contrato types compile against mock fixture
 - Integration tests:
-  - [ ] fetch mock dashboard returns 200
+  - [x] fetch mock dashboard returns 200
 - Test coverage target: >=80% on utils
 - All tests must pass
 

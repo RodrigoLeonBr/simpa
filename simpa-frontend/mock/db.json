@@ -1,0 +1,136 @@
+{
+  "planejamento": [
+    {
+      "id": "2026-05_CAFI_EQ9",
+      "plataforma": "SIMPA - Sistema Integrado de Monitoramento e Planejamento de Americana",
+      "versao_schema": "3.1.0",
+      "competencia": "2026-05",
+      "municipio": "AMERICANA",
+      "filtros_ativos": {
+        "unidade": "CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO",
+        "equipe": "EQUIPE 9 EAP"
+      },
+      "kpis_gerais": {
+        "total_atendimentos_aps": 540,
+        "total_procedimentos_ambulatoriais": 1426,
+        "total_participantes_coletivos": 810,
+        "atendimentos_odonto": 209
+      },
+      "modulos": {
+        "atencao_primaria_esus": {
+          "distribuicao_turnos": [
+            { "turno": "Manhã", "atendimentos": 575, "procedimentos": 882 },
+            { "turno": "Tarde", "atendimentos": 455, "procedimentos": 543 }
+          ],
+          "temas_coletivos": [
+            { "tema": "Alimentação saudável", "quantidade": 37 },
+            { "tema": "Autocuidado de pessoas com doenças crônicas", "quantidade": 37 },
+            { "tema": "Saúde mental", "quantidade": 6 }
+          ],
+          "distribuicao_faixa_etaria": [
+            { "faixa": "0-4", "masculino": 12, "feminino": 15 },
+            { "faixa": "20-29", "masculino": 22, "feminino": 55 },
+            { "faixa": "60-69", "masculino": 40, "feminino": 68 }
+          ],
+          "historico_mensal": [
+            { "competencia": "2026-04", "atendimentos": 515, "procedimentos": 1320, "meta": 600 },
+            { "competencia": "2026-05", "atendimentos": 540, "procedimentos": 1426, "meta": 600 }
+          ]
+        },
+        "ambulatorial_sia": {
+          "status_conexao": "MySQL_XAMPP_CONNECTED",
+          "procedimentos_especializados": [
+            {
+              "codigo_sigtap": "0205020046",
+              "descricao": "ULTRASSONOGRAFIA DE ABDOMEN TOTAL",
+              "quantidade": 11
+            }
+          ]
+        },
+        "hospitalar_sihd": {
+          "status_importacao": "PENDING_AIH_FILE",
+          "internacoes_por_capitulo_cid": []
+        },
+        "financiamento_metas": {
+          "classificacao_geral": "BOM",
+          "indicadores": [
+            { "codigo": "C1", "nome": "Acesso e Vínculo", "valor": null, "meta": null },
+            { "codigo": "B1", "nome": "1ª consulta odontológica", "valor": null, "meta": null }
+          ]
+        },
+        "elementos_futuros": {}
+      },
+      "emendas_parlamentares": [],
+      "indicadores_qualidade": [
+        {
+          "cod": "C1",
+          "nomeCurto": "Acesso e Vínculo",
+          "nome": "Acesso e Vínculo",
+          "categoria": "Componente Qualidade APS",
+          "meta": null,
+          "exec": null,
+          "num": "—",
+          "den": "—",
+          "fonte": "Relatório de Atendimento Individual",
+          "periodicidade": "Quadrimestral"
+        },
+        {
+          "cod": "B1",
+          "nomeCurto": "1ª consulta odontológica",
+          "nome": "1ª consulta odontológica programada",
+          "categoria": "Componente Qualidade APS",
+          "meta": null,
+          "exec": null,
+          "num": "—",
+          "den": "—",
+          "fonte": "Relatório de Atendimento Odontológico",
+          "periodicidade": "Quadrimestral"
+        },
+        {
+          "cod": "IGM",
+          "nomeCurto": "IGM SUS Paulista",
+          "nome": "Indicador de Gestão Municipal",
+          "categoria": "IGM SUS Paulista",
+          "meta": null,
+          "exec": null,
+          "num": "—",
+          "den": "—",
+          "fonte": "Consolidado SIMPA",
+          "periodicidade": "Anual"
+        }
+      ]
+    }
+  ],
+  "cargas": [
+    {
+      "id": 1,
+      "tipo_relatorio": "atendimento_individual",
+      "competencia": "2026-05-01",
+      "unidade": "CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO",
+      "equipe_nome": "EQUIPE 9 EAP",
+      "arquivo_origem": "atend-ind-202605.csv",
+      "registros_identificados": 540,
+      "registros_nao_identificados": 0,
+      "importado_em": "2026-06-13T17:50:00"
+    }
+  ],
+  "unidades": [
+    {
+      "id": 1,
+      "codigo": "CAFI001",
+      "nome": "CAFI CENTRO DE ASSISTENCIA A FAMILIA E AO IDOSO",
+      "tipo": "APS",
+      "status": "ativo"
+    }
+  ],
+  "equipes": [
+    {
+      "id": 1,
+      "codigo": "0002200376",
+      "nome": "EQUIPE 9 EAP",
+      "tipo": "EAP",
+      "unidade_id": 1,
+      "status": "ativo"
+    }
+  ]
+}
