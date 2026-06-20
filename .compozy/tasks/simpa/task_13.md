@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Sala de Situação overlay
 type: frontend
 complexity: medium
@@ -31,10 +31,10 @@ Implement the fullscreen Sala de Situação telão as an overlay (no route chang
 </requirements>
 
 ## Subtasks
-- [ ] 13.1 Situacao overlay component with z-index 50
-- [ ] 13.2 KPI grid (4 columns) with IBM Plex Mono 34px values
-- [ ] 13.3 ECharts dark trend + quality progress bars
-- [ ] 13.4 Wire Topbar button to toggle isSituacao
+- [x] 13.1 Situacao overlay component with z-index 50
+- [x] 13.2 KPI grid (4 columns) with IBM Plex Mono 34px values
+- [x] 13.3 ECharts dark trend + quality progress bars
+- [x] 13.4 Wire Topbar button to toggle isSituacao
 
 ## Implementation Details
 
@@ -54,11 +54,11 @@ See auth design spec Section 5 and SIMPA.dc.html isSituacao block lines 82–133
 
 ## Tests
 - Unit tests:
-  - [ ] openSituacao sets isSituacao true
-  - [ ] closeSituacao restores false
-  - [ ] Overlay renders above shell (portal/fixed)
+  - [x] openSituacao sets isSituacao true
+  - [x] closeSituacao restores false
+  - [x] Overlay renders above shell (portal/fixed)
 - Integration tests:
-  - [ ] KPI values match dashboard data source
+  - [x] KPI values match dashboard data source
 - Test coverage target: >=80%
 - All tests must pass
 

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Indicadores, Metas e Relatórios
 type: frontend
 complexity: high
@@ -31,10 +31,10 @@ Implement three analytics modules porting SIMPA.dc.html: Indicadores (catalog + 
 </requirements>
 
 ## Subtasks
-- [ ] 14.1 Indicadores page with catalog selection state
-- [ ] 14.2 Metas page with atingimento calculation display
-- [ ] 14.3 Relatórios benchmarking with indicator selector
-- [ ] 14.4 Shared progress bar and status badge components
+- [x] 14.1 Indicadores page with catalog selection state
+- [x] 14.2 Metas page with atingimento calculation display
+- [x] 14.3 Relatórios benchmarking with indicator selector
+- [x] 14.4 Shared progress bar and status badge components
 
 ## Implementation Details
 
@@ -55,11 +55,11 @@ See auth design spec Sections 7–9 and SIMPA.dc.html scrIndic/scrMetas/scrRelat
 
 ## Tests
 - Unit tests:
-  - [ ] Meta status: >=100% green, 90-99% amber, <90% red
-  - [ ] null exec renders em dash not 0%
-  - [ ] Export button shows toast not throw
+  - [x] Meta status: >=100% green, 90-99% amber, <90% red
+  - [x] null exec renders em dash not 0%
+  - [x] Export button shows toast not throw
 - Integration tests:
-  - [ ] Selecting catalog item updates detail panel
+  - [x] Selecting catalog item updates detail panel
 - Test coverage target: >=80%
 - All tests must pass
 

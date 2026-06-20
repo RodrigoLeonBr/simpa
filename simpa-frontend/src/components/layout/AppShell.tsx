@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { resolveRouteMeta } from '../../config/navigation';
 import { useApp } from '../../contexts/AppContext';
+import { SituacaoOverlay } from '../../pages/Situacao';
 import { Logo } from '../Logo';
 import { FilterBar } from './FilterBar';
 import { Sidebar } from './Sidebar';
@@ -8,7 +9,7 @@ import { Topbar } from './Topbar';
 
 export function AppShell() {
   const location = useLocation();
-  const { isSituacao, closeSituacao } = useApp();
+  const { isSituacao } = useApp();
   const meta = resolveRouteMeta(location.pathname);
 
   return (
@@ -31,17 +32,7 @@ export function AppShell() {
         </main>
       </div>
 
-      {isSituacao ? (
-        <div className="situacao-overlay" role="dialog" aria-modal="true" aria-label="Sala de Situação">
-          <div className="situacao-overlay-content">
-            <h2>Sala de Situação</h2>
-            <p>Overlay fullscreen será implementado na task 13.</p>
-            <button type="button" className="btn-primary" onClick={closeSituacao}>
-              Fechar
-            </button>
-          </div>
-        </div>
-      ) : null}
+      {isSituacao ? <SituacaoOverlay /> : null}
     </div>
   );
 }
