@@ -113,3 +113,83 @@ WEB_PORT=8080
 ## nginx
 
 Config: `docker/nginx.conf` — proxy `/api` e `/auth` para serviço `api`.
+
+## Deploy remoto (build local, sem compilar no servidor)
+
+Para máquinas de produção com pouco recurso: **compile aqui**, transfira o pacote, **suba lá sem `--build`**.
+
+### Fluxo resumido
+
+| Etapa | Onde | Comando |
+|-------|------|---------|
+| 1. Exportar pacote | PC de desenvolvimento | `npm run docker:release:export` ou `exportar-docker-release.bat` |
+| 2. Transferir | scp/rsync/USB | pasta `release/simpa-<versão>/` ou `.zip` |
+| 3. Configurar env | Servidor remoto | `cp .env.docker.example .env.docker` + editar segredos |
+| 4. Subir stack | Servidor remoto | `bash scripts/deploy-release.sh` |
+
+### PC de desenvolvimento (build)
+
+Pré-requisito: `.env.docker` configurado (só para `PG_PASS` no compose build context).
+
+```powershell
+# Compila api + web e gera pacote em release/simpa-<versão>/
+npm run docker:release:export
+
+# Opcional: só compilar, sem empacotar
+npm run docker:release:build
+
+# Versão customizada
+powershell -File scripts/docker-release-export.ps1 -Version "1.2.0"
+```
+
+Saída:
+
+- `release/simpa-<versão>/` — pasta completa para o servidor
+- `release/simpa-<versão>.zip` — mesmo conteúdo compactado
+
+O pacote inclui: imagens `.tar`, `docker-compose.yml`, `docker-compose.deploy.yml`, SQL, scripts ETL montados como volume, e `scripts/deploy-release.sh`.
+
+### Servidor remoto (sem build)
+
+```bash
+unzip simpa-2026.06.21.zip
+cd simpa-2026.06.21
+cp .env.docker.example .env.docker
+# Editar PG_PASS, JWT_SECRET, MYSQL_*, WEB_PORT
+# IMPORTANTE: SIMPA_VERSION deve ser igual à versão do pacote (ex.: 2026.06.21-HHmm)
+nano .env.docker
+
+bash scripts/deploy-release.sh
+```
+
+Atualizar release mantendo dados do Postgres:
+
+```bash
+bash scripts/deploy-release.sh --recreate
+```
+
+Windows no servidor:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/deploy-release.ps1
+```
+
+### Variável SIMPA_VERSION
+
+Definida em `.env.docker`. Deve coincidir com a tag das imagens no pacote.
+
+As imagens são nomeadas `simpa-api:<versão>` e `simpa-web:<versão>`. O `docker-compose.deploy.yml` remove o bloco `build` e usa `--no-build`.
+
+### Importar pacote já descompactado (dev)
+
+```powershell
+powershell -File scripts/docker-release-import.ps1 -BundlePath release/simpa-2026.06.21-HHmm
+```
+
+Requer `.env.docker` **dentro** da pasta do pacote com `SIMPA_VERSION` correto.
+
+### Requisitos no servidor remoto
+
+- Docker Engine + Docker Compose v2.24+ (suporte a `build: !reset null`)
+- Portas livres: `WEB_PORT` (default 8080), `PG_PUBLISH_PORT` (opcional, default 5433)
+- MySQL acessível se usar sync SIA (`MYSQL_HOST` — em Linux use IP do host, não `host.docker.internal`)

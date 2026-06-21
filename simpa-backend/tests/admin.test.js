@@ -2,11 +2,25 @@ jest.mock('../src/services/db');
 jest.mock('../src/services/auditService', () => ({
   logAudit: jest.fn().mockResolvedValue(undefined),
 }));
+jest.mock('../src/services/backupService', () => ({
+  listBackups: jest.fn().mockReturnValue([]),
+  createBackup: jest.fn().mockResolvedValue({
+    filename: 'simpa-backup-2026-06-21T12-00-00-000Z.sql',
+    size: 100,
+    created_at: '2026-06-21T12:00:00.000Z',
+  }),
+  resolveBackupPath: jest.fn(),
+  safeBackupFilename: jest.fn((name) => name),
+  deleteBackup: jest.fn().mockReturnValue(true),
+  restoreFromStored: jest.fn().mockResolvedValue({ mode: 'psql' }),
+  restoreFromUpload: jest.fn().mockResolvedValue({ mode: 'psql' }),
+}));
 
 const jwt = require('jsonwebtoken');
 const request = require('supertest');
 const bcrypt = require('bcrypt');
 const { query } = require('../src/services/db');
+const backupService = require('../src/services/backupService');
 const { authHeader } = require('./helpers/auth');
 const app = require('../src/app');
 
@@ -334,5 +348,53 @@ describe('admin routes', () => {
 
     expect(res.status).toBe(403);
     expect(query).not.toHaveBeenCalled();
+  });
+
+  it('blocks non-admin from backup routes', async () => {
+    const res = await request(app)
+      .get('/api/admin/backup')
+      .set('Authorization', gestorHeader());
+
+    expect(res.status).toBe(403);
+  });
+
+  it('admin can create and list backups', async () => {
+    backupService.listBackups.mockReturnValue([
+      {
+        filename: 'simpa-backup-2026-06-21T12-00-00-000Z.sql',
+        size: 100,
+        created_at: '2026-06-21T12:00:00.000Z',
+      },
+    ]);
+
+    const createRes = await request(app)
+      .post('/api/admin/backup')
+      .set('Authorization', authHeader());
+
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.filename).toMatch(/^simpa-backup-/);
+    expect(backupService.createBackup).toHaveBeenCalled();
+
+    const listRes = await request(app)
+      .get('/api/admin/backup')
+      .set('Authorization', authHeader());
+
+    expect(listRes.status).toBe(200);
+    expect(listRes.body).toHaveLength(1);
+  });
+
+  it('admin can restore stored backup with confirmation', async () => {
+    const res = await request(app)
+      .post('/api/admin/backup/restore')
+      .set('Authorization', authHeader())
+      .field('confirm', 'RESTAURAR')
+      .field('filename', 'simpa-backup-2026-06-21T12-00-00-000Z.sql');
+
+    expect(res.status).toBe(200);
+    expect(res.body.restored).toBe(true);
+    expect(backupService.restoreFromStored).toHaveBeenCalledWith(
+      'simpa-backup-2026-06-21T12-00-00-000Z.sql',
+      'RESTAURAR'
+    );
   });
 });

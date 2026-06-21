@@ -6,6 +6,7 @@ import {
   canReadAuditLog,
 } from '../../utils/adminView';
 import { AuditLogPage } from './AuditLog';
+import { BackupPage } from './Backup';
 import { ConfiguracoesPage } from './Configuracoes';
 import { UsuariosPage } from './Usuarios';
 
@@ -39,6 +40,14 @@ function AdminSubNav() {
           className={({ isActive }) => `admin-subnav-link${isActive ? ' active' : ''}`}
         >
           Configurações
+        </NavLink>
+      ) : null}
+      {showUsers ? (
+        <NavLink
+          to="/admin/backup"
+          className={({ isActive }) => `admin-subnav-link${isActive ? ' active' : ''}`}
+        >
+          Backup
         </NavLink>
       ) : null}
     </nav>
@@ -87,6 +96,14 @@ export default function AdminPage() {
           element={
             <AdminOnly>
               <ConfiguracoesPage />
+            </AdminOnly>
+          }
+        />
+        <Route
+          path="backup"
+          element={
+            <AdminOnly>
+              <BackupPage />
             </AdminOnly>
           }
         />

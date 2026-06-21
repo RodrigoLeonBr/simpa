@@ -23,6 +23,7 @@ export default defineConfig({
         'src/contexts/**',
         'src/hooks/useFilters.tsx',
         'src/hooks/useDashboard.ts',
+        'src/hooks/usePaginatedCatalog.ts',
         'src/components/ProtectedRoute.tsx',
         'src/components/Logo.tsx',
         'src/components/layout/**',

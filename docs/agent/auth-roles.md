@@ -48,8 +48,24 @@ Rotas em `routes/admin.js` (prefixo `/api/admin`):
 | POST | `/usuarios` | requireAdmin |
 | PUT | `/usuarios/:id` | requireAdmin |
 | DELETE | `/usuarios/:id` | requireAdmin |
+| GET | `/configuracoes` | requireAdmin |
+| PUT | `/configuracoes` | requireAdmin |
+| GET | `/backup` | requireAdmin |
+| POST | `/backup` | requireAdmin |
+| GET | `/backup/:filename` | requireAdmin |
+| DELETE | `/backup/:filename` | requireAdmin |
+| POST | `/backup/restore` | requireAdmin |
 
-Frontend: `pages/Admin/UsuariosPage.tsx`, `AuditoriaPage.tsx`, `api/admin.ts`.
+Frontend: `pages/Administracao/` (Usuários, Auditoria, Configurações, Backup), `api/admin.ts`.
+
+### Backup PostgreSQL
+
+UI em **Administração → Backup**. Gera/restaura `.sql` sem ferramentas externas para o operador.
+
+- Backups armazenados em `uploads/backups/` (volume Docker).
+- Docker: container `api` inclui `postgresql-client` (`pg_dump` / `psql`).
+- Restauração exige confirmação `RESTAURAR` (registrada em `audit_log`).
+- Variáveis: `BACKUP_MAX_STORED` (default 10), `BACKUP_MAX_RESTORE_MB` (default 500).
 
 ## Auditoria
 

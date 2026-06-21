@@ -8,10 +8,12 @@ import {
   createUsuario,
   fetchAuditLog,
   fetchConfiguracoes,
+  fetchBackups,
   fetchUsuarios,
   inactivateUsuario,
   updateConfiguracoes,
   updateUsuario,
+  createBackup,
 } from '../../api/admin';
 import AdminPage from './index';
 
@@ -23,6 +25,11 @@ vi.mock('../../api/admin', () => ({
   fetchAuditLog: vi.fn(),
   fetchConfiguracoes: vi.fn(),
   updateConfiguracoes: vi.fn(),
+  fetchBackups: vi.fn(),
+  createBackup: vi.fn(),
+  deleteBackup: vi.fn(),
+  downloadBackup: vi.fn(),
+  restoreBackup: vi.fn(),
 }));
 
 function renderAdmin(initialEntry: string, perfil: string) {
@@ -54,6 +61,7 @@ describe('Administração pages', () => {
       pagination: { page: 1, limit: 20, total: 0, pages: 1 },
     });
     vi.mocked(fetchConfiguracoes).mockResolvedValue([]);
+    vi.mocked(fetchBackups).mockResolvedValue([]);
     vi.mocked(createUsuario).mockResolvedValue({
       id: 2,
       username: 'novo',
@@ -290,5 +298,33 @@ describe('Administração pages', () => {
         }),
       ]);
     });
+  });
+
+  it('renders backup page and creates backup', async () => {
+    vi.mocked(fetchBackups)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          filename: 'simpa-backup-2026-06-21T12-00-00-000Z.sql',
+          size: 2048,
+          created_at: '2026-06-21T12:00:00.000Z',
+        },
+      ]);
+    vi.mocked(createBackup).mockResolvedValue({
+      filename: 'simpa-backup-2026-06-21T12-00-00-000Z.sql',
+      size: 2048,
+      created_at: '2026-06-21T12:00:00.000Z',
+    });
+
+    const user = userEvent.setup();
+    renderAdmin('/admin/backup', 'Administrador');
+
+    expect(await screen.findByTestId('admin-backup-empty')).toBeInTheDocument();
+    await user.click(screen.getByTestId('admin-backup-create'));
+
+    await waitFor(() => {
+      expect(createBackup).toHaveBeenCalled();
+    });
+    expect(await screen.findByTestId('admin-backup-table')).toBeInTheDocument();
   });
 });

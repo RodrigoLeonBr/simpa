@@ -1,10 +1,12 @@
 import type { CadastroEntityKey } from '../config/cadastroEntities';
 import type {
+  CadastroRecord,
   CbosListResponse,
   CadastroSyncRecord,
   CadastroSyncResult,
   EnrichmentBySlug,
   EnrichmentSlug,
+  Equipe,
   Estabelecimento,
   EstabelecimentoEnriquecimento,
   EstabelecimentoPerfil,
@@ -15,39 +17,7 @@ import type {
 import { apiFetch } from './client';
 import { ESTABELECIMENTOS_APS_QUERY } from '../utils/estabelecimentosView';
 
-export interface Equipe {
-  id: number;
-  codigo: string;
-  nome: string;
-  tipo: string;
-  estabelecimento_id?: number;
-  unidade_id?: number;
-  unidade_nome?: string;
-  status: string;
-}
-
-export interface Procedimento {
-  id: number;
-  codigo_sigtap: string;
-  descricao: string;
-  tipo: string;
-  tabela_referencia?: string | null;
-  valor_referencia?: number | null;
-  status: string;
-}
-
-export interface Emenda {
-  id: number;
-  id_emenda: string;
-  esfera: string;
-  tipo?: string | null;
-  autor?: string | null;
-  objeto?: string | null;
-  valor_repassado?: number | null;
-  status: string;
-}
-
-export type CadastroRecord = Equipe | Procedimento | Emenda;
+export type { CadastroRecord, Emenda, Equipe } from '../types/cadastros';
 
 function cadastroPath(key: CadastroEntityKey): string {
   return `/api/cadastros/${key}`;

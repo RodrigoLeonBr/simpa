@@ -1,9 +1,13 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const fs = require('fs');
+const multer = require('multer');
+const os = require('os');
 const { query } = require('../services/db');
 const requireAdmin = require('../middleware/requireAdmin');
 const requireAdminOrPlanning = require('../middleware/requireAdminOrPlanning');
 const { logAudit } = require('../services/auditService');
+const backupService = require('../services/backupService');
 
 const router = express.Router();
 
@@ -13,6 +17,13 @@ const VALID_PERFIS = [
   'Gestor de Unidade',
   'Planejamento',
 ];
+
+const MAX_RESTORE_BYTES =
+  Math.max(1, parseInt(process.env.BACKUP_MAX_RESTORE_MB || '500', 10)) * 1024 * 1024;
+const restoreUpload = multer({
+  dest: os.tmpdir(),
+  limits: { fileSize: MAX_RESTORE_BYTES, files: 1 },
+});
 
 function clientIp(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || null;
@@ -297,6 +308,104 @@ router.put('/configuracoes', async (req, res, next) => {
     return res.json(updated);
   } catch (err) {
     return next(err);
+  }
+});
+
+router.get('/backup', async (_req, res, next) => {
+  try {
+    return res.json(backupService.listBackups());
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/backup', async (req, res, next) => {
+  try {
+    const backup = await backupService.createBackup();
+    await logAudit({
+      usuarioId: req.user.id,
+      acao: 'backup_create',
+      recurso: `admin/backup/${backup.filename}`,
+      detalhes: { size: backup.size },
+      ip: clientIp(req),
+    });
+    return res.status(201).json(backup);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/backup/:filename', async (req, res, next) => {
+  try {
+    const filepath = backupService.resolveBackupPath(req.params.filename);
+    if (!filepath) {
+      return res.status(404).json({ error: 'Backup não encontrado' });
+    }
+    res.setHeader('Content-Type', 'application/sql; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${backupService.safeBackupFilename(req.params.filename)}"`
+    );
+    fs.createReadStream(filepath).pipe(res);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.delete('/backup/:filename', async (req, res, next) => {
+  try {
+    const removed = backupService.deleteBackup(req.params.filename);
+    if (!removed) {
+      return res.status(404).json({ error: 'Backup não encontrado' });
+    }
+    await logAudit({
+      usuarioId: req.user.id,
+      acao: 'backup_delete',
+      recurso: `admin/backup/${req.params.filename}`,
+      detalhes: {},
+      ip: clientIp(req),
+    });
+    return res.json({ deleted: true, filename: req.params.filename });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/backup/restore', restoreUpload.single('file'), async (req, res, next) => {
+  let tempPath = req.file?.path;
+  try {
+    const confirm = req.body?.confirm;
+    let result;
+
+    if (req.file) {
+      if (!req.file.originalname.toLowerCase().endsWith('.sql')) {
+        return res.status(400).json({ error: 'Envie um arquivo .sql de backup' });
+      }
+      result = await backupService.restoreFromUpload(req.file.path, confirm);
+    } else if (req.body?.filename) {
+      result = await backupService.restoreFromStored(req.body.filename, confirm);
+    } else {
+      return res.status(400).json({ error: 'Informe file (upload) ou filename (backup armazenado)' });
+    }
+
+    await logAudit({
+      usuarioId: req.user.id,
+      acao: 'backup_restore',
+      recurso: 'admin/backup/restore',
+      detalhes: {
+        filename: req.body?.filename || req.file?.originalname,
+        mode: result.mode,
+      },
+      ip: clientIp(req),
+    });
+
+    return res.json({ restored: true, mode: result.mode });
+  } catch (err) {
+    return next(err);
+  } finally {
+    if (tempPath) {
+      fs.promises.unlink(tempPath).catch(() => {});
+    }
   }
 });
 

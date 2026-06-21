@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildEstabelecimentosQuery,
+  buildPaginatedCatalogQuery,
   buildProcedimentosQuery,
+  buildFormasQuery,
+  buildCbosQuery,
   canEditEnrichment,
   canViewEnrichment,
   formatCatalogCount,
@@ -57,6 +60,43 @@ describe('enrichmentView', () => {
       limit: '200',
       page: '3',
       q: 'consulta',
+    });
+  });
+
+  it('buildPaginatedCatalogQuery omits q when search is empty or whitespace', () => {
+    expect(buildPaginatedCatalogQuery('', 1)).toEqual({ limit: '200', page: '1' });
+    expect(buildPaginatedCatalogQuery('   ', 2)).toEqual({ limit: '200', page: '2' });
+  });
+
+  it('buildPaginatedCatalogQuery trims search and applies page', () => {
+    expect(buildPaginatedCatalogQuery('  consulta  ', 4)).toEqual({
+      limit: '200',
+      page: '4',
+      q: 'consulta',
+    });
+  });
+
+  it('buildPaginatedCatalogQuery merges extra filters', () => {
+    expect(buildPaginatedCatalogQuery('ubs', 2, { perfil: 'MAC', status: 'ativo' })).toEqual({
+      limit: '200',
+      page: '2',
+      perfil: 'MAC',
+      status: 'ativo',
+      q: 'ubs',
+    });
+  });
+
+  it('buildFormasQuery and buildCbosQuery match paginated catalog shape', () => {
+    const expected = { limit: '200', page: '1', q: 'abc' };
+    expect(buildFormasQuery('abc')).toEqual(expected);
+    expect(buildCbosQuery('abc')).toEqual(expected);
+  });
+
+  it('buildEstabelecimentosQuery omits perfil when empty', () => {
+    expect(buildEstabelecimentosQuery('', 'termo', 1)).toEqual({
+      limit: '200',
+      page: '1',
+      q: 'termo',
     });
   });
 

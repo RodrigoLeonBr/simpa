@@ -36,6 +36,12 @@ export interface Configuracao {
   atualizado_em?: string;
 }
 
+export interface DbBackupMeta {
+  filename: string;
+  size: number;
+  created_at: string;
+}
+
 export const ADMIN_PERFIS = [
   'Administrador',
   'Gestor Secretaria',

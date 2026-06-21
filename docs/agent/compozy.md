@@ -21,6 +21,20 @@ Workflows concluídos movem para `.compozy/tasks/_archived/<timestamp>-<slug>/`.
 
 ## Workflows arquivados
 
+### `frontend-manutenibilidade` (ativo)
+
+Local: `.compozy/tasks/frontend-manutenibilidade/`
+
+| Artefato | Conteúdo |
+|----------|----------|
+| `_idea.md` | Análise build 882 KB + hotspots manutenibilidade |
+| `_prd.md` | Refactor incremental 4 fases; catálogo, lazy load, CRUD hook |
+| `_techspec.md` | Hooks, componentes, vite chunks, split utils/enrichment |
+| `_tasks.md` | 16 tasks — **pending** |
+| `adrs/adr-001` … `005` | Fases incrementais, catalog, lazy routes, useEntityCrud, CSS |
+
+**Próximo:** `compozy tasks validate --name frontend-manutenibilidade` → executar task_01.
+
 ### `importacao-depara-unidade-equipe`
 
 Local: `.compozy/tasks/_archived/1781996141048-c9181226-importacao-depara-unidade-equipe/`

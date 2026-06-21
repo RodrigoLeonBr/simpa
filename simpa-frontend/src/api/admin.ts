@@ -2,8 +2,9 @@ import type {
   AdminUsuario,
   AuditLogResponse,
   Configuracao,
+  DbBackupMeta,
 } from '../types/admin';
-import { apiFetch } from './client';
+import { apiDownload, apiFetch } from './client';
 
 export function fetchUsuarios(): Promise<AdminUsuario[]> {
   return apiFetch<AdminUsuario[]>('/api/admin/usuarios');
@@ -60,5 +61,40 @@ export function updateConfiguracoes(
   return apiFetch<Configuracao[]>('/api/admin/configuracoes', {
     method: 'PUT',
     body: JSON.stringify({ configuracoes }),
+  });
+}
+
+export function fetchBackups(): Promise<DbBackupMeta[]> {
+  return apiFetch<DbBackupMeta[]>('/api/admin/backup');
+}
+
+export function createBackup(): Promise<DbBackupMeta> {
+  return apiFetch<DbBackupMeta>('/api/admin/backup', { method: 'POST' });
+}
+
+export function deleteBackup(filename: string): Promise<{ deleted: boolean; filename: string }> {
+  return apiFetch(`/api/admin/backup/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+}
+
+export function downloadBackup(filename: string): Promise<void> {
+  return apiDownload(`/api/admin/backup/${encodeURIComponent(filename)}`, filename);
+}
+
+export function restoreBackup(payload: {
+  filename?: string;
+  file?: File;
+  confirm: string;
+}): Promise<{ restored: boolean; mode: string }> {
+  const form = new FormData();
+  form.append('confirm', payload.confirm);
+  if (payload.file) {
+    form.append('file', payload.file);
+  }
+  if (payload.filename) {
+    form.append('filename', payload.filename);
+  }
+  return apiFetch('/api/admin/backup/restore', {
+    method: 'POST',
+    body: form,
   });
 }

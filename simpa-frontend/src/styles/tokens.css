@@ -1,0 +1,53 @@
+:root {
+  --bg-app: #eef2f7;
+  --bg-card: #ffffff;
+  --bg-sidebar: #0c2236;
+  --bg-topbar: #ffffff;
+  --bg-filterbar: #ffffff;
+  --bg-input: #f7f9fc;
+  --border: #e2e9f1;
+  --border-input: #dde5ee;
+  --text-primary: #0f1b2d;
+  --text-secondary: #5a6b80;
+  --text-muted: #8595a8;
+  --text-sidebar: #9fb3c8;
+  --text-sidebar-active: #ffffff;
+  --brand: #0b5fad;
+  --brand-hover: #0a528f;
+  --brand-bg: #e7eef6;
+  --green: #1f8a5b;
+  --green-bg: #e6f3ec;
+  --amber: #c8862b;
+  --amber-bg: #fbf0dd;
+  --red: #c0392b;
+  --red-bg: #fbe6e3;
+  --sidebar-active-bg: #0b5fad;
+  --scrollbar-thumb: #c3cedb;
+}
+
+[data-theme='dark'] {
+  --bg-app: #070f1c;
+  --bg-card: #0e1a2e;
+  --bg-sidebar: #050c18;
+  --bg-topbar: #0a1525;
+  --bg-filterbar: #0a1525;
+  --bg-input: #0d1b2e;
+  --border: #1c2c44;
+  --border-input: #21374f;
+  --text-primary: #eaf1fa;
+  --text-secondary: #8499b3;
+  --text-muted: #6f86a3;
+  --text-sidebar: #9fb3c8;
+  --text-sidebar-active: #ffffff;
+  --brand: #0b5fad;
+  --brand-hover: #3b9bff;
+  --brand-bg: #13243c;
+  --green: #1f8a5b;
+  --green-bg: #0d2318;
+  --amber: #c8862b;
+  --amber-bg: #1e1507;
+  --red: #c0392b;
+  --red-bg: #200d0b;
+  --sidebar-active-bg: #0b5fad;
+  --scrollbar-thumb: #21374f;
+}

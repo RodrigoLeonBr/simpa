@@ -132,6 +132,30 @@ export interface Cbo {
   sincronizado_em?: string | null;
 }
 
+export interface Equipe {
+  id: number;
+  codigo: string;
+  nome: string;
+  tipo: string;
+  estabelecimento_id?: number;
+  unidade_id?: number;
+  unidade_nome?: string;
+  status: string;
+}
+
+export interface Emenda {
+  id: number;
+  id_emenda: string;
+  esfera: string;
+  tipo?: string | null;
+  autor?: string | null;
+  objeto?: string | null;
+  valor_repassado?: number | null;
+  status: string;
+}
+
+export type CadastroRecord = Equipe | Emenda;
+
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {

@@ -29,6 +29,7 @@ services:
       - simpa-net
 
   api:
+    image: simpa-api:${SIMPA_VERSION:-latest}
     build:
       context: .
       dockerfile: Dockerfile.api
@@ -56,6 +57,7 @@ services:
       - simpa-net
 
   web:
+    image: simpa-web:${SIMPA_VERSION:-latest}
     build:
       context: .
       dockerfile: Dockerfile.web

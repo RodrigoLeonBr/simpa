@@ -78,55 +78,44 @@ export function validateEnrichmentForm(values: EnrichmentFormValues): Record<str
   return errors;
 }
 
+export function buildPaginatedCatalogQuery(
+  q: string,
+  page = 1,
+  extra?: Record<string, string>,
+): Record<string, string> {
+  const query: Record<string, string> = {
+    limit: '200',
+    page: String(page),
+    ...extra,
+  };
+  if (q.trim()) {
+    query.q = q.trim();
+  }
+  return query;
+}
+
 export function buildEstabelecimentosQuery(
   perfil: string,
   q: string,
   page = 1,
 ): Record<string, string> {
-  const query: Record<string, string> = {
-    limit: '200',
-    page: String(page),
-  };
+  const extra: Record<string, string> = {};
   if (perfil) {
-    query.perfil = perfil;
+    extra.perfil = perfil;
   }
-  if (q.trim()) {
-    query.q = q.trim();
-  }
-  return query;
+  return buildPaginatedCatalogQuery(q, page, extra);
 }
 
 export function buildProcedimentosQuery(q: string, page = 1): Record<string, string> {
-  const query: Record<string, string> = {
-    limit: '200',
-    page: String(page),
-  };
-  if (q.trim()) {
-    query.q = q.trim();
-  }
-  return query;
+  return buildPaginatedCatalogQuery(q, page);
 }
 
 export function buildFormasQuery(q: string, page = 1): Record<string, string> {
-  const query: Record<string, string> = {
-    limit: '200',
-    page: String(page),
-  };
-  if (q.trim()) {
-    query.q = q.trim();
-  }
-  return query;
+  return buildPaginatedCatalogQuery(q, page);
 }
 
 export function buildCbosQuery(q: string, page = 1): Record<string, string> {
-  const query: Record<string, string> = {
-    limit: '200',
-    page: String(page),
-  };
-  if (q.trim()) {
-    query.q = q.trim();
-  }
-  return query;
+  return buildPaginatedCatalogQuery(q, page);
 }
 
 export function formatCatalogCount(shown: number, total: number): string {

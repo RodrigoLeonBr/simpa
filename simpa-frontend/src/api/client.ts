@@ -48,3 +48,31 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   return res.json() as Promise<T>;
 }
+
+export async function apiDownload(path: string, filename: string): Promise<void> {
+  const headers = new Headers();
+  const token = tokenProvider?.();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const res = await fetch(`${apiBase()}${path}`, { headers });
+
+  if (res.status === 401) {
+    unauthorizedHandler?.();
+    throw new Error('Unauthorized');
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error((err as { error?: string }).error || `HTTP ${res.status}`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}

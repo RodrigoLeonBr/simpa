@@ -1,0 +1,7 @@
+# Deploy remoto — sobe imagens pré-compiladas (sem build no servidor).
+# Uso: docker compose -f docker-compose.yml -f docker-compose.deploy.yml --env-file .env.docker up -d --no-build
+services:
+  api:
+    build: !reset null
+  web:
+    build: !reset null
