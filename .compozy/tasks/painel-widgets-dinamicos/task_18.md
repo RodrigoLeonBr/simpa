@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Agent docs and design spec expansion
 type: docs
 complexity: low
@@ -35,11 +35,11 @@ Update agent documentation hub and expand the design spec file with full Phase 0
 </requirements>
 
 ## Subtasks
-- [ ] 18.1 Expand design spec with implemented vs pending checklist
-- [ ] 18.2 Document API endpoints with auth matrix
-- [ ] 18.3 Document frontend routes and roles
-- [ ] 18.4 Update CLAUDE.md index line
-- [ ] 18.5 Cross-link Compozy task dir from design spec
+- [x] 18.1 Expand design spec with implemented vs pending checklist
+- [x] 18.2 Document API endpoints with auth matrix
+- [x] 18.3 Document frontend routes and roles
+- [x] 18.4 Update CLAUDE.md index line
+- [x] 18.5 Cross-link Compozy task dir from design spec
 
 ## Implementation Details
 
@@ -61,10 +61,10 @@ See TechSpec **Impact Analysis** table for file list. Follow tone of existing `d
 
 ## Tests
 - Unit tests:
-  - [ ] N/A — documentation task
+  - [x] N/A — documentation task
 - Integration tests:
-  - [ ] Verify documented endpoint paths match `routes/*.js` (manual checklist in PR)
-  - [ ] `npm test` still passes (no code regressions from doc-only if docs-only)
+  - [x] Verify documented endpoint paths match `routes/*.js` (manual checklist in PR)
+  - [x] `npm test` still passes (no code regressions from doc-only if docs-only)
 - Documentation review: peer or agent verifies links resolve
 
 ## Success Criteria

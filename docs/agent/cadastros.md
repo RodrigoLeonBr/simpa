@@ -205,3 +205,41 @@ Serviço compartilhado: `simpa-backend/src/services/cadastroReferenciaService.js
 **Adoção SIH:** quando existir pipeline/consulta SIH no PG, reutilizar as mesmas funções ou expressões SQL — não duplicar lógica de truncamento/padding. Join sempre por código canônico 6 chars contra tabelas `formas_sia`/`cbos_sia`; registros `inativo` são ignorados nos lookups.
 
 Testes: `simpa-backend/tests/cadastroReferencia.test.js`, `siaProducao.test.js`, `formasCbos.routes.test.js`.
+
+---
+
+## Workflow: painel-widgets-dinamicos {#workflow-painel-widgets-dinamicos}
+
+Spec: `.compozy/tasks/painel-widgets-dinamicos/` · **Status: MVP concluído (tasks 01–18)** · Design: [superpowers spec](../superpowers/specs/2026-06-20-painel-widgets-dinamicos-design.md)
+
+### Fluxo end-to-end
+
+```
+migration_008 (catálogo + widgets seed)
+  → painelMetricsService (executeMetric, discoverMetricsFromRaw)
+  → painelWidgetsService (CRUD, resolvePainelLayout, previewWidget)
+  → GET /painel-layout + cadastro /painel-widgets|metricas
+  → IndicadoresPainelPage (CRUD, preview, Atualizar catálogo)
+  → LayoutA + usePainelLayout (fallback dashboardView se API falhar)
+```
+
+### Cadastro UI — `/cadastros/indicadores-painel`
+
+| Ação | Quem | Detalhe |
+|------|------|---------|
+| Listar widgets APS/A | JWT | Tabela ordenada por `ordem` |
+| Criar/editar/inativar | Planning staff | `FormDialog` + picker métricas (`fetchPainelMetricas`) |
+| Pré-visualizar | Planning staff | `WidgetPreviewModal` → POST preview; SQL read-only em `<details>` |
+| Atualizar catálogo | Planning staff | `discoverPainelMetricas()` → toast inserted/updated |
+
+Grid: card `cadastro-card-indicadores-painel`. Diferente de `/indicadores` (drill-down qualidade).
+
+### ADRs resumidos
+
+| ADR | Decisão |
+|-----|---------|
+| adr-001 | Catálogo curado + templates governados; cadastro e Painel mesma prioridade |
+| adr-002 | `/painel-layout` separado de `/planejamento` |
+| adr-003 | Binding server-side; SQL nunca no browser |
+
+Testes: `painelMetricsService.test.js`, `painelWidgets*.test.js`, `IndicadoresPainelPage.test.tsx`, E2E `painel-widgets.spec.ts`.

@@ -49,7 +49,8 @@ Documentação de produto legada: `prd-simpa.md`, `estrutura_simpa.md`, `readme.
 | Módulo UI | Rota frontend | API / serviço | Doc detalhada |
 |-----------|---------------|---------------|---------------|
 | Login | `/login` | `POST /auth/login` | [auth-roles.md](docs/agent/auth-roles.md) |
-| Painel | `/` | `GET /api/v1/dashboard/planejamento` | [frontend.md](docs/agent/frontend.md#painel) |
+| Painel | `/` | `GET /planejamento` + `GET /painel-layout` | [frontend.md](docs/agent/frontend.md#painel) |
+| Indicadores do Painel | `/cadastros/indicadores-painel` | `/api/cadastros/painel-*` | [cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos) |
 | Cadastros | `/cadastros/*` | `/api/cadastros/*` | [cadastros.md](docs/agent/cadastros.md) |
 | Importação | `/importacao` | `/api/importacao/*` | [backend-api.md](docs/agent/backend-api.md#importação) |
 | Metas | `/metas` | dashboard + `metas_financiamento` | [frontend.md](docs/agent/frontend.md) |
@@ -173,6 +174,7 @@ Nenhum workflow ativo. Arquivados em `.compozy/tasks/_archived/`:
 | `importacao-depara-unidade-equipe` | **arquivado ✅** | De-para e-SUS, preview gate, Painel por IDs |
 | `estabelecimentos-perfil-painel` | **arquivado ✅** | Perfil editável, enriquecimento por perfil, Painel multi-perfil |
 | `cadastros-forma-cbo-sia-sih` | **arquivado ✅** | Forma/CBO MySQL → PG, Cadastros read-only, enriquecimento SIA |
+| `painel-widgets-dinamicos` | **arquivado ✅** | Widgets/métricas governadas, Layout A dinâmico, cadastro Indicadores do Painel |
 
 Guia: **[docs/agent/compozy.md](docs/agent/compozy.md)**.
 
@@ -206,6 +208,14 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 
 ---
 
+## Feature concluída: painel-widgets-dinamicos
+
+**Entregue:** migration 008 runtime; `painelMetricsService` + `painelWidgetsService`; `GET /painel-layout`; CRUD/preview/discovery cadastro; `IndicadoresPainelPage`; Layout A dinâmico com fallback; E2E `painel-widgets.spec.ts`.
+
+**Commit:** `fedd158` · Spec: `.compozy/tasks/painel-widgets-dinamicos/` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos)** · Design: **[superpowers spec](docs/superpowers/specs/2026-06-20-painel-widgets-dinamicos-design.md)**.
+
+---
+
 ## Convenções para agentes
 
 ### Faça
@@ -233,6 +243,8 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 | Como importação resolve de-para? | `importMappingService.js` + `routes/importacao.js` |
 | Como deriva perfil no sync? | `sync_cadastros_mysql.py` → `derive_perfil` |
 | Como enriquece forma/cbo no SIA? | `siaProducaoService.js` + `cadastroReferenciaService.js` |
+| Como Layout A carrega widgets dinâmicos? | `usePainelLayout.ts` → `fetchPainelLayout` · fallback `dashboardView.ts` |
+| Como cadastro de widgets do Painel? | `IndicadoresPainelPage.tsx` · `painelWidgetsService.js` |
 | Extensão SIH forma/cbo? | `cadastroReferenciaService.js` → `resolveFormaDescricao` / `resolveCboDescricao` |
 | Enriquecimento por perfil? | `PUT …/enriquecimento/:slug` + tabelas `enriquecimento_*` |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |

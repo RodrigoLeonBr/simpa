@@ -48,7 +48,7 @@ Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … 
 | `painel_metricas_catalogo` | Métricas descobíveis (e-SUS raw, SIA, consolidado); `sql_template` parametrizado |
 | `painel_widgets` | Slots do Painel por `perfil`/`layout`; FK opcional → catálogo; `sql_preview` para admin |
 
-Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atuais).
+Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atuais). Runtime MVP: `painelWidgetsService.resolvePainelLayout` + cadastro CRUD — ver [cadastros.md#workflow-painel-widgets-dinamicos](cadastros.md#workflow-painel-widgets-dinamicos).
 
 ### Auth / admin
 

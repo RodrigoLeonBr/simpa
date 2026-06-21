@@ -120,6 +120,27 @@ Resposta paginada: `{ data: [...], pagination: { page, limit, total, pages } }`.
 
 Detalhes de payloads, sync e slugs: **[cadastros.md](cadastros.md)**.
 
+#### Painel widgets e métricas (`painelWidgetsCadastrosRoutes.js`, `painelMetricasCadastrosRoutes.js`)
+
+Montados em `routes/cadastros.js`. Service: `painelWidgetsService.js`, `painelMetricsService.js`.
+
+| Método | Path | Auth | Função |
+|--------|------|------|--------|
+| GET | `/api/cadastros/painel-widgets` | JWT | Lista widgets (`perfil`, `layout`, `include_inactive`) |
+| GET | `/api/cadastros/painel-widgets/:id` | JWT | Detalhe + métrica join + `sql_preview` |
+| POST | `/api/cadastros/painel-widgets` | JWT + planning | Criar widget |
+| PUT | `/api/cadastros/painel-widgets/:id` | JWT + planning | Atualizar widget |
+| PATCH | `/api/cadastros/painel-widgets/reorder` | JWT + planning | Body `{ perfil, layout, orderedIds }` |
+| DELETE | `/api/cadastros/painel-widgets/:id` | JWT + planning | Soft-delete (`status=inativo`) |
+| POST | `/api/cadastros/painel-widgets/preview` | JWT + planning | Body `{ widgetId \| widget, scope: { competencia, estabelecimentoId?, equipeId? } }` → valor resolvido |
+| GET | `/api/cadastros/painel-metricas` | JWT | Catálogo paginado (`q`, `fonte_tipo`, `page`, `limit`) |
+| GET | `/api/cadastros/painel-metricas/:id` | JWT | Detalhe + `sql_template` |
+| POST | `/api/cadastros/painel-metricas/descobrir` | JWT + planning | Scan `esus_indicadores_raw` → UPSERT catálogo |
+
+Auditoria (planning): `painel_widget_create`, `painel_widget_update`, `painel_widget_reorder`, `painel_widget_inactivate`, `painel_metricas_descobrir`.
+
+Workflow UI: **[cadastros.md#workflow-painel-widgets-dinamicos](cadastros.md#workflow-painel-widgets-dinamicos)**.
+
 ### Admin (`routes/admin.js`)
 
 Ver **[auth-roles.md](auth-roles.md#admin)**.
@@ -151,6 +172,8 @@ Ver **[auth-roles.md](auth-roles.md#admin)**.
 | `estabelecimentosService.js` | listagem, `updatePerfil`, `upsertEnrichment` (transação) |
 | `procedimentosService.js` | CRUD procedimentos |
 | `cadastroRegistry.js` | Registry genérico outros cadastros |
+| `painelMetricsService.js` | `bindTemplate`, `executeMetric`, `discoverMetricsFromRaw` |
+| `painelWidgetsService.js` | CRUD widgets, `resolvePainelLayout`, `previewWidget` |
 | `auditService.js` | `audit_log` inserts |
 
 ## Middleware (`middleware/`)

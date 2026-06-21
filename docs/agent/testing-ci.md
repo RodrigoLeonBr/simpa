@@ -39,8 +39,9 @@
 - Config: `simpa-frontend/playwright.config.ts`
 - Testes: `simpa-frontend/tests/e2e/`
   - `perfil-painel.spec.ts` — Painel multi-perfil + edição perfil cadastros
-  - `critical-flow.spec.ts` — smoke login
-  - `helpers.ts` — login, navegação, `searchEstabelecimentos`
+  - `painel-widgets.spec.ts` — cadastro widget → título refletido no Layout A (`kpi-card-atendimentos`)
+  - `critical-flow.spec.ts` — smoke login/import/cadastros
+  - `helpers.ts` — `login`, `openIndicadoresPainel`, `openEstabelecimentos`, `searchEstabelecimentos`
 
 **Requer stack** em `http://localhost:8080` (Docker).
 

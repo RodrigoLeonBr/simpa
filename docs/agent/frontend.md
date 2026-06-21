@@ -59,21 +59,24 @@ Dev: Vite proxy `/api` e `/auth` → `http://localhost:3001` (`vite.config.ts`).
 ```
 pages/Painel/
 ├── index.tsx              # ProfileSwitcher + LayoutSwitcher + layouts/placeholder
-├── LayoutA.tsx, LayoutB.tsx, LayoutC.tsx
+├── LayoutA.tsx            # dinâmico via usePainelLayout + fallback dashboardView
+├── LayoutB.tsx, LayoutC.tsx
+hooks/
+├── usePainelLayout.ts     # fetchPainelLayout(competencia, filtros, perfil, layout)
 components/painel/
-├── ProfileSwitcher.tsx    # APS | MAC | Hospitalar | Misto
+├── KpiCard.tsx            # data-testid kpi-card-{slug}
+├── ProfileSwitcher.tsx
 ├── PainelProfilePlaceholder.tsx
 └── LayoutSwitcher.tsx
-components/layout/
-└── FilterBar.tsx          # competência, unidade, equipe (unidades do perfil)
+utils/painelWidgetsView.ts # mapWidgetToKpi, trend, ranking
+api/painelWidgets.ts       # fetchPainelLayout + cadastro CRUD/preview/discovery
 ```
 
-- **Dashboard KPIs:** `fetchDashboard(competencia, { estabelecimentoId, equipeId })` quando **unidadeId e equipeId** estão setados em `useFilters`; visão municipal (sem IDs) quando filtros vazios ou só unidade selecionada.
-- **Unidades:** `fetchEstabelecimentos({ perfil: painelPerfil })` → `mapEstabelecimentosToUnidades` (labels no FilterBar; não usados na query do dashboard).
-- **Catálogo KPI:** `utils/dashboardView.ts` → `PAINEL_KPI_CATALOGS`; APS `ready`, demais `pending`.
-- **Non-APS:** placeholder “Indicadores em definição”; sem flash de KPI APS (`isPainelCatalogReady`).
-- Tipos: `types/contrato.ts`, `types/painel.ts`.
-- 404 da API → `useDashboard.error` (sem crash).
+- **Layout A dinâmico:** `usePainelLayout('A')` em paralelo com `useDashboard`; `LayoutA` mapeia widgets resolvidos → `KpiCard` / `EChart`. Se `layoutError` ou lista vazia → fallback `buildPainelKpis`, `buildTrendSeries`, `buildRanking`.
+- **Dashboard legado:** `fetchDashboard` + `ModuleStatusBar` inalterados (`/planejamento`).
+- **Unidades:** `fetchEstabelecimentos({ perfil: painelPerfil })` → FilterBar.
+- **Non-APS:** placeholder “Indicadores em definição”.
+- Tipos: `types/painelWidgets.ts`, `types/contrato.ts`, `types/painel.ts`.
 
 ## Importação {#importacao}
 
@@ -98,7 +101,8 @@ Ver **[backend-api.md](backend-api.md#importação)** e de-para em **[cadastros.
 
 ```
 pages/Cadastros/
-├── index.tsx                  # router interno (estabelecimentos, procedimentos, formas, cbos, …)
+├── index.tsx                  # router interno (estabelecimentos, procedimentos, formas, cbos, indicadores-painel, …)
+├── IndicadoresPainelPage.tsx  # widgets Painel APS/A — CRUD, preview, discovery
 ├── EstabelecimentosPage.tsx
 ├── FormasPage.tsx             # read-only — formas_sia
 ├── CbosPage.tsx               # read-only — cbos_sia
@@ -111,7 +115,8 @@ components/cadastros/
 └── ...
 ```
 
-- **Grid:** `/cadastros` lista cards de `CADASTRO_GRID_ITEMS`; `data-testid` `cadastro-card-formas` / `cadastro-card-cbos`.
+- **Grid:** `/cadastros` lista cards de `CADASTRO_GRID_ITEMS`; `data-testid` inclui `cadastro-card-indicadores-painel`, `cadastro-card-formas`, `cadastro-card-cbos`.
+- **Indicadores do Painel:** planning staff — ver [cadastros.md#workflow-painel-widgets-dinamicos](cadastros.md#workflow-painel-widgets-dinamicos).
 - **Formas/CBOs:** busca com debounce via submit (`formas-search` / `cbos-search`); paginação; aviso de origem MySQL; sem edição.
 - **Perfil:** select editável (planning staff); hint se `perfilDraft` ≠ persistido.
 - **Enriquecimento:** form por perfil; readonly para Visualizador (`canViewEnrichment`).
@@ -133,7 +138,8 @@ Ver **[cadastros.md](cadastros.md)** e workflow forma/cbo em **[cadastros.md#wor
 
 | Arquivo | Função |
 |---------|--------|
-| `utils/dashboardView.ts` | KPIs, ranking, `PAINEL_KPI_CATALOGS`, `isPainelCatalogReady` |
+| `utils/dashboardView.ts` | KPIs fallback, ranking, `PAINEL_KPI_CATALOGS` |
+| `utils/painelWidgetsView.ts` | map API widgets → KpiCard / charts |
 | `utils/enrichmentByPerfil.ts` | payloads/forms por perfil |
 | `utils/enrichmentView.ts` | `canViewEnrichment`, leitos |
 | `utils/estabelecimentosView.ts` | query Painel por perfil |
@@ -146,6 +152,7 @@ Ver **[cadastros.md](cadastros.md)** e workflow forma/cbo em **[cadastros.md#wor
 | `types/contrato.ts` | Dashboard JSON v3.1.0 |
 | `types/cadastros.ts` | Estabelecimento, `Forma`, `Cbo`, EnrichmentSlug, enrichment unions |
 | `types/painel.ts` | `PainelPerfil`, `PainelCatalogStatus` |
+| `types/painelWidgets.ts` | catálogo, widget config, layout response |
 | `types/importacao.ts` | preview enriquecido, `ResolucaoUpload`, mapeamentos |
 
 ## Estilo
@@ -155,6 +162,6 @@ Ver **[cadastros.md](cadastros.md)** e workflow forma/cbo em **[cadastros.md#wor
 
 ## Testes
 
-- Vitest: `simpa-frontend/src/**/*.test.ts(x)` — ~235 testes.
-- Playwright: `tests/e2e/perfil-painel.spec.ts`, `helpers.ts`.
+- Vitest: `simpa-frontend/src/**/*.test.ts(x)`.
+- Playwright: `perfil-painel.spec.ts`, `painel-widgets.spec.ts`, `helpers.ts` (`login`, `openIndicadoresPainel`, …).
 - `npm run test:web` na raiz.

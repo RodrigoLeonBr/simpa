@@ -24,4 +24,4 @@
 | 15 | Widget preview modal and SQL detail panel | completed | medium | task_14 |
 | 16 | Catalog discovery action in cadastro UI | completed | low | task_15, task_07 |
 | 17 | Playwright E2E cadastro to Painel flow | completed | medium | task_11, task_15 |
-| 18 | Agent docs and design spec expansion | pending | low | task_11, task_16, task_17 |
+| 18 | Agent docs and design spec expansion | completed | low | task_11, task_16, task_17 |
