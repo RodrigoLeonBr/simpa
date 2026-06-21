@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Playwright E2E cadastro to Painel flow
 type: test
 complexity: medium
@@ -33,11 +33,11 @@ Add end-to-end coverage: planning staff edits a widget title in cadastro and see
 </requirements>
 
 ## Subtasks
-- [ ] 17.1 Add spec file following `perfil-painel.spec.ts` patterns
-- [ ] 17.2 Implement login + cadastro edit flow
-- [ ] 17.3 Assert Painel reflects change
-- [ ] 17.4 Verify spec passes locally against docker stack
-- [ ] 17.5 Document any new data-testid requirements added in tasks 11–15
+- [x] 17.1 Add spec file following `perfil-painel.spec.ts` patterns
+- [x] 17.2 Implement login + cadastro edit flow
+- [x] 17.3 Assert Painel reflects change
+- [x] 17.4 Verify spec passes locally against docker stack
+- [x] 17.5 Document any new data-testid requirements added in tasks 11–15
 
 ## Implementation Details
 
@@ -57,11 +57,11 @@ See TechSpec **E2E** section. Coordinate test ids with LayoutA and IndicadoresPa
 
 ## Tests
 - E2E tests:
-  - [ ] Planning staff login succeeds
-  - [ ] Cadastro page lists widgets
-  - [ ] Edit widget title persists after save
-  - [ ] Painel Layout A displays updated widget title
-  - [ ] Cleanup restores seed title (no permanent data drift)
+  - [x] Planning staff login succeeds
+  - [x] Cadastro page lists widgets
+  - [x] Edit widget title persists after save
+  - [x] Painel Layout A displays updated widget title
+  - [x] Cleanup restores seed title (no permanent data drift)
 - All tests must pass in `npm run test:e2e`
 
 ## Success Criteria

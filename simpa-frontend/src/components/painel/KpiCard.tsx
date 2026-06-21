@@ -21,7 +21,10 @@ export function KpiCard({ kpi, compact = false }: KpiCardProps) {
         : 'var(--text-muted)';
 
   return (
-    <article className={`kpi-card${compact ? ' kpi-card-compact' : ''}`}>
+    <article
+      className={`kpi-card${compact ? ' kpi-card-compact' : ''}`}
+      data-testid={`kpi-card-${kpi.id}`}
+    >
       <div className="kpi-card-head">
         <div className="kpi-card-label">{kpi.label}</div>
         <span className={`kpi-card-delta mono ${deltaClass(kpi.delta.direction)}`}>{kpi.delta.label}</span>

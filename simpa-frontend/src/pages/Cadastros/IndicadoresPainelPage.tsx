@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   createPainelWidget,
+  discoverPainelMetricas,
   fetchPainelMetricas,
   fetchPainelWidgets,
   inactivatePainelWidget,
@@ -9,6 +10,7 @@ import {
 } from '../../api/painelWidgets';
 import { ConfirmDialog } from '../../components/cadastros/ConfirmDialog';
 import { FormDialog, type SelectOption } from '../../components/cadastros/FormDialog';
+import { WidgetPreviewModal } from '../../components/cadastros/WidgetPreviewModal';
 import { ToastBanner, useToast } from '../../components/shared/Toast';
 import type { CadastroFieldDef } from '../../config/cadastroEntities';
 import { useAuth } from '../../contexts/AuthContext';
@@ -75,6 +77,10 @@ export function IndicadoresPainelPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [targetRow, setTargetRow] = useState<PainelWidgetConfig | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewRow, setPreviewRow] = useState<PainelWidgetConfig | null>(null);
+  const [discoveryBusy, setDiscoveryBusy] = useState(false);
+  const [metricCatalogVersion, setMetricCatalogVersion] = useState(0);
   const { toast, showToast } = useToast();
   const debouncedMetricQuery = useDebounce(metricQuery, 300);
 
@@ -126,7 +132,7 @@ export function IndicadoresPainelPage() {
     return () => {
       cancelled = true;
     };
-  }, [dialogOpen, canEdit, debouncedMetricQuery]);
+  }, [dialogOpen, canEdit, debouncedMetricQuery, metricCatalogVersion]);
 
   const selectOptions = useMemo<Record<string, SelectOption[]>>(
     () => ({
@@ -187,6 +193,11 @@ export function IndicadoresPainelPage() {
     setConfirmOpen(true);
   }
 
+  function openPreview(row: PainelWidgetConfig) {
+    setPreviewRow(row);
+    setPreviewOpen(true);
+  }
+
   async function handleSave(values: Record<string, string>) {
     const payload: Partial<PainelWidgetConfig> = {
       slug: values.slug.trim(),
@@ -226,6 +237,21 @@ export function IndicadoresPainelPage() {
     }
   }
 
+  async function handleDiscoverCatalog() {
+    setDiscoveryBusy(true);
+    try {
+      const result = await discoverPainelMetricas();
+      showToast(
+        `Catálogo atualizado — ${result.inserted} inseridas, ${result.updated} atualizadas`
+      );
+      setMetricCatalogVersion((version) => version + 1);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha ao atualizar catálogo');
+    } finally {
+      setDiscoveryBusy(false);
+    }
+  }
+
   const submitDisabled = !dialogValues.titulo?.trim();
 
   return (
@@ -242,9 +268,20 @@ export function IndicadoresPainelPage() {
           </p>
         </div>
         {canEdit ? (
-          <button type="button" className="cadastro-btn primary" onClick={openCreate}>
-            Novo widget
-          </button>
+          <div className="cadastro-head-actions">
+            <button
+              type="button"
+              className="cadastro-btn ghost"
+              disabled={discoveryBusy}
+              data-testid="discover-catalog-button"
+              onClick={() => void handleDiscoverCatalog()}
+            >
+              {discoveryBusy ? 'Atualizando catálogo…' : 'Atualizar catálogo'}
+            </button>
+            <button type="button" className="cadastro-btn primary" onClick={openCreate}>
+              Novo widget
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -296,6 +333,13 @@ export function IndicadoresPainelPage() {
                           <button
                             type="button"
                             className="cadastro-action-btn"
+                            onClick={() => openPreview(row)}
+                          >
+                            Pré-visualizar
+                          </button>
+                          <button
+                            type="button"
+                            className="cadastro-action-btn"
                             onClick={() => openInactivate(row)}
                           >
                             Inativar
@@ -340,6 +384,18 @@ export function IndicadoresPainelPage() {
               ) : null}
             </div>
           }
+        />
+      ) : null}
+
+      {canEdit ? (
+        <WidgetPreviewModal
+          open={previewOpen}
+          widget={previewRow}
+          onClose={() => {
+            setPreviewOpen(false);
+            setPreviewRow(null);
+          }}
+          onError={showToast}
         />
       ) : null}
 

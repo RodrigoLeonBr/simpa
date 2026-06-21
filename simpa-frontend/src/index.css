@@ -2577,6 +2577,13 @@ body {
   gap: 16px;
 }
 
+.cadastro-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .cadastro-back-link {
   display: inline-block;
   margin-bottom: 8px;
@@ -2841,4 +2848,58 @@ body {
   margin: 0;
   font-size: 0.8125rem;
   color: var(--muted);
+}
+
+.widget-preview-dialog {
+  width: min(560px, 100%);
+}
+
+.widget-preview-form {
+  gap: 14px;
+}
+
+.widget-preview-result h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.widget-preview-value {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.widget-preview-value-null {
+  color: var(--text-muted);
+}
+
+.widget-preview-delta {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.widget-sql-details {
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.widget-sql-details summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.widget-sql-preview {
+  margin: 10px 0 0;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--bg-subtle, #f6f8fb);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-x: auto;
 }

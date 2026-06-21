@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Catalog discovery action in cadastro UI
 type: frontend
 complexity: low
@@ -31,10 +31,10 @@ Add **Atualizar catálogo** button for planning staff that triggers metric disco
 </requirements>
 
 ## Subtasks
-- [ ] 16.1 Button + loading state in page header
-- [ ] 16.2 Success/error toast handling
-- [ ] 16.3 Test discovery button visibility by role
-- [ ] 16.4 Test API invocation on click
+- [x] 16.1 Button + loading state in page header
+- [x] 16.2 Success/error toast handling
+- [x] 16.3 Test discovery button visibility by role
+- [x] 16.4 Test API invocation on click
 
 ## Implementation Details
 
@@ -53,9 +53,9 @@ See PRD F1 discovery manual trigger and TechSpec **Development Sequencing** step
 
 ## Tests
 - Unit tests:
-  - [ ] Button hidden for Visualizador
-  - [ ] Click calls discoverPainelMetricas once
-  - [ ] Success toast shows inserted/updated counts from mock
+  - [x] Button hidden for Visualizador
+  - [x] Click calls discoverPainelMetricas once
+  - [x] Success toast shows inserted/updated counts from mock
 - Test coverage target: >=80%
 - All tests must pass
 

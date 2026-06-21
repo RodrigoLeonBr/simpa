@@ -21,7 +21,7 @@
 | 12 | Cadastros grid entry and route wiring | completed | low | task_08 |
 | 13 | IndicadoresPainelPage widget list | completed | medium | task_08, task_12 |
 | 14 | Widget edit form and metric catalog picker | completed | medium | task_13 |
-| 15 | Widget preview modal and SQL detail panel | pending | medium | task_14 |
-| 16 | Catalog discovery action in cadastro UI | pending | low | task_15, task_07 |
-| 17 | Playwright E2E cadastro to Painel flow | pending | medium | task_11, task_15 |
+| 15 | Widget preview modal and SQL detail panel | completed | medium | task_14 |
+| 16 | Catalog discovery action in cadastro UI | completed | low | task_15, task_07 |
+| 17 | Playwright E2E cadastro to Painel flow | completed | medium | task_11, task_15 |
 | 18 | Agent docs and design spec expansion | pending | low | task_11, task_16, task_17 |

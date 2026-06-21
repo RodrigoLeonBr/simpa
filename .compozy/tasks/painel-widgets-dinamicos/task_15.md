@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Widget preview modal and SQL detail panel
 type: frontend
 complexity: medium
@@ -31,11 +31,11 @@ Add planning-staff preview: test competência/unidade, call preview API, show re
 </requirements>
 
 ## Subtasks
-- [ ] 15.1 Preview modal with competencia input (default current filter or month picker)
-- [ ] 15.2 Optional estabelecimento select populated from fetchEstabelecimentos APS
-- [ ] 15.3 Display preview result fields
-- [ ] 15.4 SQL detail collapsible panel
-- [ ] 15.5 Tests for preview success and error paths
+- [x] 15.1 Preview modal with competencia input (default current filter or month picker)
+- [x] 15.2 Optional estabelecimento select populated from fetchEstabelecimentos APS
+- [x] 15.3 Display preview result fields
+- [x] 15.4 SQL detail collapsible panel
+- [x] 15.5 Tests for preview success and error paths
 
 ## Implementation Details
 
@@ -57,10 +57,10 @@ See PRD **Cadastro journey** steps 4–5 and TechSpec **sql_preview read-only**.
 
 ## Tests
 - Unit tests:
-  - [ ] Preview button calls previewPainelWidget with competencia 2026-05
-  - [ ] SQL panel renders sql_preview text when expanded
-  - [ ] Preview error shows toast message
-  - [ ] isNull preview shows em-dash styling
+  - [x] Preview button calls previewPainelWidget with competencia 2026-05
+  - [x] SQL panel renders sql_preview text when expanded
+  - [x] Preview error shows toast message
+  - [x] isNull preview shows em-dash styling
 - Test coverage target: >=80%
 - All tests must pass
 

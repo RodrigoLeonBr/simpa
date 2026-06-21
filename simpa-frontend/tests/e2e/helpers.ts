@@ -23,3 +23,10 @@ export async function searchEstabelecimentos(page: Page, query: string) {
   await page.getByTestId('estabelecimentos-search').fill(query);
   await page.getByRole('button', { name: 'Buscar' }).click();
 }
+
+export async function openIndicadoresPainel(page: Page) {
+  await page.getByRole('link', { name: 'Cadastros' }).click();
+  await expect(page.getByTestId('cadastro-grid-page')).toBeVisible();
+  await page.getByTestId('cadastro-card-indicadores-painel').click();
+  await expect(page.getByTestId('indicadores-painel-page')).toBeVisible();
+}
