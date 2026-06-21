@@ -14,12 +14,32 @@ Ferramenta de PRD → TechSpec → tasks executáveis. Config: `.compozy/` na ra
 │   ├── adr-001.md    # produto
 │   └── adr-002.md …  # técnicos
 ├── reviews-NNN/      # review rounds (issues markdown)
-└── (memória opcional)
+└── memory/           # memória compartilhada + por task
 ```
 
-## Workflow arquivado: `estabelecimentos-perfil-painel`
+Workflows concluídos movem para `.compozy/tasks/_archived/<timestamp>-<slug>/`.
 
-Local: `.compozy/tasks/_archived/*-estabelecimentos-perfil-painel/`
+## Workflows arquivados
+
+### `importacao-depara-unidade-equipe`
+
+Local: `.compozy/tasks/_archived/1781996141048-c9181226-importacao-depara-unidade-equipe/`
+
+| Artefato | Conteúdo |
+|----------|----------|
+| `_prd.md` | De-para e-SUS → cadastro, preview gate, Painel por IDs |
+| `_techspec.md` | migration 006, `importMappingService`, ETL, API, UI |
+| `_tasks.md` | 10 tasks — **todas completed** |
+| `adrs/adr-001` … `003` | registry, Todas rules, ID-based dashboard |
+| `reviews-001/` | 8 issues resolvidos (review round 1) |
+
+**Entregáveis:** migration 006 · `importMappingService.js` · preview/upload com `resolucoes` · UI Mapeamentos · Painel por IDs · docs agent.
+
+**Commit principal:** `be60db2`
+
+### `estabelecimentos-perfil-painel`
+
+Local: `.compozy/tasks/_archived/1781985788688-5f17b4aa-estabelecimentos-perfil-painel/`
 
 | Artefato | Conteúdo |
 |----------|----------|
@@ -29,28 +49,19 @@ Local: `.compozy/tasks/_archived/*-estabelecimentos-perfil-painel/`
 | `adrs/adr-001` … `004` | decisões produto + técnica |
 | `reviews-001/` | 11 issues resolvidos (review round 1) |
 
-### Status
+**Entregáveis:** migration 005 · enriquecimento por perfil · ProfileSwitcher · E2E + seed `E2E001–004`.
 
-| Tasks | Estado |
-|-------|--------|
-| 01–10 | ✅ completed |
+**Commits principais:** `4c43959`, `8353acf`, `5e20371`
 
-### Entregáveis principais
-
-- Migration 005 + sync com `perfil_editado`
-- API `PUT /perfil`, `PUT /enriquecimento/:slug`
-- Cadastros: drawer + `EnrichmentFormByPerfil`
-- Painel: `ProfileSwitcher`, placeholder MAC/Hospitalar/Misto
-- E2E + seed `E2E001–004` (`npm run seed:e2e`)
-
-### Comandos (histórico)
-
-Workflow arquivado — não executar `tasks run`. Referência:
+## Comandos úteis
 
 ```powershell
-compozy sync --name estabelecimentos-perfil-painel   # antes de archive
-compozy archive --name estabelecimentos-perfil-painel
+compozy tasks validate --name <slug>   # antes de archive
+compozy sync --name <slug>               # sincroniza global.db
+compozy archive --name <slug>            # move para _archived/
 ```
+
+Não executar `compozy tasks run` em workflows arquivados — usar spec como referência.
 
 ## Skills Claude/Cursor (`.claude/skills/`)
 
@@ -65,7 +76,7 @@ compozy archive --name estabelecimentos-perfil-painel
 | `cy-final-verify` | Verificação antes de marcar done |
 | `cy-workflow-memory` | Memória entre tasks |
 
-## Ao executar uma task
+## Ao executar uma task (workflow ativo)
 
 1. Ler `task_NN.md`, `_techspec.md`, ADRs relevantes.
 2. Verificar conflitos spec vs código.
@@ -74,19 +85,18 @@ compozy archive --name estabelecimentos-perfil-painel
 5. Atualizar checkboxes em `task_NN.md` e `_tasks.md`.
 6. Commit só se usuário pedir.
 
-## Referência cruzada
-
-Detalhe de domínio:
-
-- DB → [database.md](database.md)
-- API → [backend-api.md](backend-api.md) + [cadastros.md](cadastros.md)
-- Frontend → [frontend.md](frontend.md)
-- Testes → [testing-ci.md](testing-ci.md)
-
 ## Criar novo workflow
 
 1. `cy-create-prd` → aprovar `_prd.md`
 2. `cy-create-techspec` → `_techspec.md` + ADRs
 3. `cy-create-tasks` → `_tasks.md` + `task_*.md`
 4. `compozy tasks validate --name <slug>`
-5. Adicionar linha em `CLAUDE.md` (seção Compozy) e este arquivo.
+5. Adicionar linha em `CLAUDE.md` e este arquivo.
+6. Ao concluir: `compozy sync` → `compozy archive` → atualizar docs agent.
+
+## Referência cruzada
+
+- DB → [database.md](database.md)
+- API → [backend-api.md](backend-api.md) + [cadastros.md](cadastros.md)
+- Frontend → [frontend.md](frontend.md)
+- Testes → [testing-ci.md](testing-ci.md)

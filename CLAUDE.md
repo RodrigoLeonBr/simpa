@@ -166,14 +166,12 @@ Detalhes: **[docs/agent/testing-ci.md](docs/agent/testing-ci.md)**.
 
 ## Compozy (spec-driven)
 
-Workflows ativos em `.compozy/tasks/<slug>/`:
+Nenhum workflow ativo. Arquivados em `.compozy/tasks/_archived/`:
 
 | Slug | Estado | Conteúdo |
 |------|--------|----------|
-| `importacao-depara-unidade-equipe` | **concluído ✅** | De-para e-SUS, preview gate, Painel por IDs |
+| `importacao-depara-unidade-equipe` | **arquivado ✅** | De-para e-SUS, preview gate, Painel por IDs |
 | `estabelecimentos-perfil-painel` | **arquivado ✅** | Perfil editável, enriquecimento por perfil, Painel multi-perfil |
-
-Artefatos ativos: `.compozy/tasks/importacao-depara-unidade-equipe/`. Arquivados: `.compozy/tasks/_archived/*-estabelecimentos-perfil-painel/`.
 
 Guia: **[docs/agent/compozy.md](docs/agent/compozy.md)**.
 
@@ -181,7 +179,9 @@ Guia: **[docs/agent/compozy.md](docs/agent/compozy.md)**.
 
 ## Feature concluída: importacao-depara-unidade-equipe
 
-**Entregue:** registry `esus_import_mapeamentos`; preview gate + upload com `resolucoes`; FKs em `esus_cargas`/`dados_consolidados`; Painel consulta dashboard por `estabelecimento_id`/`equipe_id`.
+**Entregue:** registry `esus_import_mapeamentos`; preview gate + upload com `resolucoes`; FKs em `esus_cargas`/`dados_consolidados`; Painel por `estabelecimento_id`/`equipe_id`; review-001 resolvido.
+
+**Commit:** `be60db2` · Spec arquivada: `.compozy/tasks/_archived/*-importacao-depara-unidade-equipe/`
 
 Resumo: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-importacao-depara)** · Importação UI: **[frontend.md](docs/agent/frontend.md#importacao)** · API: **[backend-api.md](docs/agent/backend-api.md)**.
 

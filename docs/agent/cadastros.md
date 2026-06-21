@@ -88,9 +88,11 @@ Roles de edição: Administrador, Gestor Secretaria, Planejamento.
 
 ## Workflow: importacao-depara-unidade-equipe {#workflow-importacao-depara}
 
-Spec: `.compozy/tasks/importacao-depara-unidade-equipe/` · **Status: concluído (tasks 01–10)**
+Spec: `.compozy/tasks/_archived/1781996141048-c9181226-importacao-depara-unidade-equipe/` · **Status: concluído e arquivado (tasks 01–10)**
 
-Resumo: migration 006 + registry `esus_import_mapeamentos` + preview gate na UI + Painel consulta dashboard por `estabelecimento_id`/`equipe_id`. Detalhe de endpoints: [backend-api.md](backend-api.md) · UI: [frontend.md](frontend.md#importacao).
+Resumo: migration 006 + registry `esus_import_mapeamentos` + preview gate na UI + Painel consulta dashboard por `estabelecimento_id`/`equipe_id` (fallback legado por nome). Review round `reviews-001/` (8 issues resolvidos). Commit `be60db2`.
+
+Detalhe de endpoints: [backend-api.md](backend-api.md) · UI: [frontend.md](frontend.md#importacao).
 
 ---
 

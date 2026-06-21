@@ -6,7 +6,7 @@
 
 1. Leia `CLAUDE.md` para contexto, stack e mapa.
 2. Abra **apenas** o arquivo do módulo que vai alterar.
-3. Para features Compozy, leia também `.compozy/tasks/<slug>/_techspec.md` e ADRs.
+3. Para features Compozy arquivadas, leia `.compozy/tasks/_archived/*-<slug>/_techspec.md` e ADRs (ver [compozy.md](compozy.md)).
 
 ## Arquivos
 
