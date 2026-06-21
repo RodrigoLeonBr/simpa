@@ -212,7 +212,7 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 
 **Entregue:** migration 008 runtime; `painelMetricsService` + `painelWidgetsService`; `GET /painel-layout`; CRUD/preview/discovery cadastro; `IndicadoresPainelPage`; Layout A dinâmico com fallback; E2E `painel-widgets.spec.ts`.
 
-**Commit:** `fedd158` · Spec: `.compozy/tasks/painel-widgets-dinamicos/` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos)** · Design: **[superpowers spec](docs/superpowers/specs/2026-06-20-painel-widgets-dinamicos-design.md)**.
+**Commits:** `fedd158`, `73ff413` · Spec arquivada: `.compozy/tasks/_archived/*-painel-widgets-dinamicos/` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos)** · Design: **[superpowers spec](docs/superpowers/specs/2026-06-20-painel-widgets-dinamicos-design.md)**.
 
 ---
 

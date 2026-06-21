@@ -68,6 +68,23 @@ Local: `.compozy/tasks/_archived/1782059930411-1eccf03e-cadastros-forma-cbo-sia-
 
 Resumo: **[cadastros.md](cadastros.md#workflow-forma-cbo-sia-sih)** · API: **[backend-api.md](backend-api.md)** · UI: **[frontend.md](frontend.md#cadastros)**.
 
+### `painel-widgets-dinamicos`
+
+Local: `.compozy/tasks/_archived/1782072157130-bb89b930-painel-widgets-dinamicos/`
+
+| Artefato | Conteúdo |
+|----------|----------|
+| `_prd.md` | Widgets/métricas governadas, Layout A dinâmico, cadastro Indicadores do Painel |
+| `_techspec.md` | migration 008, `painelMetricsService`, `painelWidgetsService`, UI cadastro + runtime |
+| `_tasks.md` | 18 tasks — **todas completed** |
+| `adrs/adr-001` … `003` | catálogo métricas, resolver layout, fallback hardcoded |
+
+**Entregáveis:** migration 008 · APIs cadastro/runtime · `IndicadoresPainelPage` · Layout A dinâmico · preview/discovery · E2E `painel-widgets.spec.ts` · docs agent + design spec.
+
+**Commits principais:** `fedd158`, `73ff413`
+
+Resumo: **[cadastros.md](cadastros.md#workflow-painel-widgets-dinamicos)** · Design: **[superpowers spec](../superpowers/specs/2026-06-20-painel-widgets-dinamicos-design.md)**.
+
 ## Comandos úteis
 
 ```powershell
