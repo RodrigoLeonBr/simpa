@@ -35,6 +35,7 @@ Express em `simpa-backend/src/`. Entry: `app.js` → `server.js`.
 | Método | Path | Service |
 |--------|------|---------|
 | GET | `/api/v1/dashboard/planejamento` | `dashboardService.fetchDashboard` |
+| GET | `/api/v1/dashboard/painel-layout` | `painelWidgetsService.resolvePainelLayout` |
 | POST | `/api/v1/dashboard/consolidar` | `consolidator.runConsolidation` |
 
 Query GET `planejamento`:
@@ -47,6 +48,16 @@ Query GET `planejamento`:
 | `unidade`, `equipe` | legado | Fallback por texto para linhas sem FK |
 
 404 quando não há linha consolidada para os filtros. Consolidar POST: `all=true` ou trio texto `competencia` + `unidade` + `equipe`.
+
+Query GET `painel-layout`:
+
+| Param | Obrigatório | Notas |
+|-------|-------------|-------|
+| `competencia` | sim | `YYYY-MM` |
+| `perfil` | não | default `APS` |
+| `layout` | não | default `A` |
+| `estabelecimento_id` | não | inteiro |
+| `equipe_id` | não | inteiro |
 
 ### Importação (`routes/importacao.js`)
 

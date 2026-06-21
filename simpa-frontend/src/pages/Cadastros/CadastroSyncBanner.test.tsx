@@ -7,6 +7,7 @@ import {
   fetchUltimaCadastroSync,
   sincronizarCadastros,
 } from '../../api/cadastros';
+import { CadastroSyncBanner } from './CadastroSyncBanner';
 import CadastrosPage from './index';
 
 vi.mock('../../api/cadastros', async () => {
@@ -88,6 +89,71 @@ describe('CadastroSyncBanner', () => {
       expect(fetchUltimaCadastroSync).toHaveBeenCalledTimes(2);
       expect(screen.getByTestId('cadastro-sync-ultima')).toHaveTextContent(/7 estab/i);
       expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Cadastros atualizados/i);
+    });
+  });
+
+  it('shows degraded fallback and API error toast when sync returns status erro', async () => {
+    vi.mocked(sincronizarCadastros).mockResolvedValue({
+      status: 'erro',
+      error: 'Falha no MySQL do SIA',
+      estabelecimentos: { inserted: 0, updated: 0, inactivated: 0 },
+      procedimentos: { inserted: 0, updated: 0, inactivated: 0 },
+      sincronizado_em: '2026-06-20T15:30:00Z',
+    });
+    const user = userEvent.setup();
+
+    render(<CadastroSyncBanner />);
+
+    await user.click(screen.getByTestId('cadastro-sync-button'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(/MySQL\/XAMPP indisponível/i);
+      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Falha no MySQL do SIA/i);
+    });
+  });
+
+  it('handles partial sync by keeping degraded message and refreshing last sync', async () => {
+    vi.mocked(sincronizarCadastros).mockResolvedValue({
+      status: 'parcial',
+      error: 'Alguns registros ignorados',
+      estabelecimentos: { inserted: 1, updated: 2, inactivated: 0 },
+      procedimentos: { inserted: 3, updated: 4, inactivated: 0 },
+      sincronizado_em: '2026-06-20T16:10:00Z',
+    });
+    vi.mocked(fetchUltimaCadastroSync)
+      .mockRejectedValueOnce(new Error('404'))
+      .mockResolvedValueOnce({
+        id: 2,
+        status: 'parcial',
+        sincronizado_em: '2026-06-20T16:10:00Z',
+        estabelecimentos: { inserted: 1, updated: 2, inactivated: 0 },
+        procedimentos: { inserted: 3, updated: 4, inactivated: 0 },
+      });
+    const user = userEvent.setup();
+
+    render(<CadastroSyncBanner />);
+
+    await user.click(screen.getByTestId('cadastro-sync-button'));
+
+    await waitFor(() => {
+      expect(fetchUltimaCadastroSync).toHaveBeenCalledTimes(2);
+      expect(screen.getByRole('alert')).toHaveTextContent(/Alguns registros ignorados/i);
+      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Cadastros atualizados/i);
+      expect(screen.getByTestId('cadastro-sync-ultima')).toHaveTextContent(/3 estab/i);
+    });
+  });
+
+  it('shows generic toast error without degraded alert for non-MySQL failure', async () => {
+    vi.mocked(sincronizarCadastros).mockRejectedValue(new Error('Falha timeout API'));
+    const user = userEvent.setup();
+
+    render(<CadastroSyncBanner />);
+
+    await user.click(screen.getByTestId('cadastro-sync-button'));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Falha timeout API/i);
     });
   });
 });

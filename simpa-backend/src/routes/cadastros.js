@@ -25,6 +25,8 @@ const {
 } = require('../services/procedimentosService');
 const { logAudit } = require('../services/auditService');
 const requirePlanningStaff = require('../middleware/requirePlanningStaff');
+const { registerPainelWidgetsCadastrosRoutes } = require('./painelWidgetsCadastrosRoutes');
+const { registerPainelMetricasCadastrosRoutes } = require('./painelMetricasCadastrosRoutes');
 
 const router = express.Router();
 
@@ -230,5 +232,7 @@ function registerResource(pathKey) {
 }
 
 Object.keys(ENTITIES).forEach(registerResource);
+registerPainelWidgetsCadastrosRoutes(router);
+registerPainelMetricasCadastrosRoutes(router);
 
 module.exports = router;

@@ -62,6 +62,13 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
     description: 'id_emenda, esfera, tipo, autor, objeto, valor repassado, status.',
   },
   {
+    route: 'indicadores-painel',
+    title: 'Indicadores do Painel',
+    tableName: 'painel_widgets',
+    description:
+      'Configuração dinâmica dos cards e gráficos do Painel APS (layout e métricas governadas).',
+  },
+  {
     route: '/admin',
     title: 'Indicadores e Metas',
     tableName: 'admin',

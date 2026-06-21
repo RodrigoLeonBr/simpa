@@ -14,7 +14,7 @@ export interface DashboardViewModel {
   unidades: Unidade[];
 }
 
-function buildDashboardFilters(
+export function buildDashboardFilters(
   unidadeId: number | null,
   equipeId: number | null,
 ): { estabelecimentoId: number; equipeId?: number } | undefined {

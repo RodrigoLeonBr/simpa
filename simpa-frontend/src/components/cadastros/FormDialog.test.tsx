@@ -7,7 +7,7 @@ import { FormDialog } from './FormDialog';
 describe('FormDialog', () => {
   afterEach(() => cleanup());
 
-  it('validates required id_emenda field before submit', async () => {
+  it('keeps submit disabled when required id_emenda is empty', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
     const config = CADASTRO_ENTITIES.find((entity) => entity.key === 'emendas')!;
@@ -22,14 +22,14 @@ describe('FormDialog', () => {
       />,
     );
 
+    const submitButton = screen.getByRole('button', { name: 'Salvar' });
+    expect(submitButton).toBeDisabled();
     await user.type(screen.getByLabelText(/Esfera/i), 'Federal');
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
-
-    expect(await screen.findByText(/ID Emenda é obrigatório/i)).toBeInTheDocument();
+    expect(submitButton).toBeDisabled();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('validates required esfera field before submit', async () => {
+  it('keeps submit disabled when required esfera is empty', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
     const config = CADASTRO_ENTITIES.find((entity) => entity.key === 'emendas')!;
@@ -44,10 +44,10 @@ describe('FormDialog', () => {
       />,
     );
 
+    const submitButton = screen.getByRole('button', { name: 'Salvar' });
+    expect(submitButton).toBeDisabled();
     await user.type(screen.getByLabelText(/ID Emenda/i), 'EM001');
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
-
-    expect(await screen.findByText(/Esfera é obrigatório/i)).toBeInTheDocument();
+    expect(submitButton).toBeDisabled();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

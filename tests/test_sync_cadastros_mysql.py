@@ -13,9 +13,12 @@ import sync_cadastros_mysql as sync
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION_004 = ROOT / "migration_004_cadastros_sync.sql"
 MIGRATION_005 = ROOT / "migration_005_estabelecimentos_perfil_enrichment.sql"
+MIGRATION_009 = ROOT / "migration_009_cadastros_forma_cbo.sql"
 
 TEST_ESTAB_KEYS = ("9999999", "1111111", "2222222", "3333333")
 TEST_PROC_KEYS = ("0301010010", "0401010010")
+TEST_FORMA_KEYS = ("010101", "020202")
+TEST_CBO_KEYS = ("223505", "225125")
 
 
 @pytest.fixture
@@ -23,6 +26,7 @@ def cadastro_pg(pg_conn):
     with pg_conn.cursor() as cur:
         cur.execute(MIGRATION_004.read_text(encoding="utf-8"))
         cur.execute(MIGRATION_005.read_text(encoding="utf-8"))
+        cur.execute(MIGRATION_009.read_text(encoding="utf-8"))
         cur.execute(
             "DELETE FROM procedimentos WHERE codigo_sigtap = ANY(%s)",
             (list(TEST_PROC_KEYS),),
@@ -30,6 +34,14 @@ def cadastro_pg(pg_conn):
         cur.execute(
             "DELETE FROM estabelecimentos WHERE codigo_externo = ANY(%s)",
             (list(TEST_ESTAB_KEYS),),
+        )
+        cur.execute(
+            "DELETE FROM formas_sia WHERE codigo_forma = ANY(%s)",
+            (list(TEST_FORMA_KEYS),),
+        )
+        cur.execute(
+            "DELETE FROM cbos_sia WHERE codigo_cbo = ANY(%s)",
+            (list(TEST_CBO_KEYS),),
         )
     pg_conn.commit()
     return pg_conn
@@ -67,6 +79,34 @@ def test_build_procedimento_query_defaults_match_producao_schema():
     assert "proc.PA_TOTAL AS pa_total" in query
     assert "proc.RUB_TOTAL AS rubrica" in query
     assert "FROM procedimento proc" in query
+
+
+def test_build_forma_query_defaults_match_producao_schema():
+    query = sync.build_forma_query()
+    cfg = sync.build_cadastro_config()
+
+    assert cfg["table_forma"] == "forma"
+    assert cfg["col_forma_grupo"] == "grupo"
+    assert cfg["col_forma_subgrupo"] == "subgrupo"
+    assert cfg["col_forma_codigo"] == "forma"
+    assert cfg["col_forma_desc"] == "descricao"
+    assert "f.grupo AS codigo_grupo" in query
+    assert "f.subgrupo AS codigo_subgrupo" in query
+    assert "f.forma AS codigo_forma" in query
+    assert "f.descricao AS descricao" in query
+    assert "FROM forma f" in query
+
+
+def test_build_cbo_query_defaults_match_producao_schema():
+    query = sync.build_cbo_query()
+    cfg = sync.build_cadastro_config()
+
+    assert cfg["table_cbo"] == "cbo"
+    assert cfg["col_cbo_codigo"] == "CBO"
+    assert cfg["col_cbo_desc"] == "DS_CBO"
+    assert "c.CBO AS codigo_cbo" in query
+    assert "c.DS_CBO AS descricao" in query
+    assert "FROM cbo c" in query
 
 
 def test_derive_perfil_known_tipouni(perfil_map):
@@ -135,6 +175,62 @@ def test_normalize_prestador_row_maps_status_and_perfil(perfil_map, sync_ts):
     assert row["codigo_externo"] == "1234567"
 
 
+def test_normalize_forma_row_returns_expected_fields(sync_ts):
+    row = sync.normalize_forma_row(
+        {
+            "codigo_grupo": "01",
+            "codigo_subgrupo": "0101",
+            "codigo_forma": "010101",
+            "descricao": "CONSULTA MEDICA",
+        },
+        sync_ts,
+    )
+    assert row["codigo_grupo"] == "01"
+    assert row["codigo_subgrupo"] == "0101"
+    assert row["codigo_forma"] == "010101"
+    assert row["descricao"] == "CONSULTA MEDICA"
+    assert row["status"] == "ativo"
+    assert row["sincronizado_em"] == sync_ts
+
+
+def test_normalize_forma_row_derives_grupo_subgrupo_from_codigo(sync_ts):
+    row = sync.normalize_forma_row(
+        {
+            "codigo_forma": "020202",
+            "descricao": "EXAME LABORATORIAL",
+        },
+        sync_ts,
+    )
+    assert row["codigo_grupo"] == "02"
+    assert row["codigo_subgrupo"] == "0202"
+    assert row["codigo_forma"] == "020202"
+
+
+def test_normalize_cbo_row_returns_expected_fields(sync_ts):
+    row = sync.normalize_cbo_row(
+        {
+            "codigo_cbo": "223505",
+            "descricao": "ENFERMEIRO",
+        },
+        sync_ts,
+    )
+    assert row["codigo_cbo"] == "223505"
+    assert row["descricao"] == "ENFERMEIRO"
+    assert row["status"] == "ativo"
+    assert row["sincronizado_em"] == sync_ts
+
+
+def test_normalize_cbo_row_pads_codigo_to_six_chars(sync_ts):
+    row = sync.normalize_cbo_row(
+        {
+            "codigo_cbo": "1234",
+            "descricao": "PROFISSIONAL TESTE",
+        },
+        sync_ts,
+    )
+    assert row["codigo_cbo"] == "001234"
+
+
 def test_dry_run_does_not_write_to_postgresql(monkeypatch, sync_ts):
     prest = [
         {
@@ -162,6 +258,8 @@ def test_dry_run_does_not_write_to_postgresql(monkeypatch, sync_ts):
     monkeypatch.setattr(sync, "mysql_configured", lambda: True)
     monkeypatch.setattr(sync, "extrair_prestadores", lambda *_: prest)
     monkeypatch.setattr(sync, "extrair_procedimentos", lambda *_: proc)
+    monkeypatch.setattr(sync, "extrair_formas", lambda *_: [])
+    monkeypatch.setattr(sync, "extrair_cbos", lambda *_: [])
 
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
@@ -176,6 +274,8 @@ def test_dry_run_does_not_write_to_postgresql(monkeypatch, sync_ts):
     assert result["status"] == "ok"
     assert result["estabelecimentos"]["inserted"] == 1
     assert result["procedimentos"]["inserted"] == 1
+    assert result["formas"] == {"inserted": 0, "updated": 0, "inactivated": 0}
+    assert result["cbos"] == {"inserted": 0, "updated": 0, "inactivated": 0}
 
     write_calls = [
         call
@@ -185,6 +285,133 @@ def test_dry_run_does_not_write_to_postgresql(monkeypatch, sync_ts):
     ]
     assert write_calls == []
     mock_conn.commit.assert_not_called()
+
+
+def test_dry_run_includes_forma_cbo_counters(monkeypatch, sync_ts):
+    formas = [
+        {
+            "codigo_grupo": "01",
+            "codigo_subgrupo": "0101",
+            "codigo_forma": "010101",
+            "descricao": "CONSULTA",
+        }
+    ]
+    cbos = [{"codigo_cbo": "223505", "descricao": "ENFERMEIRO"}]
+
+    monkeypatch.setattr(sync, "mysql_configured", lambda: True)
+    monkeypatch.setattr(sync, "extrair_prestadores", lambda *_: [])
+    monkeypatch.setattr(sync, "extrair_procedimentos", lambda *_: [])
+    monkeypatch.setattr(sync, "extrair_formas", lambda *_: formas)
+    monkeypatch.setattr(sync, "extrair_cbos", lambda *_: cbos)
+
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+    mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+    mock_cursor.fetchall.return_value = []
+    monkeypatch.setattr(sync, "pg_connect", lambda: mock_conn)
+
+    result = sync.sincronizar(pg_write=False, dry_run=True)
+
+    assert result["status"] == "ok"
+    assert result["formas"]["inserted"] == 1
+    assert result["cbos"]["inserted"] == 1
+    mock_conn.commit.assert_not_called()
+
+
+@pytest.mark.integration
+def test_upsert_forma_updates_existing_without_duplicate(cadastro_pg, sync_ts):
+    pg_conn = cadastro_pg
+    row = sync.normalize_forma_row(
+        {
+            "codigo_grupo": "01",
+            "codigo_subgrupo": "0101",
+            "codigo_forma": "010101",
+            "descricao": "CONSULTA ORIGINAL",
+        },
+        sync_ts,
+    )
+
+    counts_first = sync.sync_formas(pg_conn, [row], pg_write=True)
+    pg_conn.commit()
+    assert counts_first["inserted"] == 1
+
+    updated = sync.normalize_forma_row(
+        {
+            "codigo_grupo": "01",
+            "codigo_subgrupo": "0101",
+            "codigo_forma": "010101",
+            "descricao": "CONSULTA ATUALIZADA",
+        },
+        sync_ts,
+    )
+    counts_second = sync.sync_formas(pg_conn, [updated], pg_write=True)
+    pg_conn.commit()
+    assert counts_second["updated"] == 1
+
+    with pg_conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT COUNT(*), MAX(descricao)
+            FROM formas_sia
+            WHERE codigo_forma = '010101'
+            """
+        )
+        count, descricao = cur.fetchone()
+        assert count == 1
+        assert descricao == "CONSULTA ATUALIZADA"
+
+
+@pytest.mark.integration
+def test_pg_write_persists_formas_and_cbos(cadastro_pg, sync_ts):
+    pg_conn = cadastro_pg
+
+    formas = [
+        sync.normalize_forma_row(
+            {
+                "codigo_grupo": "02",
+                "codigo_subgrupo": "0202",
+                "codigo_forma": "020202",
+                "descricao": "EXAME",
+            },
+            sync_ts,
+        )
+    ]
+    cbos = [
+        sync.normalize_cbo_row(
+            {"codigo_cbo": "225125", "descricao": "MEDICO CLINICO"},
+            sync_ts,
+        )
+    ]
+
+    forma_counts = sync.sync_formas(pg_conn, formas, pg_write=True)
+    cbo_counts = sync.sync_cbos(pg_conn, cbos, pg_write=True)
+    result = {
+        "status": "ok",
+        "estabelecimentos": dict(sync.COUNT_TEMPLATE),
+        "procedimentos": dict(sync.COUNT_TEMPLATE),
+        "formas": forma_counts,
+        "cbos": cbo_counts,
+    }
+    sync.insert_sync_audit(pg_conn, result)
+    pg_conn.commit()
+
+    with pg_conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM formas_sia WHERE codigo_forma = '020202'")
+        assert cur.fetchone()[0] == 1
+        cur.execute("SELECT COUNT(*) FROM cbos_sia WHERE codigo_cbo = '225125'")
+        assert cur.fetchone()[0] == 1
+        cur.execute(
+            """
+            SELECT forma_inseridos, cbo_inseridos
+            FROM cadastros_sincronizacoes
+            ORDER BY id DESC
+            LIMIT 1
+            """
+        )
+        forma_inseridos, cbo_inseridos = cur.fetchone()
+        assert forma_inseridos >= 1
+        assert cbo_inseridos >= 1
 
 
 @pytest.mark.integration
@@ -436,6 +663,8 @@ def test_pg_write_inserts_estabelecimentos_and_audit(cadastro_pg):
         "status": "ok",
         "estabelecimentos": estab,
         "procedimentos": proc_counts,
+        "formas": dict(sync.COUNT_TEMPLATE),
+        "cbos": dict(sync.COUNT_TEMPLATE),
     }
     sync.insert_sync_audit(pg_conn, result)
     pg_conn.commit()
@@ -482,6 +711,8 @@ def test_invalid_mysql_rows_emit_parcial_status(monkeypatch, sync_ts):
         lambda *_: [{"codigo_externo": "", "nome": "INVALIDO"}],
     )
     monkeypatch.setattr(sync, "extrair_procedimentos", lambda *_: [])
+    monkeypatch.setattr(sync, "extrair_formas", lambda *_: [])
+    monkeypatch.setattr(sync, "extrair_cbos", lambda *_: [])
 
     mock_conn = MagicMock()
     mock_cursor = MagicMock()

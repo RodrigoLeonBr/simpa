@@ -16,6 +16,7 @@ services:
       - ./migration_006_import_depara.sql:/docker-entrypoint-initdb.d/06-migration_006_import_depara.sql:ro
       - ./migration_007_atendimento_domiciliar.sql:/docker-entrypoint-initdb.d/07-migration_007_atendimento_domiciliar.sql:ro
       - ./migration_008_painel_widgets.sql:/docker-entrypoint-initdb.d/08-migration_008_painel_widgets.sql:ro
+      - ./migration_009_cadastros_forma_cbo.sql:/docker-entrypoint-initdb.d/09-migration_009_cadastros_forma_cbo.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

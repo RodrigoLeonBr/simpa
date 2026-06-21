@@ -4,6 +4,7 @@ import { CADASTRO_ENTITIES } from '../../config/cadastroEntities';
 import { CadastroGrid } from './CadastroGrid';
 import { EstabelecimentosPage } from './EstabelecimentosPage';
 import { ProcedimentosPage } from './ProcedimentosPage';
+import { IndicadoresPainelPage } from './IndicadoresPainelPage';
 
 export default function CadastrosPage() {
   return (
@@ -11,6 +12,7 @@ export default function CadastrosPage() {
       <Route index element={<CadastroGrid />} />
       <Route path="estabelecimentos" element={<EstabelecimentosPage />} />
       <Route path="procedimentos" element={<ProcedimentosPage />} />
+      <Route path="indicadores-painel" element={<IndicadoresPainelPage />} />
       {CADASTRO_ENTITIES.map((entity) => (
         <Route
           key={entity.key}

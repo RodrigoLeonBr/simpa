@@ -13,6 +13,7 @@ import {
 import { CADASTRO_ENTITIES } from '../../config/cadastroEntities';
 import { CadastroCrudPage } from '../../components/cadastros/CadastroCrudPage';
 import CadastrosPage from './index';
+import { AuthProvider } from '../../contexts/AuthContext';
 
 vi.mock('../../api/cadastros', async () => {
   const actual = await vi.importActual<typeof import('../../api/cadastros')>('../../api/cadastros');
@@ -52,7 +53,7 @@ describe('Cadastros pages', () => {
     });
   });
 
-  it('renders cadastros grid with five cards and sync banner', () => {
+  it('renders cadastros grid with six cards and sync banner', () => {
     render(
       <MemoryRouter initialEntries={['/cadastros']}>
         <Routes>
@@ -63,15 +64,31 @@ describe('Cadastros pages', () => {
 
     expect(screen.getByTestId('cadastro-grid-page')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-sync-banner')).toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(5);
+    expect(screen.getAllByRole('link')).toHaveLength(6);
     expect(screen.getByTestId('cadastro-card-estabelecimentos')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-procedimentos')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-equipes')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-emendas')).toBeInTheDocument();
+    expect(screen.getByTestId('cadastro-card-indicadores-painel')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-indicadores-metas')).toBeInTheDocument();
     expect(screen.queryByTestId('cadastro-card-unidades')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cadastro-card-prestadores-mac')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cadastro-card-hospitais')).not.toBeInTheDocument();
+  });
+
+  it('resolves /cadastros/indicadores-painel route without 404', () => {
+    render(
+      <MemoryRouter initialEntries={['/cadastros/indicadores-painel']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/cadastros/*" element={<CadastrosPage />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('indicadores-painel-page')).toBeInTheDocument();
+    expect(screen.getByText('Indicadores do Painel')).toBeInTheDocument();
   });
 
   it('creates emenda and refreshes list with mocked API', async () => {

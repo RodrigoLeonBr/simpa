@@ -7,6 +7,13 @@ import {
 } from '../../utils/dashboardView';
 import { EChart, trendOption } from '../../components/charts/EChart';
 import { KpiCard } from '../../components/painel/KpiCard';
+import { usePainelLayout } from '../../hooks/usePainelLayout';
+import {
+  mapWidgetToKpi,
+  mapWidgetToRanking,
+  mapWidgetToTrendSeries,
+  splitPainelWidgetsByTipo,
+} from '../../utils/painelWidgetsView';
 
 interface LayoutAProps {
   data: ContratoDashboard;
@@ -14,12 +21,40 @@ interface LayoutAProps {
 }
 
 export function LayoutA({ data, unidades }: LayoutAProps) {
-  const kpis = buildPainelKpis(data);
-  const trend = buildTrendSeries(data);
-  const ranking = buildRanking(data, unidades);
+  const { layout, loading: layoutLoading, error: layoutError } = usePainelLayout('A');
+  const useFallback = Boolean(layoutError) || !layout?.widgets?.length;
+
+  const sortedWidgets = [...(layout?.widgets ?? [])].sort((a, b) => a.ordem - b.ordem);
+  const split = splitPainelWidgetsByTipo(sortedWidgets);
+  const lineWidget = split.linhas[0];
+  const rankingWidget = split.rankings[0];
+
+  const kpis = useFallback
+    ? buildPainelKpis(data)
+    : split.cards.slice(0, 6).map((widget) => mapWidgetToKpi(widget));
+
+  const trend = useFallback
+    ? buildTrendSeries(data)
+    : lineWidget
+      ? mapWidgetToTrendSeries(lineWidget)
+      : [];
+
+  const ranking = useFallback
+    ? buildRanking(data, unidades)
+    : rankingWidget
+      ? mapWidgetToRanking(rankingWidget)
+      : [];
+
+  const trendTitle = useFallback ? 'Atendimentos individuais' : lineWidget?.titulo ?? 'Atendimentos individuais';
+  const rankingTitle = useFallback
+    ? 'Produção por unidade · top 6'
+    : rankingWidget?.titulo ?? 'Produção por unidade · top 6';
 
   return (
     <div className="painel-layout-a" data-testid="layout-a">
+      {layoutLoading && !layout?.widgets?.length ? (
+        <p className="painel-state-inline">Atualizando indicadores dinâmicos…</p>
+      ) : null}
       <div className="kpi-grid-3">
         {kpis.map((kpi) => (
           <KpiCard key={kpi.id} kpi={kpi} />
@@ -29,7 +64,7 @@ export function LayoutA({ data, unidades }: LayoutAProps) {
       <div className="painel-split-grid">
         <section className="card painel-trend-card">
           <div className="painel-section-head">
-            <h3>Atendimentos individuais</h3>
+            <h3>{trendTitle}</h3>
             <span className="mono painel-section-meta">
               {trend[0]?.competencia.slice(5) ?? '—'} — {trend[trend.length - 1]?.competencia.slice(5) ?? '—'}
             </span>
@@ -38,7 +73,7 @@ export function LayoutA({ data, unidades }: LayoutAProps) {
         </section>
 
         <section className="card painel-ranking-card">
-          <h3>Produção por unidade · top 6</h3>
+          <h3>{rankingTitle}</h3>
           <div className="ranking-list">
             {ranking.map((row) => (
               <RankingBar key={row.nome} row={row} />

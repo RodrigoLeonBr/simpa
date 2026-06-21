@@ -3,8 +3,9 @@
 SIMPA — Conector cadastros: MySQL/XAMPP -> PostgreSQL
 =====================================================
 
-Espelha prestador e procedimento (somente leitura MySQL) em estabelecimentos
-e procedimentos PostgreSQL. Preserva enriquecimento JSONB no re-sync.
+Espelha prestador, procedimento, forma e cbo (somente leitura MySQL) em
+estabelecimentos, procedimentos, formas_sia e cbos_sia PostgreSQL.
+Preserva enriquecimento JSONB no re-sync.
 
 Uso:
     python sync_cadastros_mysql.py --dry-run
@@ -74,6 +75,33 @@ UPSERT_PROCEDIMENTO_SQL = """
         status = EXCLUDED.status
 """
 
+UPSERT_FORMA_SQL = """
+    INSERT INTO formas_sia (
+        codigo_grupo, codigo_subgrupo, codigo_forma, descricao, status, sincronizado_em
+    ) VALUES (
+        %(codigo_grupo)s, %(codigo_subgrupo)s, %(codigo_forma)s, %(descricao)s,
+        %(status)s, %(sincronizado_em)s
+    )
+    ON CONFLICT (codigo_forma) DO UPDATE SET
+        codigo_grupo = EXCLUDED.codigo_grupo,
+        codigo_subgrupo = EXCLUDED.codigo_subgrupo,
+        descricao = EXCLUDED.descricao,
+        status = EXCLUDED.status,
+        sincronizado_em = EXCLUDED.sincronizado_em
+"""
+
+UPSERT_CBO_SQL = """
+    INSERT INTO cbos_sia (
+        codigo_cbo, descricao, status, sincronizado_em
+    ) VALUES (
+        %(codigo_cbo)s, %(descricao)s, %(status)s, %(sincronizado_em)s
+    )
+    ON CONFLICT (codigo_cbo) DO UPDATE SET
+        descricao = EXCLUDED.descricao,
+        status = EXCLUDED.status,
+        sincronizado_em = EXCLUDED.sincronizado_em
+"""
+
 
 def _cadastro_env(name: str, default: str) -> str:
     return os.environ.get(name, default)
@@ -98,6 +126,14 @@ def build_cadastro_config() -> dict[str, str]:
         "col_rubrica": _cadastro_env("SIA_COL_PROC_RUBRICA", "RUB_TOTAL"),
         "col_pa_id": _cadastro_env("SIA_COL_PROC_PA_ID", "PA_ID"),
         "col_financiamento": _cadastro_env("SIA_COL_PROC_FINANCIAMENTO", "FINANCIAMENTO"),
+        "table_forma": _cadastro_env("SIA_TABLE_FORMA", "forma"),
+        "table_cbo": _cadastro_env("SIA_TABLE_CBO", "cbo"),
+        "col_forma_grupo": _cadastro_env("SIA_COL_FORMA_GRUPO", "grupo"),
+        "col_forma_subgrupo": _cadastro_env("SIA_COL_FORMA_SUBGRUPO", "subgrupo"),
+        "col_forma_codigo": _cadastro_env("SIA_COL_FORMA_CODIGO", "forma"),
+        "col_forma_desc": _cadastro_env("SIA_COL_FORMA_DESC", "descricao"),
+        "col_cbo_codigo": _cadastro_env("SIA_COL_CBO_CODIGO", "CBO"),
+        "col_cbo_desc": _cadastro_env("SIA_COL_CBO_DESC", "DS_CBO"),
     }
 
 
@@ -128,6 +164,28 @@ def build_procedimento_query(cfg: dict[str, str] | None = None) -> str:
             proc.{cfg['col_pa_id']} AS pa_id,
             proc.{cfg['col_financiamento']} AS financiamento
         FROM {cfg['table_proc']} proc
+    """
+
+
+def build_forma_query(cfg: dict[str, str] | None = None) -> str:
+    cfg = cfg or build_cadastro_config()
+    return f"""
+        SELECT
+            f.{cfg['col_forma_grupo']} AS codigo_grupo,
+            f.{cfg['col_forma_subgrupo']} AS codigo_subgrupo,
+            f.{cfg['col_forma_codigo']} AS codigo_forma,
+            f.{cfg['col_forma_desc']} AS descricao
+        FROM {cfg['table_forma']} f
+    """
+
+
+def build_cbo_query(cfg: dict[str, str] | None = None) -> str:
+    cfg = cfg or build_cadastro_config()
+    return f"""
+        SELECT
+            c.{cfg['col_cbo_codigo']} AS codigo_cbo,
+            c.{cfg['col_cbo_desc']} AS descricao
+        FROM {cfg['table_cbo']} c
     """
 
 
@@ -210,6 +268,57 @@ def normalize_prestador_row(
     }
 
 
+def _canonical_code(value: str, length: int) -> str:
+    text = value.strip()
+    if len(text) >= length:
+        return text[:length]
+    return text.zfill(length)
+
+
+def normalize_forma_row(
+    row: dict[str, Any],
+    sync_ts: datetime | None = None,
+) -> dict[str, Any]:
+    sync_ts = sync_ts or datetime.now(timezone.utc)
+    codigo_forma_raw = _clean_str(row.get("codigo_forma"), max_len=6)
+    descricao = _clean_str(row.get("descricao"), max_len=120)
+    if not codigo_forma_raw or not descricao:
+        raise ValueError("forma row missing codigo_forma or descricao")
+
+    codigo_forma = _canonical_code(codigo_forma_raw, 6)
+    grupo_raw = _clean_str(row.get("codigo_grupo"), max_len=2)
+    subgrupo_raw = _clean_str(row.get("codigo_subgrupo"), max_len=4)
+    codigo_grupo = _canonical_code(grupo_raw or codigo_forma[:2], 2)
+    codigo_subgrupo = _canonical_code(subgrupo_raw or codigo_forma[:4], 4)
+
+    return {
+        "codigo_grupo": codigo_grupo,
+        "codigo_subgrupo": codigo_subgrupo,
+        "codigo_forma": codigo_forma,
+        "descricao": descricao,
+        "status": "ativo",
+        "sincronizado_em": sync_ts,
+    }
+
+
+def normalize_cbo_row(
+    row: dict[str, Any],
+    sync_ts: datetime | None = None,
+) -> dict[str, Any]:
+    sync_ts = sync_ts or datetime.now(timezone.utc)
+    codigo_raw = _clean_str(row.get("codigo_cbo"), max_len=6)
+    descricao = _clean_str(row.get("descricao"), max_len=160)
+    if not codigo_raw or not descricao:
+        raise ValueError("cbo row missing codigo_cbo or descricao")
+
+    return {
+        "codigo_cbo": _canonical_code(codigo_raw, 6),
+        "descricao": descricao,
+        "status": "ativo",
+        "sincronizado_em": sync_ts,
+    }
+
+
 def normalize_procedimento_row(
     row: dict[str, Any],
     sync_ts: datetime | None = None,
@@ -246,6 +355,18 @@ def extrair_prestadores(conn_mysql, cfg: dict[str, str] | None = None) -> list[d
 
 def extrair_procedimentos(conn_mysql, cfg: dict[str, str] | None = None) -> list[dict[str, Any]]:
     query = build_procedimento_query(cfg)
+    df = pd.read_sql(query, conn_mysql)
+    return df.replace({pd.NA: None}).to_dict(orient="records")
+
+
+def extrair_formas(conn_mysql, cfg: dict[str, str] | None = None) -> list[dict[str, Any]]:
+    query = build_forma_query(cfg)
+    df = pd.read_sql(query, conn_mysql)
+    return df.replace({pd.NA: None}).to_dict(orient="records")
+
+
+def extrair_cbos(conn_mysql, cfg: dict[str, str] | None = None) -> list[dict[str, Any]]:
+    query = build_cbo_query(cfg)
     df = pd.read_sql(query, conn_mysql)
     return df.replace({pd.NA: None}).to_dict(orient="records")
 
@@ -292,6 +413,54 @@ def _inactivate_estabelecimentos(cur, snapshot_keys: set[str], pg_write: bool) -
             UPDATE estabelecimentos
             SET status = 'inativo'
             WHERE codigo_externo = ANY(%s)
+            """,
+            (to_inactivate,),
+        )
+    return len(to_inactivate)
+
+
+def _inactivate_formas(cur, snapshot_keys: set[str], pg_write: bool) -> int:
+    if not snapshot_keys:
+        return 0
+
+    cur.execute(
+        """
+        SELECT codigo_forma FROM formas_sia
+        WHERE status = 'ativo' AND codigo_forma NOT IN %s
+        """,
+        (tuple(snapshot_keys),),
+    )
+    to_inactivate = [row[0] for row in cur.fetchall()]
+    if pg_write and to_inactivate:
+        cur.execute(
+            """
+            UPDATE formas_sia
+            SET status = 'inativo'
+            WHERE codigo_forma = ANY(%s)
+            """,
+            (to_inactivate,),
+        )
+    return len(to_inactivate)
+
+
+def _inactivate_cbos(cur, snapshot_keys: set[str], pg_write: bool) -> int:
+    if not snapshot_keys:
+        return 0
+
+    cur.execute(
+        """
+        SELECT codigo_cbo FROM cbos_sia
+        WHERE status = 'ativo' AND codigo_cbo NOT IN %s
+        """,
+        (tuple(snapshot_keys),),
+    )
+    to_inactivate = [row[0] for row in cur.fetchall()]
+    if pg_write and to_inactivate:
+        cur.execute(
+            """
+            UPDATE cbos_sia
+            SET status = 'inativo'
+            WHERE codigo_cbo = ANY(%s)
             """,
             (to_inactivate,),
         )
@@ -370,6 +539,54 @@ def sync_estabelecimentos(
     return counts
 
 
+def sync_formas(
+    conn_pg,
+    rows: list[dict[str, Any]],
+    *,
+    pg_write: bool,
+) -> dict[str, int]:
+    counts = dict(COUNT_TEMPLATE)
+    snapshot_keys = {row["codigo_forma"] for row in rows}
+
+    with conn_pg.cursor() as cur:
+        existing = _fetch_key_set(cur, "formas_sia", "codigo_forma")
+        inserted, updated = _count_upserts(rows, existing, "codigo_forma")
+        counts["inserted"] = inserted
+        counts["updated"] = updated
+
+        if pg_write:
+            for row in rows:
+                cur.execute(UPSERT_FORMA_SQL, row)
+
+        counts["inactivated"] = _inactivate_formas(cur, snapshot_keys, pg_write)
+
+    return counts
+
+
+def sync_cbos(
+    conn_pg,
+    rows: list[dict[str, Any]],
+    *,
+    pg_write: bool,
+) -> dict[str, int]:
+    counts = dict(COUNT_TEMPLATE)
+    snapshot_keys = {row["codigo_cbo"] for row in rows}
+
+    with conn_pg.cursor() as cur:
+        existing = _fetch_key_set(cur, "cbos_sia", "codigo_cbo")
+        inserted, updated = _count_upserts(rows, existing, "codigo_cbo")
+        counts["inserted"] = inserted
+        counts["updated"] = updated
+
+        if pg_write:
+            for row in rows:
+                cur.execute(UPSERT_CBO_SQL, row)
+
+        counts["inactivated"] = _inactivate_cbos(cur, snapshot_keys, pg_write)
+
+    return counts
+
+
 def sync_procedimentos(
     conn_pg,
     rows: list[dict[str, Any]],
@@ -397,13 +614,17 @@ def sync_procedimentos(
 def insert_sync_audit(conn_pg, result: dict[str, Any]) -> None:
     estab = result.get("estabelecimentos", COUNT_TEMPLATE)
     proc = result.get("procedimentos", COUNT_TEMPLATE)
+    formas = result.get("formas", COUNT_TEMPLATE)
+    cbos = result.get("cbos", COUNT_TEMPLATE)
     with conn_pg.cursor() as cur:
         cur.execute(
             """
             INSERT INTO cadastros_sincronizacoes (
                 status, estab_inseridos, estab_atualizados, estab_inativados,
-                proc_inseridos, proc_atualizados, proc_inativados, erro
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                proc_inseridos, proc_atualizados, proc_inativados,
+                forma_inseridos, forma_atualizados, forma_inativados,
+                cbo_inseridos, cbo_atualizados, cbo_inativados, erro
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 result.get("status", "ok"),
@@ -413,6 +634,12 @@ def insert_sync_audit(conn_pg, result: dict[str, Any]) -> None:
                 proc.get("inserted", 0),
                 proc.get("updated", 0),
                 proc.get("inactivated", 0),
+                formas.get("inserted", 0),
+                formas.get("updated", 0),
+                formas.get("inactivated", 0),
+                cbos.get("inserted", 0),
+                cbos.get("updated", 0),
+                cbos.get("inactivated", 0),
                 result.get("error"),
             ),
         )
@@ -424,6 +651,8 @@ def _error_result(error: str) -> dict[str, Any]:
         "error": error,
         "estabelecimentos": dict(COUNT_TEMPLATE),
         "procedimentos": dict(COUNT_TEMPLATE),
+        "formas": dict(COUNT_TEMPLATE),
+        "cbos": dict(COUNT_TEMPLATE),
     }
 
 
@@ -455,6 +684,8 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
     try:
         raw_prest = extrair_prestadores(conn_mysql, cfg)
         raw_proc = extrair_procedimentos(conn_mysql, cfg)
+        raw_formas = extrair_formas(conn_mysql, cfg)
+        raw_cbos = extrair_cbos(conn_mysql, cfg)
     except Exception as exc:
         result = _error_result(str(exc))
         _persist_audit_if_writing(pg_write, result)
@@ -480,23 +711,47 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
             skipped_proc += 1
             continue
 
+    formas: list[dict[str, Any]] = []
+    skipped_formas = 0
+    for row in raw_formas:
+        try:
+            formas.append(normalize_forma_row(row, sync_ts))
+        except ValueError:
+            skipped_formas += 1
+            continue
+
+    cbos: list[dict[str, Any]] = []
+    skipped_cbos = 0
+    for row in raw_cbos:
+        try:
+            cbos.append(normalize_cbo_row(row, sync_ts))
+        except ValueError:
+            skipped_cbos += 1
+            continue
+
     conn_pg = pg_connect()
     try:
         estab_counts = sync_estabelecimentos(conn_pg, prestadores, pg_write=pg_write)
         proc_counts = sync_procedimentos(conn_pg, procedimentos, pg_write=pg_write)
+        forma_counts = sync_formas(conn_pg, formas, pg_write=pg_write)
+        cbo_counts = sync_cbos(conn_pg, cbos, pg_write=pg_write)
 
-        skipped_total = skipped_estab + skipped_proc
+        skipped_total = skipped_estab + skipped_proc + skipped_formas + skipped_cbos
         status = "parcial" if skipped_total else "ok"
         result: dict[str, Any] = {
             "status": status,
             "estabelecimentos": estab_counts,
             "procedimentos": proc_counts,
+            "formas": forma_counts,
+            "cbos": cbo_counts,
             "sincronizado_em": sync_ts.isoformat(),
         }
         if skipped_total:
             result["skipped"] = {
                 "estabelecimentos": skipped_estab,
                 "procedimentos": skipped_proc,
+                "formas": skipped_formas,
+                "cbos": skipped_cbos,
             }
             result["error"] = (
                 f"{skipped_total} registro(s) ignorado(s) por dados inválidos no MySQL"
@@ -521,7 +776,7 @@ def main() -> None:
     parser.add_argument(
         "--pg-write",
         action="store_true",
-        help="Grava em estabelecimentos + procedimentos + cadastros_sincronizacoes",
+        help="Grava cadastros (estab/proc/forma/cbo) + cadastros_sincronizacoes",
     )
     parser.add_argument(
         "--dry-run",
