@@ -114,6 +114,125 @@ async function fetchCadastroLabels(estabelecimentoId, equipeId) {
   return rows[0] || null;
 }
 
+function isMunicipalQuery({ unidade, equipe, estabelecimentoId, equipeId }) {
+  return !unidade && !equipe && estabelecimentoId == null && equipeId == null;
+}
+
+const KPI_SUM_FIELDS = [
+  'total_atendimentos_aps',
+  'total_procedimentos_ambulatoriais',
+  'total_participantes_coletivos',
+  'atendimentos_odonto',
+];
+
+function sumKpis(rows) {
+  const result = {};
+  for (const field of KPI_SUM_FIELDS) {
+    let sum = 0;
+    let hasValue = false;
+    for (const row of rows) {
+      const val = row.dados_conteudo?.kpis_gerais?.[field];
+      if (val != null && Number.isFinite(Number(val))) {
+        sum += Number(val);
+        hasValue = true;
+      }
+    }
+    result[field] = hasValue ? sum : null;
+  }
+  return result;
+}
+
+async function fetchMunicipalAggregate(competenciaDate, competenciaLabel) {
+  const { rows } = await query(
+    `SELECT unidade, equipe, estabelecimento_id, equipe_id, municipio, versao_schema, dados_conteudo
+     FROM dados_consolidados
+     WHERE competencia = $1
+     ORDER BY unidade, equipe`,
+    [competenciaDate]
+  );
+  if (!rows.length) {
+    return null;
+  }
+
+  const byUnit = new Map();
+  for (const row of rows) {
+    const key = row.estabelecimento_id ?? row.unidade;
+    const atend = row.dados_conteudo?.kpis_gerais?.total_atendimentos_aps;
+    const parsed = atend != null ? Number(atend) : null;
+    const existing = byUnit.get(key) ?? {
+      unidade: row.unidade,
+      estabelecimento_id: row.estabelecimento_id ?? undefined,
+      atendimentos: 0,
+      hasValue: false,
+    };
+    if (parsed != null) {
+      existing.atendimentos += parsed;
+      existing.hasValue = true;
+    }
+    byUnit.set(key, existing);
+  }
+
+  const { rows: historicoRows } = await query(
+    `SELECT competencia::text,
+            SUM(COALESCE((dados_conteudo->'kpis_gerais'->>'total_atendimentos_aps')::bigint, 0)) AS atendimentos
+     FROM dados_consolidados
+     WHERE competencia <= $1::date
+       AND (dados_conteudo->'kpis_gerais'->>'total_atendimentos_aps') IS NOT NULL
+     GROUP BY competencia
+     ORDER BY competencia
+     LIMIT 12`,
+    [competenciaDate]
+  );
+
+  const historicoMensal = historicoRows.map((row) => ({
+    competencia: row.competencia.slice(0, 7),
+    atendimentos: Number(row.atendimentos),
+    meta: null,
+  }));
+
+  const first = rows[0];
+  const kpis = sumKpis(rows);
+  const producaoPorUnidade = Array.from(byUnit.values())
+    .filter((item) => item.hasValue)
+    .map(({ unidade, estabelecimento_id, atendimentos }) => ({
+      unidade,
+      estabelecimento_id,
+      atendimentos,
+    }))
+    .sort((a, b) => b.atendimentos - a.atendimentos);
+
+  const baseContent = first.dados_conteudo || {};
+  const modulosBase = baseContent.modulos ?? {};
+
+  return envelopeDashboard(
+    {
+      unidade: '',
+      equipe: '',
+      municipio: first.municipio,
+      versao_schema: first.versao_schema,
+      dados_conteudo: {
+        plataforma: PLATAFORMA,
+        versao_schema: first.versao_schema || '3.1.0',
+        competencia: competenciaLabel,
+        municipio: first.municipio || 'AMERICANA',
+        filtros_ativos: { unidade: '', equipe: '' },
+        kpis_gerais: kpis,
+        modulos: {
+          ...modulosBase,
+          atencao_primaria_esus: {
+            ...(modulosBase.atencao_primaria_esus ?? {}),
+            historico_mensal: historicoMensal,
+            producao_por_unidade: producaoPorUnidade,
+          },
+        },
+        indicadores_qualidade: baseContent.indicadores_qualidade ?? [],
+        emendas_parlamentares: baseContent.emendas_parlamentares ?? [],
+      },
+    },
+    competenciaLabel
+  );
+}
+
 async function fetchDashboard({
   competencia,
   unidade,
@@ -138,6 +257,28 @@ async function fetchDashboard({
     };
   }
 
+  const filtros = {
+    competencia: parsed.label,
+    unidade: unidade || null,
+    equipe: equipe || null,
+    estabelecimento_id: estabelecimentoId,
+    equipe_id: equipeId,
+  };
+
+  if (isMunicipalQuery({ unidade, equipe, estabelecimentoId, equipeId })) {
+    const aggregate = await fetchMunicipalAggregate(parsed.date, parsed.label);
+    if (!aggregate) {
+      return {
+        status: 404,
+        body: {
+          error: 'Dados não encontrados para os filtros informados',
+          filtros,
+        },
+      };
+    }
+    return { status: 200, body: aggregate };
+  }
+
   const { sql, params } = buildDashboardQuery({
     competenciaDate: parsed.date,
     unidade,
@@ -146,14 +287,6 @@ async function fetchDashboard({
     equipeId,
   });
   let { rows } = await query(sql, params);
-
-  const filtros = {
-    competencia: parsed.label,
-    unidade: unidade || null,
-    equipe: equipe || null,
-    estabelecimento_id: estabelecimentoId,
-    equipe_id: equipeId,
-  };
 
   if (
     !rows.length &&
@@ -203,5 +336,8 @@ module.exports = {
   envelopeDashboard,
   logDashboardMiss,
   fetchCadastroLabels,
+  isMunicipalQuery,
+  sumKpis,
+  fetchMunicipalAggregate,
   fetchDashboard,
 };

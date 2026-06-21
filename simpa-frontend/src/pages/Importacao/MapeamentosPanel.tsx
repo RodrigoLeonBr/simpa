@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fetchEstabelecimentos } from '../../api/cadastros';
 import { deleteMapeamento, fetchMapeamentos, updateMapeamento } from '../../api/importacao';
 import { ConfirmDialog } from '../../components/cadastros/ConfirmDialog';
 import { ToastBanner, useToast } from '../../components/shared/Toast';
 import type { EsusImportMapeamento } from '../../types/importacao';
+import { EstabelecimentoMappingSelect } from './EstabelecimentoMappingSelect';
 
 function formatCadastroRow(item: EsusImportMapeamento): string {
   const parts = [item.estabelecimento_codigo, item.estabelecimento_nome].filter(Boolean);
@@ -20,10 +20,11 @@ export function MapeamentosPanel({ initialQuery = '' }: { initialQuery?: string 
   const [query, setQuery] = useState(initialQuery);
   const [deleteTarget, setDeleteTarget] = useState<EsusImportMapeamento | null>(null);
   const [editTarget, setEditTarget] = useState<EsusImportMapeamento | null>(null);
-  const [editEstabelecimentoId, setEditEstabelecimentoId] = useState<number | ''>('');
-  const [estabelecimentoOptions, setEstabelecimentoOptions] = useState<
-    { id: number; codigo_externo: string; nome: string }[]
-  >([]);
+  const [editEstabelecimentoId, setEditEstabelecimentoId] = useState<number | null>(null);
+  const [editEstabelecimentoLabel, setEditEstabelecimentoLabel] = useState<{
+    codigo_externo: string;
+    nome: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const { toast, showToast } = useToast();
 
@@ -55,29 +56,21 @@ export function MapeamentosPanel({ initialQuery = '' }: { initialQuery?: string 
     void carregar(query);
   };
 
-  const openEdit = async (item: EsusImportMapeamento) => {
+  const openEdit = (item: EsusImportMapeamento) => {
     setEditTarget(item);
     setEditEstabelecimentoId(item.estabelecimento_id);
-    try {
-      const response = await fetchEstabelecimentos({ limit: 50 });
-      setEstabelecimentoOptions(
-        response.data.map((est) => ({
-          id: est.id,
-          codigo_externo: est.codigo_externo,
-          nome: est.nome,
-        })),
-      );
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Falha ao carregar estabelecimentos');
-    }
+    setEditEstabelecimentoLabel({
+      codigo_externo: item.estabelecimento_codigo ?? '',
+      nome: item.estabelecimento_nome ?? '',
+    });
   };
 
   const handleSaveEdit = async () => {
-    if (!editTarget || editEstabelecimentoId === '') return;
+    if (!editTarget || editEstabelecimentoId == null) return;
 
     setBusy(true);
     try {
-      await updateMapeamento(editTarget.id, { estabelecimento_id: Number(editEstabelecimentoId) });
+      await updateMapeamento(editTarget.id, { estabelecimento_id: editEstabelecimentoId });
       setEditTarget(null);
       showToast('Mapeamento atualizado');
       await carregar(query);
@@ -203,22 +196,20 @@ export function MapeamentosPanel({ initialQuery = '' }: { initialQuery?: string 
               {editTarget.esus_unidade_label}
               {editTarget.esus_equipe_nome ? ` · ${editTarget.esus_equipe_nome}` : ''}
             </p>
-            <label className="import-mapping-picker">
-              <span>Estabelecimento</span>
-              <select
-                value={editEstabelecimentoId}
-                onChange={(event) =>
-                  setEditEstabelecimentoId(Number.parseInt(event.target.value, 10) || '')
-                }
-                data-testid="mapeamento-edit-select"
-              >
-                {estabelecimentoOptions.map((est) => (
-                  <option key={est.id} value={est.id}>
-                    {est.codigo_externo} · {est.nome}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <EstabelecimentoMappingSelect
+              value={editEstabelecimentoId}
+              selectedLabel={editEstabelecimentoLabel}
+              selectTestId="mapeamento-edit-select"
+              searchTestId="mapeamento-edit-search"
+              onChange={(selected) => {
+                setEditEstabelecimentoId(selected?.id ?? null);
+                setEditEstabelecimentoLabel(
+                  selected
+                    ? { codigo_externo: selected.codigo_externo, nome: selected.nome }
+                    : null,
+                );
+              }}
+            />
             <div className="cadastro-form-actions">
               <button
                 type="button"
@@ -232,7 +223,7 @@ export function MapeamentosPanel({ initialQuery = '' }: { initialQuery?: string 
                 type="button"
                 className="cadastro-btn"
                 onClick={() => void handleSaveEdit()}
-                disabled={busy || editEstabelecimentoId === ''}
+                disabled={busy || editEstabelecimentoId == null}
                 data-testid="mapeamento-edit-save"
               >
                 {busy ? 'Salvando…' : 'Salvar'}

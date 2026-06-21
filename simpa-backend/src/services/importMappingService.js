@@ -40,6 +40,34 @@ function tokenize(text) {
   return normalized.split(' ').filter(Boolean);
 }
 
+const SUGGESTION_STOP_WORDS = new Set([
+  'de',
+  'da',
+  'do',
+  'dos',
+  'das',
+  'e',
+  'saude',
+  'familia',
+  'estrategia',
+  'estabelecimento',
+  'unidade',
+  'centro',
+  'assistencia',
+  'programa',
+  'municipal',
+  'pm',
+  'ubs',
+  'esf',
+  'esus',
+]);
+
+function distinctiveTokens(text) {
+  return tokenize(text).filter(
+    (token) => token.length >= 4 && !SUGGESTION_STOP_WORDS.has(token)
+  );
+}
+
 function scoreNameSimilarity(label, candidateName) {
   const labelTokens = tokenize(label);
   const candidateTokens = tokenize(candidateName);
@@ -73,7 +101,7 @@ function scoreNameSimilarity(label, candidateName) {
   return Math.min(score, 1);
 }
 
-async function suggestEstabelecimentos(esusUnidadeLabel, { limit = 5 } = {}) {
+async function suggestEstabelecimentos(esusUnidadeLabel, { limit = 10 } = {}) {
   const { rows } = await query(
     `SELECT id, codigo_externo, nome
      FROM estabelecimentos
@@ -81,13 +109,24 @@ async function suggestEstabelecimentos(esusUnidadeLabel, { limit = 5 } = {}) {
      ORDER BY nome`
   );
 
+  const keywords = distinctiveTokens(esusUnidadeLabel);
+
   return rows
-    .map((row) => ({
-      id: row.id,
-      codigo_externo: row.codigo_externo,
-      nome: row.nome,
-      score: scoreNameSimilarity(esusUnidadeLabel, row.nome),
-    }))
+    .map((row) => {
+      let score = scoreNameSimilarity(esusUnidadeLabel, row.nome);
+      const candidateTokens = new Set(tokenize(row.nome));
+      for (const token of keywords) {
+        if (candidateTokens.has(token)) {
+          score += 0.35;
+        }
+      }
+      return {
+        id: row.id,
+        codigo_externo: row.codigo_externo,
+        nome: row.nome,
+        score: Math.min(score, 1),
+      };
+    })
     .sort((a, b) => b.score - a.score || a.nome.localeCompare(b.nome))
     .slice(0, limit);
 }
@@ -437,13 +476,34 @@ async function touchMapeamentosForMeta(meta, estabelecimentoId, client) {
     `UPDATE esus_import_mapeamentos
      SET ultimo_uso_em = now(), atualizado_em = now()
      WHERE status = 'ativo'
-       AND (
-         (esus_unidade_label = $1 AND esus_equipe_codigo IS NULL AND esus_equipe_nome IS NULL)
-         OR ($3 IS NOT NULL AND estabelecimento_id = $2 AND esus_equipe_codigo = $3)
-         OR ($4 IS NOT NULL AND estabelecimento_id = $2 AND esus_equipe_nome = $4 AND esus_equipe_codigo IS NULL)
-       )`,
-    [esusUnidade, estabelecimentoId, esusEquipeCodigo, teamNome]
+       AND esus_unidade_label = $1
+       AND esus_equipe_codigo IS NULL
+       AND esus_equipe_nome IS NULL`,
+    [esusUnidade]
   );
+
+  if (esusEquipeCodigo) {
+    await runQuery(
+      `UPDATE esus_import_mapeamentos
+       SET ultimo_uso_em = now(), atualizado_em = now()
+       WHERE status = 'ativo'
+         AND estabelecimento_id = $1
+         AND esus_equipe_codigo = $2`,
+      [estabelecimentoId, esusEquipeCodigo]
+    );
+  }
+
+  if (teamNome) {
+    await runQuery(
+      `UPDATE esus_import_mapeamentos
+       SET ultimo_uso_em = now(), atualizado_em = now()
+       WHERE status = 'ativo'
+         AND estabelecimento_id = $1
+         AND esus_equipe_nome = $2
+         AND esus_equipe_codigo IS NULL`,
+      [estabelecimentoId, teamNome]
+    );
+  }
 }
 
 async function resolveForUpload(meta, resolucao, user) {

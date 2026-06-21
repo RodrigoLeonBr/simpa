@@ -205,8 +205,14 @@ export function UploadZone({ onUploadConcluido }: UploadZoneProps) {
                 item={item}
                 draft={drafts[item.nome] ?? defaultDraftFromPreview(item)}
                 canEdit={isPlanningStaff}
-                onDraftChange={(next) =>
-                  setDrafts((current) => ({ ...current, [item.nome]: next }))
+                onDraftChange={(patch) =>
+                  setDrafts((current) => ({
+                    ...current,
+                    [item.nome]: {
+                      ...(current[item.nome] ?? defaultDraftFromPreview(item)),
+                      ...patch,
+                    },
+                  }))
                 }
               />
             ))}

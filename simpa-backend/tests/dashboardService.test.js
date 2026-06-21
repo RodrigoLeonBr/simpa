@@ -6,6 +6,8 @@ const {
   buildDashboardQuery,
   envelopeDashboard,
   fetchDashboard,
+  isMunicipalQuery,
+  sumKpis,
 } = require('../src/services/dashboardService');
 const { samplePayload } = require('./fixtures/sampleContrato');
 
@@ -263,6 +265,64 @@ describe('dashboardService', () => {
       expect(result.status).toBe(200);
       expect(result.body.versao_schema).toBe('3.1.0');
       expect(result.body.indicadores_qualidade.length).toBeGreaterThan(0);
+    });
+
+    it('aggregates municipal KPIs when only competencia is provided', async () => {
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              unidade: 'UBS A',
+              equipe: 'Todas',
+              estabelecimento_id: 1,
+              municipio: 'AMERICANA',
+              versao_schema: '3.1.0',
+              dados_conteudo: {
+                kpis_gerais: { total_atendimentos_aps: 100, atendimentos_odonto: null },
+                modulos: {},
+              },
+            },
+            {
+              unidade: 'UBS B',
+              equipe: 'Todas',
+              estabelecimento_id: 2,
+              municipio: 'AMERICANA',
+              versao_schema: '3.1.0',
+              dados_conteudo: {
+                kpis_gerais: { total_atendimentos_aps: 200, atendimentos_odonto: null },
+                modulos: {},
+              },
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [{ competencia: '2026-01-01', atendimentos: '300' }],
+        });
+
+      const result = await fetchDashboard({ competencia: '2026-01' });
+
+      expect(result.status).toBe(200);
+      expect(result.body.kpis_gerais.total_atendimentos_aps).toBe(300);
+      expect(result.body.modulos.atencao_primaria_esus.producao_por_unidade).toHaveLength(2);
+      expect(result.body.modulos.atencao_primaria_esus.historico_mensal).toHaveLength(1);
+    });
+  });
+
+  describe('isMunicipalQuery', () => {
+    it('detects municipal query without unit filters', () => {
+      expect(isMunicipalQuery({})).toBe(true);
+      expect(isMunicipalQuery({ estabelecimentoId: 1 })).toBe(false);
+    });
+  });
+
+  describe('sumKpis', () => {
+    it('sums numeric KPI fields across rows', () => {
+      const total = sumKpis([
+        { dados_conteudo: { kpis_gerais: { total_atendimentos_aps: 100 } } },
+        { dados_conteudo: { kpis_gerais: { total_atendimentos_aps: 50 } } },
+      ]);
+
+      expect(total.total_atendimentos_aps).toBe(150);
     });
   });
 });

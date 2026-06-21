@@ -1,4 +1,4 @@
-import type { EstabelecimentoSugestao, PreviewCargaEnriquecida } from '../../types/importacao';
+import type { PreviewCargaEnriquecida } from '../../types/importacao';
 import {
   buildMappingStatusLabel,
   formatCadastroTargetLabel,
@@ -6,16 +6,13 @@ import {
   previewUnidadeLabel,
   type ResolucaoDraft,
 } from '../../utils/importacaoView';
+import { EstabelecimentoMappingSelect } from './EstabelecimentoMappingSelect';
 
 interface PreviewMappingRowProps {
   item: PreviewCargaEnriquecida;
   draft: ResolucaoDraft;
   canEdit: boolean;
-  onDraftChange: (next: ResolucaoDraft) => void;
-}
-
-function suggestionOptions(item: PreviewCargaEnriquecida): EstabelecimentoSugestao[] {
-  return item.sugestoes_estabelecimento ?? [];
+  onDraftChange: (patch: Partial<ResolucaoDraft>) => void;
 }
 
 export function PreviewMappingRow({
@@ -25,10 +22,7 @@ export function PreviewMappingRow({
   onDraftChange,
 }: PreviewMappingRowProps) {
   const cadastroLabel = formatCadastroTargetLabel(item, draft);
-  const showPicker =
-    canEdit &&
-    item.mapeamento_status === 'pending' &&
-    suggestionOptions(item).length > 0;
+  const showPicker = canEdit && item.mapeamento_status === 'pending';
 
   return (
     <div className="import-preview-row" data-testid="preview-row">
@@ -65,30 +59,35 @@ export function PreviewMappingRow({
             ) : null}
           </div>
           {showPicker ? (
-            <label className="import-mapping-picker">
-              <span>Estabelecimento</span>
-              <select
-                data-testid="mapping-estabelecimento-select"
-                value={draft.estabelecimento_id ?? ''}
-                onChange={(event) => {
-                  const value = Number.parseInt(event.target.value, 10);
-                  const selected = suggestionOptions(item).find((s) => s.id === value);
+            <EstabelecimentoMappingSelect
+              value={draft.estabelecimento_id}
+              suggestions={item.sugestoes_estabelecimento}
+              selectedLabel={
+                draft.estabelecimento_codigo || draft.estabelecimento_nome
+                  ? {
+                      codigo_externo: draft.estabelecimento_codigo ?? '',
+                      nome: draft.estabelecimento_nome ?? '',
+                    }
+                  : null
+              }
+              onChange={(selected) => {
+                if (!selected) {
                   onDraftChange({
-                    ...draft,
-                    estabelecimento_id: Number.isFinite(value) ? value : null,
-                    equipe_id: item.equipe_id ?? draft.equipe_id,
-                    salvar_mapeamento: draft.salvar_mapeamento || Boolean(selected),
+                    estabelecimento_id: null,
+                    estabelecimento_codigo: null,
+                    estabelecimento_nome: null,
                   });
-                }}
-              >
-                <option value="">Selecione…</option>
-                {suggestionOptions(item).map((sugestao) => (
-                  <option key={sugestao.id} value={sugestao.id}>
-                    {sugestao.codigo_externo} · {sugestao.nome}
-                  </option>
-                ))}
-              </select>
-            </label>
+                  return;
+                }
+                onDraftChange({
+                  estabelecimento_id: Number(selected.id),
+                  estabelecimento_codigo: selected.codigo_externo,
+                  estabelecimento_nome: selected.nome,
+                  equipe_id: item.equipe_id ?? draft.equipe_id,
+                  salvar_mapeamento: draft.salvar_mapeamento || true,
+                });
+              }}
+            />
           ) : null}
           {canEdit && showPicker && draft.estabelecimento_id ? (
             <label className="import-mapping-save">

@@ -209,6 +209,20 @@ def _turno_map(indexed: dict, tipo_relatorio: str) -> dict[str, int]:
     return result
 
 
+def _turno_total(indexed: dict, tipo_relatorio: str) -> int | None:
+    """Fallback quando o export e-SUS omite a seção Resumo de produção."""
+    total = 0
+    found = False
+    for turno in TURNO_ORDER:
+        qty = _qty(indexed.get((tipo_relatorio, "Turno", turno)), "quantidade")
+        if qty is not None:
+            total += qty
+            found = True
+    if found and total > 0:
+        return total
+    return None
+
+
 def _resumo_total(indexed: dict, tipo_relatorio: str) -> int | None:
     for descricao in ("Registros identificados", "Total de registros"):
         qty = _qty(
@@ -217,7 +231,7 @@ def _resumo_total(indexed: dict, tipo_relatorio: str) -> int | None:
         )
         if qty is not None:
             return qty
-    return None
+    return _turno_total(indexed, tipo_relatorio)
 
 
 def _participantes_coletivos(indexed: dict) -> int | None:

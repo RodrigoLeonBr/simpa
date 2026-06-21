@@ -17,13 +17,14 @@ O SIMPA unifica três fontes de dados de saúde do município de Americana/SP, h
 2. **Média/Alta Complexidade — SIA/SUS**: instância local MySQL/XAMPP.
 3. **Atenção Hospitalar — SIHD/SUS**: exportações de AIH (DBF/CSV).
 
-## Os 5 relatórios e-SUS (Módulo 1)
+## Os 6 relatórios e-SUS (Módulo 1)
 
-O parser (`parse_esus_csv.py`) reconhece 5 tipos de relatório pelo título na linha 7 do CSV (`TIPO_RELATORIO_MAP`):
+O parser (`parse_esus_csv.py`) reconhece 6 tipos de relatório pelo título na linha 7 do CSV (`TIPO_RELATORIO_MAP`):
 
 | Título do relatório (linha 7) | `tipo_relatorio` |
 |---|---|
 | Relatório de atendimento individual - Analítico | `atendimento_individual` |
+| Relatório de atendimento domiciliar - Analítico | `atendimento_domiciliar` |
 | Relatório de atendimento odontológico - Analítico | `atendimento_odontologico` |
 | Relatório de atividade coletiva - Analítico | `atividade_coletiva` |
 | Relatório de marcadores de consumo alimentar - Analítico | `marcadores_consumo_alimentar` |

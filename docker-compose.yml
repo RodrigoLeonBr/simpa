@@ -14,6 +14,8 @@ services:
       - ./migration_004_cadastros_sync.sql:/docker-entrypoint-initdb.d/04-migration_004_cadastros_sync.sql:ro
       - ./migration_005_estabelecimentos_perfil_enrichment.sql:/docker-entrypoint-initdb.d/05-migration_005_estabelecimentos_perfil_enrichment.sql:ro
       - ./migration_006_import_depara.sql:/docker-entrypoint-initdb.d/06-migration_006_import_depara.sql:ro
+      - ./migration_007_atendimento_domiciliar.sql:/docker-entrypoint-initdb.d/07-migration_007_atendimento_domiciliar.sql:ro
+      - ./migration_008_painel_widgets.sql:/docker-entrypoint-initdb.d/08-migration_008_painel_widgets.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

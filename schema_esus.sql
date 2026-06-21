@@ -4,10 +4,11 @@
 --
 -- Baseado nos relatórios analíticos exportados do e-SUS APS:
 --   1) Relatório de atendimento individual          -> tipo 'atendimento_individual'
---   2) Relatório de atendimento odontológico        -> tipo 'atendimento_odontologico'
---   3) Relatório de atividade coletiva               -> tipo 'atividade_coletiva'
---   4) Relatório de marcadores de consumo alimentar  -> tipo 'marcadores_consumo_alimentar'
---   5) Relatório de procedimentos individualizados   -> tipo 'procedimentos_individualizados'
+--   2) Relatório de atendimento domiciliar           -> tipo 'atendimento_domiciliar'
+--   3) Relatório de atendimento odontológico        -> tipo 'atendimento_odontologico'
+--   4) Relatório de atividade coletiva               -> tipo 'atividade_coletiva'
+--   5) Relatório de marcadores de consumo alimentar  -> tipo 'marcadores_consumo_alimentar'
+--   6) Relatório de procedimentos individualizados   -> tipo 'procedimentos_individualizados'
 --
 -- Estratégia (Spec-Driven, ver PRD Seção 5):
 --   esus_cargas            -> 1 linha por arquivo importado (metadados da carga)
@@ -29,6 +30,7 @@ CREATE TABLE esus_cargas (
 
     tipo_relatorio              VARCHAR(60) NOT NULL CHECK (tipo_relatorio IN (
                                     'atendimento_individual',
+                                    'atendimento_domiciliar',
                                     'atendimento_odontologico',
                                     'atividade_coletiva',
                                     'marcadores_consumo_alimentar',

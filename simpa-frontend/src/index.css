@@ -2104,6 +2104,45 @@ body {
   font-size: 12px;
 }
 
+.import-mapping-search input {
+  width: 100%;
+  max-width: 420px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.import-mapping-search-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.import-mapping-search-toggle {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 11px;
+  color: var(--brand);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.import-mapping-search-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.import-mapping-search-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
 .import-mapping-save {
   width: 100%;
   display: flex;

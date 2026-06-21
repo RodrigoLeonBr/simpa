@@ -50,6 +50,11 @@ export interface ModuloAPS {
   temas_coletivos: TemaColetivo[];
   distribuicao_faixa_etaria: FaixaEtaria[];
   historico_mensal: HistoricoMensal[];
+  producao_por_unidade?: {
+    unidade: string;
+    estabelecimento_id?: number;
+    atendimentos: number | null;
+  }[];
 }
 
 export interface ModuloSIA {

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS esus_cargas (
     id                          BIGSERIAL PRIMARY KEY,
     tipo_relatorio              VARCHAR(60) NOT NULL CHECK (tipo_relatorio IN (
                                     'atendimento_individual',
+                                    'atendimento_domiciliar',
                                     'atendimento_odontologico',
                                     'atividade_coletiva',
                                     'marcadores_consumo_alimentar',

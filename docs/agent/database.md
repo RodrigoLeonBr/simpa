@@ -10,8 +10,10 @@
 | `migration_004_cadastros_sync.sql` | `estabelecimentos`, `procedimentos`, sync metadata |
 | `migration_005_estabelecimentos_perfil_enrichment.sql` | `perfil_editado`, tabelas enriquecimento |
 | `migration_006_import_depara.sql` | `esus_import_mapeamentos`, FKs em `esus_cargas` / `dados_consolidados` |
+| `migration_007_atendimento_domiciliar.sql` | CHECK `tipo_relatorio` inclui `atendimento_domiciliar` |
+| `migration_008_painel_widgets.sql` | `painel_metricas_catalogo`, `painel_widgets` (layout dinâmico APS) |
 
-Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `06` em `/docker-entrypoint-initdb.d/`.
+Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `08` em `/docker-entrypoint-initdb.d/`.
 
 ## Tabelas por domínio
 
@@ -34,6 +36,15 @@ Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … 
 | `estabelecimentos.enriquecimento` | JSONB legado (somente leitura/backfill) |
 | `procedimentos` | Códigos SIGTAP |
 | `cadastros_sync_log` | Histórico sync MySQL |
+
+### Painel dinâmico (migration 008)
+
+| Tabela | Uso |
+|--------|-----|
+| `painel_metricas_catalogo` | Métricas descobíveis (e-SUS raw, SIA, consolidado); `sql_template` parametrizado |
+| `painel_widgets` | Slots do Painel por `perfil`/`layout`; FK opcional → catálogo; `sql_preview` para admin |
+
+Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atuais).
 
 ### Auth / admin
 

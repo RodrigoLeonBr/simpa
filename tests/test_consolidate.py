@@ -89,6 +89,31 @@ def test_build_payload_matches_schema(contrato_schema):
     assert payload["kpis_gerais"]["total_participantes_coletivos"] == 810
 
 
+def test_build_payload_uses_turno_when_resumo_missing():
+    payload = build_payload(
+        competencia=date(2026, 1, 1),
+        municipio="AMERICANA",
+        unidade="ESF 24 MARIO COVAS",
+        equipe="Todas",
+        raw_rows=[
+            {
+                "tipo_relatorio": "atendimento_individual",
+                "secao": "Turno",
+                "descricao": "Manhã",
+                "valores": {"quantidade": 345},
+            },
+            {
+                "tipo_relatorio": "atendimento_individual",
+                "secao": "Turno",
+                "descricao": "Tarde",
+                "valores": {"quantidade": 247},
+            },
+        ],
+    )
+
+    assert payload["kpis_gerais"]["total_atendimentos_aps"] == 592
+
+
 def test_null_indicator_values_remain_null():
     payload = build_payload(
         competencia=date(2026, 5, 1),

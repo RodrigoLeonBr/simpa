@@ -49,12 +49,10 @@ def fetch_groups(
     id_clauses = [
         "c.estabelecimento_id IS NOT NULL",
         "c.equipe_id IS NOT NULL",
-        "eq.nome <> 'Todas'",
     ]
     legacy_clauses = [
         "c.estabelecimento_id IS NULL",
         "c.equipe_id IS NULL",
-        "c.equipe_nome <> 'Todas'",
     ]
     params: list[object] = []
     id_params: list[object] = []

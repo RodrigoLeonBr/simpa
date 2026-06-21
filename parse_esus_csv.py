@@ -4,8 +4,8 @@ SIMPA - Parser de relatorios analiticos do e-SUS APS
 =====================================================
 
 Le os arquivos .csv exportados do e-SUS APS (relatorios "Analitico":
-atendimento individual, atendimento odontologico, atividade coletiva,
-marcadores de consumo alimentar, procedimentos individualizados) e gera
+atendimento individual, atendimento domiciliar, atendimento odontologico,
+atividade coletiva, marcadores de consumo alimentar, procedimentos individualizados) e gera
 um script SQL de seed para as tabelas:
 
     - esus_cargas
@@ -35,6 +35,7 @@ from dotenv import load_dotenv
 # usado na coluna CHECK de esus_cargas.
 TIPO_RELATORIO_MAP = {
     "Relatório de atendimento individual - Analítico": "atendimento_individual",
+    "Relatório de atendimento domiciliar - Analítico": "atendimento_domiciliar",
     "Relatório de atendimento odontológico - Analítico": "atendimento_odontologico",
     "Relatório de atividade coletiva - Analítico": "atividade_coletiva",
     "Relatório de marcadores de consumo alimentar - Analítico": "marcadores_consumo_alimentar",

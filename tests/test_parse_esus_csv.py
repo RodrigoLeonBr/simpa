@@ -76,6 +76,35 @@ def test_iso8859_encoding(tmp_path):
     assert meta["equipe_nome"] == "EQUIPE TESTE"
 
 
+def test_detects_atendimento_domiciliar_report_type(tmp_path):
+    content = (
+        "e-SUS APS\n"
+        "MINISTÉRIO DA SAÚDE\n"
+        "ESTADO DE SÃO PAULO\n"
+        "MUNICÍPIO DE AMERICANA\n"
+        "UNIDADE DE SAÚDE UBS TESTE\n"
+        "\n"
+        "Relatório de atendimento domiciliar - Analítico\n"
+        "\n"
+        "FILTROS\n"
+        "Período;01/06/2026 a 30/06/2026\n"
+        "Equipe;Todas\n"
+        "\n"
+        "Resumo de produção\n"
+        "Descrição;Quantidade;\n"
+        "Registros identificados;12;\n"
+    ).encode("utf-8")
+
+    path = tmp_path / "domiciliar.csv"
+    path.write_bytes(content)
+
+    meta, sections = parser.parse_report(path)
+    assert meta["tipo_relatorio"] == "atendimento_domiciliar"
+    assert meta["unidade"] == "UBS TESTE"
+    assert meta["registros_identificados"] == 12
+    assert sections
+
+
 def test_json_out_interface(sample_csv):
     reports = parser.collect_reports(sample_csv)
     output = []

@@ -230,6 +230,14 @@ describe('importacaoView', () => {
     expect(formatCadastroTargetLabel(row, { ...defaultDraftFromPreview(row), estabelecimento_id: 99 })).toBe(
       '999 · Other',
     );
+    expect(
+      formatCadastroTargetLabel(row, {
+        ...defaultDraftFromPreview(row),
+        estabelecimento_id: 55,
+        estabelecimento_codigo: '1234567',
+        estabelecimento_nome: 'P.M. 10 ZANAGA II',
+      }),
+    ).toBe('1234567 · P.M. 10 ZANAGA II');
   });
 
   it('notifyCargasUpdated dispatches browser event', async () => {

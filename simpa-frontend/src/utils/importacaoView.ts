@@ -88,6 +88,8 @@ export const PLANNING_IMPORT_PERFIS = [
 
 export interface ResolucaoDraft {
   estabelecimento_id: number | null;
+  estabelecimento_codigo?: string | null;
+  estabelecimento_nome?: string | null;
   equipe_id: number | null;
   salvar_mapeamento: boolean;
   confirmar_remocao_todas?: boolean;
@@ -198,6 +200,9 @@ export function formatCadastroTargetLabel(
     (item.estabelecimento_codigo || item.estabelecimento_nome)
   ) {
     return [item.estabelecimento_codigo, item.estabelecimento_nome].filter(Boolean).join(' · ');
+  }
+  if (draft?.estabelecimento_codigo || draft?.estabelecimento_nome) {
+    return [draft.estabelecimento_codigo, draft.estabelecimento_nome].filter(Boolean).join(' · ');
   }
   const suggestion = item.sugestoes_estabelecimento?.find((s) => s.id === estabelecimentoId);
   if (suggestion) {

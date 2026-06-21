@@ -115,6 +115,41 @@ describe('UploadZone', () => {
     expect(screen.getByTestId('upload-process-btn')).toBeDisabled();
   });
 
+  it('shows mapping picker even when preview has no suggestions', async () => {
+    vi.mocked(previewUpload).mockResolvedValueOnce([
+      { ...pendingPreview, sugestoes_estabelecimento: [] },
+    ]);
+
+    renderUploadZone();
+    fireEvent.change(screen.getByTestId('upload-input'), {
+      target: { files: [new File(['a,b'], 'relatorio.csv', { type: 'text/csv' })] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mapping-estabelecimento-search')).toBeInTheDocument();
+      expect(screen.getByTestId('mapping-estabelecimento-select')).toBeInTheDocument();
+    });
+  });
+
+  it('selects establishment from suggestion dropdown', async () => {
+    const user = userEvent.setup();
+    vi.mocked(previewUpload).mockResolvedValueOnce([pendingPreview]);
+
+    renderUploadZone();
+    fireEvent.change(screen.getByTestId('upload-input'), {
+      target: { files: [new File(['a,b'], 'relatorio.csv', { type: 'text/csv' })] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mapping-estabelecimento-select')).toBeInTheDocument();
+    });
+
+    await user.selectOptions(screen.getByTestId('mapping-estabelecimento-select'), '42');
+
+    expect(screen.getByTestId('upload-process-btn')).toBeEnabled();
+    expect(screen.getByTestId('cadastro-target-label')).toHaveTextContent('7169698 · CAFI');
+  });
+
   it('enables Process after selecting establishment for pending row', async () => {
     const user = userEvent.setup();
     vi.mocked(previewUpload).mockResolvedValueOnce([pendingPreview]);

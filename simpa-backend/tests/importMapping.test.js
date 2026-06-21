@@ -66,6 +66,22 @@ describe('importMappingService', () => {
       expect(scoreNameSimilarity('', CAFI_CADASTRO)).toBe(0);
       expect(tokenize('')).toEqual([]);
     });
+
+    it('ranks establishments sharing distinctive tokens such as ZANAGA', async () => {
+      query.mockResolvedValueOnce({
+        rows: [
+          { id: 1, codigo_externo: '111', nome: 'UBS JARDIM SAO PAULO' },
+          { id: 2, codigo_externo: '222', nome: 'P.M. 10 ZANAGA II' },
+          { id: 3, codigo_externo: '333', nome: 'HOSPITAL MUNICIPAL' },
+        ],
+      });
+
+      const sugestoes = await suggestEstabelecimentos(
+        'ESTRATEGIA DE SAUDE DA FAMILIA ZANAGA I'
+      );
+
+      expect(sugestoes[0].nome).toContain('ZANAGA');
+    });
   });
 
   describe('enrichPreviewItem', () => {
@@ -644,6 +660,46 @@ describe('importMappingService', () => {
 
       expect(resolved.equipeId).toBe(20);
       expect(resolved.equipeNome).toBe('Todas');
+    });
+
+    it('saves unit mapping and touches registry without null param type error', async () => {
+      const clientQuery = jest.fn();
+      const mockClient = {
+        query: clientQuery,
+        release: jest.fn(),
+      };
+      pool.connect.mockResolvedValue(mockClient);
+
+      query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 2, codigo_externo: '7169698', nome: CAFI_CADASTRO }],
+        });
+
+      clientQuery
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 20, codigo: 'TODAS-2', nome: 'Todas' }],
+        })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 88, esus_unidade_label: CAFI_ESUS }],
+        })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const resolved = await resolveForUpload(
+        { ...meta, equipe_nome: 'Todas', equipe_codigo: null },
+        { estabelecimento_id: 2, salvar_mapeamento: true },
+        { id: 1 }
+      );
+
+      expect(resolved.equipeId).toBe(20);
+      const touchCalls = clientQuery.mock.calls.filter((c) =>
+        /UPDATE esus_import_mapeamentos/.test(c[0])
+      );
+      expect(touchCalls.length).toBeGreaterThanOrEqual(1);
+      expect(touchCalls[0][1]).toEqual([CAFI_ESUS]);
     });
   });
 
