@@ -84,8 +84,19 @@ Limite upload: `UPLOAD_MAX_BYTES` (default 50MB).
 
 | Método | Path | Service |
 |--------|------|---------|
-| POST | `/api/sia/sync` | `siaSync.runSync` |
-| GET | `/api/sia/status` | último sync |
+| POST | `/api/sia/sincronizar` | `sia.sincronizar` + `consolidator.runConsolidation` |
+| GET | `/api/sia/sincronizacoes` | histórico em `sia_sincronizacoes` |
+| GET | `/api/sia/producao` | `siaProducaoService.listProducao` |
+
+Query GET `producao`:
+
+| Param | Obrigatório | Notas |
+|-------|-------------|-------|
+| `competencia` | não | `YYYY-MM` — filtra mês |
+| `unidade` | não | ILIKE parcial |
+| `codigo_sigtap` | não | match exato |
+
+Resposta agregada por procedimento/faixa/sexo/cbo, com campos enriquecidos `descricao_forma` e `descricao_cbo` (join em `formas_sia` / `cbos_sia` via `cadastroReferenciaService`). Ver **[cadastros.md](cadastros.md#workflow-forma-cbo-sia-sih)**.
 
 ### Cadastros (`routes/cadastros.js`)
 
@@ -96,9 +107,18 @@ Limite upload: `UPLOAD_MAX_BYTES` (default 50MB).
 | PUT | `/api/cadastros/estabelecimentos/:id/perfil` | JWT + `requirePlanningStaff` |
 | PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento/:slug` | JWT + `requirePlanningStaff` |
 | PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento` | JWT + `requirePlanningStaff` (legado) |
+| GET | `/api/cadastros/formas` | JWT — listagem paginada (`formasService.listFormas`) |
+| GET | `/api/cadastros/cbos` | JWT — listagem paginada (`cbosService.listCbos`) |
+| POST/PUT/DELETE | `/api/cadastros/formas`, `/cbos` | JWT — **405** read-only (MySQL espelho) |
 | GET/POST | procedimentos, sincronizar, … | ver **[cadastros.md](cadastros.md)** |
 
-Detalhes de payloads e slugs: **[cadastros.md](cadastros.md)**.
+Query GET `formas`: `q`, `grupo` (2 chars), `subgrupo` (4 chars), `status` (`ativo`|`inativo`|`all`, default `ativo`), `page`, `limit` (max 200).
+
+Query GET `cbos`: `q`, `status`, `page`, `limit`.
+
+Resposta paginada: `{ data: [...], pagination: { page, limit, total, pages } }`.
+
+Detalhes de payloads, sync e slugs: **[cadastros.md](cadastros.md)**.
 
 ### Admin (`routes/admin.js`)
 
@@ -122,8 +142,12 @@ Ver **[auth-roles.md](auth-roles.md#admin)**.
 | `consolidator.js` | Spawn `consolidate_dashboard.py` (aceita IDs) |
 | `parser.js` | Spawn `parse_esus_csv.py` (aceita IDs) |
 | `storage.js` | Paths de upload em disco |
-| `siaSync.js` | Spawn `sync_sia_mysql.py` |
-| `cadastrosSync.js` | Spawn `sync_cadastros_mysql.py` |
+| `sia.js` | Spawn `sync_sia_mysql.py` |
+| `cadastrosSync.js` | Spawn `sync_cadastros_mysql.py`; histórico com blocos `formas`/`cbos` |
+| `formasService.js` | `listFormas` — tabela `formas_sia` (read-only) |
+| `cbosService.js` | `listCbos` — tabela `cbos_sia` (read-only) |
+| `cadastroReferenciaService.js` | `resolveFormaDescricao`, `resolveCboDescricao`; expressões SQL canônicas para join |
+| `siaProducaoService.js` | `listProducao` — agrega `sia_producao` + descrições forma/cbo |
 | `estabelecimentosService.js` | listagem, `updatePerfil`, `upsertEnrichment` (transação) |
 | `procedimentosService.js` | CRUD procedimentos |
 | `cadastroRegistry.js` | Registry genérico outros cadastros |

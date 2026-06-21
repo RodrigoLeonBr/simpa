@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Normalização de códigos forma/cbo e inativação segura
 type: backend
 complexity: medium
@@ -29,10 +29,10 @@ Garantir qualidade dos dados espelhados por meio de normalização de códigos (
 </requirements>
 
 ## Subtasks
-- [ ] 03.1 Implementar `normalize_forma_row`
-- [ ] 03.2 Implementar `normalize_cbo_row`
-- [ ] 03.3 Regras de validação e descarte seguro de linhas inválidas
-- [ ] 03.4 Proteção adicional contra inativação por snapshot inconsistente
+- [x] 03.1 Implementar `normalize_forma_row`
+- [x] 03.2 Implementar `normalize_cbo_row`
+- [x] 03.3 Regras de validação e descarte seguro de linhas inválidas
+- [x] 03.4 Proteção adicional contra inativação por snapshot inconsistente
 
 ## Deliverables
 - normalizadores e regras de segurança no `sync_cadastros_mysql.py`
@@ -40,12 +40,12 @@ Garantir qualidade dos dados espelhados por meio de normalização de códigos (
 
 ## Tests
 - Unit tests:
-  - [ ] Forma com código curto é normalizada corretamente
-  - [ ] CBO com espaços/padding é normalizado
-  - [ ] Linha inválida não derruba o processamento
-  - [ ] Snapshot vazio não inativa massa
+  - [x] Forma com código curto é normalizada corretamente
+  - [x] CBO com espaços/padding é normalizado
+  - [x] Linha inválida não derruba o processamento
+  - [x] Snapshot vazio não inativa massa
 - Integration tests:
-  - [ ] Comparar contagem pré e pós sync em cenário parcial
+  - [x] Comparar contagem pré e pós sync em cenário parcial
 
 ## Success Criteria
 - Dados persistidos com códigos consistentes e sem inativação indevida

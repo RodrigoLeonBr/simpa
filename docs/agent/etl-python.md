@@ -10,7 +10,7 @@ CSV e-SUS → parse_esus_csv.py → esus_cargas / raw tables
 
 MySQL SIA → sync_sia_mysql.py → tabelas SIA no PG
 
-MySQL prestador/procedimento → sync_cadastros_mysql.py → estabelecimentos, procedimentos
+MySQL prestador/procedimento/forma/cbo → sync_cadastros_mysql.py → estabelecimentos, procedimentos, formas_sia, cbos_sia
 ```
 
 ## Scripts
@@ -33,15 +33,17 @@ MySQL prestador/procedimento → sync_cadastros_mysql.py → estabelecimentos, p
 
 ### `sync_cadastros_mysql.py`
 
-- UPSERT `estabelecimentos` e `procedimentos`.
+- UPSERT `estabelecimentos`, `procedimentos`, `formas_sia`, `cbos_sia`.
 - `derive_perfil()` mapeia tipo prestador → APS/MAC/Hospitalar/Misto/Outro.
 - Respeita `perfil_editado = true` (não sobrescreve perfil manual).
 - Inativa registros ausentes no snapshot MySQL; **snapshot vazio não inativa em massa**.
+- Forma/CBO: normalização de códigos (6 chars canônicos); guard `CADASTRO_SNAPSHOT_MIN_RATIO` para inativação.
 
 Funções-chave a localizar no arquivo:
 
 - `derive_perfil`
-- `_inactivate_estabelecimentos` / `_inactivate_procedimentos`
+- `extrair_formas` / `extrair_cbos`, `normalize_forma_row` / `normalize_cbo_row`
+- `_inactivate_estabelecimentos` / `_inactivate_procedimentos` / inativação forma-cbo
 - UPSERT SQL com `CASE WHEN perfil_editado …`
 - `main` / argparse CLI
 

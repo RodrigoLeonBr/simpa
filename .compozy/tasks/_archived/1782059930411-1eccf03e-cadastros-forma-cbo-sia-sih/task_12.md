@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Preparar extensão SIH e atualizar documentação técnica
 type: docs
 complexity: low
@@ -29,10 +29,10 @@ Documentar o uso de `forma` e `cbo` para SIA e estabelecer o contrato de extens�
 </requirements>
 
 ## Subtasks
-- [ ] 12.1 Documentar API e services novos
-- [ ] 12.2 Documentar páginas frontend e navegação
-- [ ] 12.3 Registrar contrato de extensão SIH
-- [ ] 12.4 Revisar consistência entre docs e implementação
+- [x] 12.1 Documentar API e services novos
+- [x] 12.2 Documentar páginas frontend e navegação
+- [x] 12.3 Registrar contrato de extensão SIH
+- [x] 12.4 Revisar consistência entre docs e implementação
 
 ## Deliverables
 - arquivos `docs/agent/*` atualizados
@@ -40,10 +40,10 @@ Documentar o uso de `forma` e `cbo` para SIA e estabelecer o contrato de extens�
 
 ## Tests
 - Unit tests:
-  - [ ] N/A (task de documentação)
+  - [x] N/A (task de documentação)
 - Integration tests:
-  - [ ] Checklist manual: caminhos/documentos batem com código
-  - [ ] Links internos válidos
+  - [x] Checklist manual: caminhos/documentos batem com código
+  - [x] Links internos válidos
 
 ## Success Criteria
 - Time encontra rapidamente o fluxo completo forma/cbo (sync, API, UI, SIA, SIH)

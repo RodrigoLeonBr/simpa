@@ -25,9 +25,21 @@ Enriquecimento normalizado (migration 005), 1:1 com `estabelecimentos`:
 
 `procedimentos`: código SIGTAP, descrição — sync MySQL.
 
+Tabelas de referência SIA (migration 009):
+
+| Tabela | Chave join | Origem MySQL |
+|--------|------------|--------------|
+| `formas_sia` | `codigo_forma` (6 chars) | `forma` — grupo/subgrupo/forma + descrição |
+| `cbos_sia` | `codigo_cbo` (6 chars) | `cbo` — código + descrição |
+
+Colunas comuns: `descricao`, `status` (`ativo`|`inativo`), `sincronizado_em`. CBO de produção pode vir com até 8 chars (`prd_cbo`); join usa os 6 primeiros (equivale a `left(prd_cbo, 6)`). Forma deriva de `left(prd_pa, 6)` ou `left(codigo_sigtap, 6)`.
+
+Auditoria em `cadastros_sincronizacoes`: colunas `forma_inseridos/atualizados/inativados` e `cbo_inseridos/atualizados/inativados`.
+
 ## Fonte de verdade
 
 - **Identidade** (código, nome, tipouni, status): MySQL via `sync_cadastros_mysql.py`.
+- **Forma/CBO:** MySQL tabelas `forma` e `cbo` — espelho read-only em `formas_sia`/`cbos_sia`; sem CRUD manual na API.
 - **Perfil:** derivado no sync (`derive_perfil`); editável na UI → `perfil_editado = true`.
 - **Enriquecimento manual:** `PUT /enriquecimento/:slug` → tabela do perfil ativo.
 
@@ -57,24 +69,44 @@ Validação de leitos: inteiros ≥ 0. Merge parcial de `leitos` faz deep-merge.
 | PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento/:slug` | JWT + `requirePlanningStaff` |
 | PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento` | JWT + `requirePlanningStaff` (legado Hospitalar/Misto) |
 | GET | `/api/cadastros/procedimentos` | JWT |
+| GET | `/api/cadastros/formas` | JWT — read-only |
+| GET | `/api/cadastros/cbos` | JWT — read-only |
 | POST | `/api/cadastros/sincronizar` | JWT + `requirePlanningStaff` |
 | GET | `/api/cadastros/sincronizacoes` | JWT |
+| GET | `/api/cadastros/sincronizacoes/ultima` | JWT |
 
 Roles de edição: Administrador, Gestor Secretaria, Planejamento.
 
+### `formasService.js` / `cbosService.js`
+
+| Função | Descrição |
+|--------|-----------|
+| `listFormas(query)` | paginação; filtros `q`, `grupo`, `subgrupo`, `status` |
+| `listCbos(query)` | paginação; filtros `q`, `status` |
+
+POST/PUT/DELETE em `/formas` e `/cbos` retornam **405** (`createReadOnlyWriteHandler`).
+
 ### Sync (`sync_cadastros_mysql.py`)
 
-- UPSERT estabelecimentos/procedimentos; inativa ausentes no snapshot MySQL.
-- **Snapshot vazio:** não inativa em massa (guarda contra falha MySQL).
+- UPSERT estabelecimentos/procedimentos/**formas**/**cbos**; inativa ausentes no snapshot MySQL.
+- **Snapshot vazio:** não inativa em massa (guarda contra falha MySQL) — inclui forma/cbo.
+- **Ratio mínimo:** `CADASTRO_SNAPSHOT_MIN_RATIO` (default 0.25) — snapshot pequeno demais não inativa forma/cbo.
+- Normalização: forma com códigos 2/4/6 chars; CBO canônico 6 chars (`_canonical_code`).
+- Payload JSON do sync e histórico API incluem blocos `{ formas: {inserted, updated, inactivated}, cbos: {...} }`.
 - `perfil`: `CASE WHEN perfil_editado THEN atual ELSE derivado END`.
 - Linhas de enriquecimento antigas **permanecem** ao trocar perfil (TechSpec).
+
+Invocado por `cadastrosSync.js` → `POST /api/cadastros/sincronizar`. Detalhe ETL: [etl-python.md](etl-python.md).
 
 ## Frontend
 
 | Arquivo | Comportamento |
 |---------|---------------|
 | `EstabelecimentosPage.tsx` | tabela, chips perfil (incl. Misto) |
+| `FormasPage.tsx` | listagem read-only forma de organização (grupo/subgrupo/forma) |
+| `CbosPage.tsx` | listagem read-only CBO |
 | `EstabelecimentoDetailDrawer.tsx` | perfil editável; enriquecimento por `perfilDraft` |
+| `config/cadastroEntities.ts` | cards `formas`/`cbos` em `CADASTRO_GRID_ITEMS` |
 | `EnrichmentFormByPerfil.tsx` | forms APS/MAC/Hospitalar/Misto/Outro |
 | `api/cadastros.ts` | `updatePerfil`, `updateEnrichmentBySlug`, `fetchEstabelecimentos` |
 | `utils/enrichmentByPerfil.ts` | slug, payloads, títulos por perfil |
@@ -131,3 +163,45 @@ Arquivo: `migration_005_estabelecimentos_perfil_enrichment.sql` (init Docker + m
 | 10 | E2E `perfil-painel.spec.ts` + seed `E2E001–004` |
 
 Review round: `reviews-001/` (11 issues resolvidos).
+
+---
+
+## Workflow: forma-cbo-sia-sih {#workflow-forma-cbo-sia-sih}
+
+Spec: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · **Status: concluído e arquivado (tasks 01–12)**
+
+### Fluxo end-to-end
+
+```
+MySQL (forma, cbo)
+  → sync_cadastros_mysql.py → formas_sia / cbos_sia (PG)
+  → GET /api/cadastros/formas|cbos → FormasPage / CbosPage (UI)
+  → GET /api/sia/producao → descricao_forma / descricao_cbo (SIA)
+  → cadastroReferenciaService → extensão SIH (futuro)
+```
+
+### Uso analítico SIA (implementado)
+
+`siaProducaoService.listProducao` agrega `sia_producao` com LEFT JOIN:
+
+- `formas_sia` ON `codigo_forma = left(trim(codigo_sigtap), 6)` (status `ativo`)
+- `cbos_sia` ON `codigo_cbo` canônico 6 chars a partir de `sp.cbo`
+
+Campos extras na resposta: `descricao_forma`, `descricao_cbo` (null quando código ausente ou sem match).
+
+### Contrato de extensão SIH (preparação)
+
+Serviço compartilhado: `simpa-backend/src/services/cadastroReferenciaService.js`.
+
+| Export | Uso |
+|--------|-----|
+| `resolveFormaDescricao(codigoForma)` | Lookup async em `formas_sia` após `canonicalFormaFromSigtap` (left 6) |
+| `resolveCboDescricao(codigoCbo)` | Lookup async em `cbos_sia` após `canonicalCboCode` (truncate/pad 6) |
+| `canonicalFormaFromSigtap(codigoSigtap)` | Normaliza código procedimento → forma |
+| `canonicalCboCode(codigoCbo)` | Normaliza CBO → 6 chars |
+| `SQL_CANONICAL_FORMA_EXPR` | Expressão SQL para join em queries batch (ex.: `siaProducaoService`) |
+| `SQL_CANONICAL_CBO_EXPR` | Idem para CBO |
+
+**Adoção SIH:** quando existir pipeline/consulta SIH no PG, reutilizar as mesmas funções ou expressões SQL — não duplicar lógica de truncamento/padding. Join sempre por código canônico 6 chars contra tabelas `formas_sia`/`cbos_sia`; registros `inativo` são ignorados nos lookups.
+
+Testes: `simpa-backend/tests/cadastroReferencia.test.js`, `siaProducao.test.js`, `formasCbos.routes.test.js`.

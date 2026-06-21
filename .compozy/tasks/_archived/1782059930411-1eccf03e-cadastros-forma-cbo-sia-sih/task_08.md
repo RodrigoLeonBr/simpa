@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Adicionar cards Forma e CBO no cadastroEntities
 type: frontend
 complexity: low
@@ -27,17 +27,17 @@ Atualizar a configuração de entidades de Cadastros para incluir as novas entra
 </requirements>
 
 ## Subtasks
-- [ ] 08.1 Inserir `formas` em `CADASTRO_GRID_ITEMS`
-- [ ] 08.2 Inserir `cbos` em `CADASTRO_GRID_ITEMS`
-- [ ] 08.3 Ajustar test ids e tipos
+- [x] 08.1 Inserir `formas` em `CADASTRO_GRID_ITEMS`
+- [x] 08.2 Inserir `cbos` em `CADASTRO_GRID_ITEMS`
+- [x] 08.3 Ajustar test ids e tipos
 
 ## Deliverables
 - `simpa-frontend/src/config/cadastroEntities.ts` atualizado
 
 ## Tests
 - Unit tests:
-  - [ ] Grid contém cards forma e cbo
-  - [ ] Test IDs renderizam corretamente
+  - [x] Grid contém cards forma e cbo
+  - [x] Test IDs renderizam corretamente
 - Integration tests:
   - [ ] N/A (validado em task_10)
 

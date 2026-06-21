@@ -23,6 +23,8 @@ const {
   listProcedimentos,
   getProcedimentoById,
 } = require('../services/procedimentosService');
+const { listFormas } = require('../services/formasService');
+const { listCbos } = require('../services/cbosService');
 const { logAudit } = require('../services/auditService');
 const requirePlanningStaff = require('../middleware/requirePlanningStaff');
 const { registerPainelWidgetsCadastrosRoutes } = require('./painelWidgetsCadastrosRoutes');
@@ -182,16 +184,43 @@ router.get('/procedimentos/:id', async (req, res, next) => {
   }
 });
 
-function readOnlyWriteHandler(_req, res) {
-  return res.status(405).json({
-    error: 'Procedimentos são somente leitura. Use POST /api/cadastros/sincronizar.',
-    allow: 'GET',
-  });
+function createReadOnlyWriteHandler(resourceLabel) {
+  return (_req, res) =>
+    res.status(405).json({
+      error: `${resourceLabel} são somente leitura. Use POST /api/cadastros/sincronizar.`,
+      allow: 'GET',
+    });
 }
 
-router.post('/procedimentos', readOnlyWriteHandler);
-router.put('/procedimentos/:id', readOnlyWriteHandler);
-router.delete('/procedimentos/:id', readOnlyWriteHandler);
+router.post('/procedimentos', createReadOnlyWriteHandler('Procedimentos'));
+router.put('/procedimentos/:id', createReadOnlyWriteHandler('Procedimentos'));
+router.delete('/procedimentos/:id', createReadOnlyWriteHandler('Procedimentos'));
+
+router.get('/formas', async (req, res, next) => {
+  try {
+    const result = await listFormas(req.query);
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/formas', createReadOnlyWriteHandler('Formas'));
+router.put('/formas/:id', createReadOnlyWriteHandler('Formas'));
+router.delete('/formas/:id', createReadOnlyWriteHandler('Formas'));
+
+router.get('/cbos', async (req, res, next) => {
+  try {
+    const result = await listCbos(req.query);
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/cbos', createReadOnlyWriteHandler('CBOs'));
+router.put('/cbos/:id', createReadOnlyWriteHandler('CBOs'));
+router.delete('/cbos/:id', createReadOnlyWriteHandler('CBOs'));
 
 function registerResource(pathKey) {
   router.get(`/${pathKey}`, async (req, res, next) => {

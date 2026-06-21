@@ -6,6 +6,8 @@ import {
   createCadastro,
   fetchCadastroList,
   fetchEstabelecimentosAps,
+  fetchCbos,
+  fetchFormas,
   fetchUltimaCadastroSync,
   inactivateCadastro,
   updateCadastro,
@@ -25,6 +27,14 @@ vi.mock('../../api/cadastros', async () => {
     inactivateCadastro: vi.fn(),
     fetchEstabelecimentosAps: vi.fn().mockResolvedValue([]),
     fetchUltimaCadastroSync: vi.fn().mockRejectedValue(new Error('404')),
+    fetchFormas: vi.fn().mockResolvedValue({
+      data: [],
+      pagination: { page: 1, limit: 200, total: 0, pages: 1 },
+    }),
+    fetchCbos: vi.fn().mockResolvedValue({
+      data: [],
+      pagination: { page: 1, limit: 200, total: 0, pages: 1 },
+    }),
   };
 });
 
@@ -53,7 +63,7 @@ describe('Cadastros pages', () => {
     });
   });
 
-  it('renders cadastros grid with six cards and sync banner', () => {
+  it('renders cadastros grid with eight cards and sync banner', () => {
     render(
       <MemoryRouter initialEntries={['/cadastros']}>
         <Routes>
@@ -64,9 +74,11 @@ describe('Cadastros pages', () => {
 
     expect(screen.getByTestId('cadastro-grid-page')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-sync-banner')).toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(6);
+    expect(screen.getAllByRole('link')).toHaveLength(8);
     expect(screen.getByTestId('cadastro-card-estabelecimentos')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-procedimentos')).toBeInTheDocument();
+    expect(screen.getByTestId('cadastro-card-formas')).toBeInTheDocument();
+    expect(screen.getByTestId('cadastro-card-cbos')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-equipes')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-emendas')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-indicadores-painel')).toBeInTheDocument();
@@ -74,6 +86,51 @@ describe('Cadastros pages', () => {
     expect(screen.queryByTestId('cadastro-card-unidades')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cadastro-card-prestadores-mac')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cadastro-card-hospitais')).not.toBeInTheDocument();
+  });
+
+  it('resolves /cadastros/formas route without 404', async () => {
+    render(
+      <MemoryRouter initialEntries={['/cadastros/formas']}>
+        <Routes>
+          <Route path="/cadastros/*" element={<CadastrosPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByTestId('formas-page')).toBeInTheDocument();
+    expect(screen.getByText('Formas de Organização')).toBeInTheDocument();
+    expect(fetchFormas).toHaveBeenCalled();
+  });
+
+  it('resolves /cadastros/cbos route without 404', async () => {
+    render(
+      <MemoryRouter initialEntries={['/cadastros/cbos']}>
+        <Routes>
+          <Route path="/cadastros/*" element={<CadastrosPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByTestId('cbos-page')).toBeInTheDocument();
+    expect(screen.getByText('CBOs')).toBeInTheDocument();
+    expect(fetchCbos).toHaveBeenCalled();
+  });
+
+  it('navigates to /cadastros/formas when clicking Formas card', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/cadastros']}>
+        <Routes>
+          <Route path="/cadastros/*" element={<CadastrosPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByTestId('cadastro-card-formas'));
+
+    expect(await screen.findByTestId('formas-page')).toBeInTheDocument();
+    expect(screen.getByText('Formas de Organização')).toBeInTheDocument();
   });
 
   it('resolves /cadastros/indicadores-painel route without 404', () => {

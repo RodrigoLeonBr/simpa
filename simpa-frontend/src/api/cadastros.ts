@@ -1,5 +1,6 @@
 import type { CadastroEntityKey } from '../config/cadastroEntities';
 import type {
+  CbosListResponse,
   CadastroSyncRecord,
   CadastroSyncResult,
   EnrichmentBySlug,
@@ -8,6 +9,7 @@ import type {
   EstabelecimentoEnriquecimento,
   EstabelecimentoPerfil,
   EstabelecimentosListResponse,
+  FormasListResponse,
   ProcedimentosListResponse,
 } from '../types/cadastros';
 import { apiFetch } from './client';
@@ -175,5 +177,21 @@ export function fetchProcedimentos(
 ): Promise<ProcedimentosListResponse> {
   return apiFetch<ProcedimentosListResponse>(
     `/api/cadastros/procedimentos${buildQuery(query)}`,
+  );
+}
+
+export function fetchFormas(
+  query?: Record<string, string | number>,
+): Promise<FormasListResponse> {
+  return apiFetch<FormasListResponse>(
+    `/api/cadastros/formas${buildQuery(query)}`,
+  );
+}
+
+export function fetchCbos(
+  query?: Record<string, string | number>,
+): Promise<CbosListResponse> {
+  return apiFetch<CbosListResponse>(
+    `/api/cadastros/cbos${buildQuery(query)}`,
   );
 }

@@ -1,11 +1,13 @@
 jest.mock('../src/services/db');
 jest.mock('../src/services/sia');
 jest.mock('../src/services/consolidator');
+jest.mock('../src/services/siaProducaoService');
 
 const request = require('supertest');
 const { query } = require('../src/services/db');
 const { sincronizar } = require('../src/services/sia');
 const { runConsolidation } = require('../src/services/consolidator');
+const { listProducao } = require('../src/services/siaProducaoService');
 const { authHeader } = require('./helpers/auth');
 const app = require('../src/app');
 
@@ -113,10 +115,15 @@ describe('sia routes', () => {
     expect(res.body[0].status).toBe('ok');
   });
 
-  it('GET /producao applies filters', async () => {
-    query.mockResolvedValueOnce({
-      rows: [{ codigo_sigtap: '0301010072', quantidade: '12' }],
-    });
+  it('GET /producao applies filters and returns enriched payload', async () => {
+    listProducao.mockResolvedValueOnce([
+      {
+        codigo_sigtap: '0301010072',
+        quantidade: '12',
+        descricao_forma: 'CONSULTA MEDICA',
+        descricao_cbo: 'MEDICO CLINICO',
+      },
+    ]);
 
     const res = await request(app)
       .get('/api/sia/producao')
@@ -125,10 +132,13 @@ describe('sia routes', () => {
 
     expect(res.status).toBe(200);
     expect(res.body[0].codigo_sigtap).toBe('0301010072');
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('FROM sia_producao'),
-      ['2026-05-01', '%CAFI%', '0301010072']
-    );
+    expect(res.body[0].descricao_forma).toBe('CONSULTA MEDICA');
+    expect(res.body[0].descricao_cbo).toBe('MEDICO CLINICO');
+    expect(listProducao).toHaveBeenCalledWith({
+      competencia: '2026-05',
+      unidade: 'CAFI',
+      codigo_sigtap: '0301010072',
+    });
   });
 
   it('requires JWT', async () => {

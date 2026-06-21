@@ -2,9 +2,11 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { CadastroCrudPage } from '../../components/cadastros/CadastroCrudPage';
 import { CADASTRO_ENTITIES } from '../../config/cadastroEntities';
 import { CadastroGrid } from './CadastroGrid';
+import { CbosPage } from './CbosPage';
 import { EstabelecimentosPage } from './EstabelecimentosPage';
-import { ProcedimentosPage } from './ProcedimentosPage';
+import { FormasPage } from './FormasPage';
 import { IndicadoresPainelPage } from './IndicadoresPainelPage';
+import { ProcedimentosPage } from './ProcedimentosPage';
 
 export default function CadastrosPage() {
   return (
@@ -12,6 +14,8 @@ export default function CadastrosPage() {
       <Route index element={<CadastroGrid />} />
       <Route path="estabelecimentos" element={<EstabelecimentosPage />} />
       <Route path="procedimentos" element={<ProcedimentosPage />} />
+      <Route path="formas" element={<FormasPage />} />
+      <Route path="cbos" element={<CbosPage />} />
       <Route path="indicadores-painel" element={<IndicadoresPainelPage />} />
       {CADASTRO_ENTITIES.map((entity) => (
         <Route

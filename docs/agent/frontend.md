@@ -20,6 +20,8 @@ React 19 + Vite 8 + Tailwind 4. Raiz: `simpa-frontend/src/`.
 | `/cadastros` | redirect | — |
 | `/cadastros/estabelecimentos` | `EstabelecimentosPage` | — |
 | `/cadastros/procedimentos` | `ProcedimentosPage` | — |
+| `/cadastros/formas` | `FormasPage` | read-only, espelho MySQL |
+| `/cadastros/cbos` | `CbosPage` | read-only, espelho MySQL |
 | `/importacao` | `ImportacaoPage` | — |
 | `/metas` | `MetasPage` | — |
 | `/indicadores` | `IndicadoresPage` | — |
@@ -34,7 +36,7 @@ React 19 + Vite 8 + Tailwind 4. Raiz: `simpa-frontend/src/`.
 | `client.ts` | `apiFetch`, base URL, Authorization header |
 | `auth.ts` | `login`, `getMe` |
 | `dashboard.ts` | `fetchDashboard(competencia, { estabelecimentoId?, equipeId? })` |
-| `cadastros.ts` | `fetchEstabelecimentos`, `updatePerfil`, `updateEnrichmentBySlug`, … |
+| `cadastros.ts` | `fetchEstabelecimentos`, `fetchFormas`, `fetchCbos`, `updatePerfil`, `updateEnrichmentBySlug`, … |
 | `importacao.ts` | `previewUpload`, `uploadCargas(files, resolucoes)`, mapeamentos CRUD, cargas |
 | `admin.ts` | usuários, audit log |
 | `config.ts` | feature flags |
@@ -96,19 +98,28 @@ Ver **[backend-api.md](backend-api.md#importação)** e de-para em **[cadastros.
 
 ```
 pages/Cadastros/
+├── index.tsx                  # router interno (estabelecimentos, procedimentos, formas, cbos, …)
 ├── EstabelecimentosPage.tsx
+├── FormasPage.tsx             # read-only — formas_sia
+├── CbosPage.tsx               # read-only — cbos_sia
 ├── EstabelecimentoDetailDrawer.tsx
+config/cadastroEntities.ts     # CADASTRO_GRID_ITEMS (8 cards incl. formas/cbos)
 components/cadastros/
+├── ReadOnlyDataTable.tsx      # tabelas somente leitura (formas, cbos, procedimentos)
 ├── EnrichmentFormByPerfil.tsx
 ├── EnrichmentForm.tsx          # Hospitalar (leitos)
 └── ...
 ```
 
+- **Grid:** `/cadastros` lista cards de `CADASTRO_GRID_ITEMS`; `data-testid` `cadastro-card-formas` / `cadastro-card-cbos`.
+- **Formas/CBOs:** busca com debounce via submit (`formas-search` / `cbos-search`); paginação; aviso de origem MySQL; sem edição.
 - **Perfil:** select editável (planning staff); hint se `perfilDraft` ≠ persistido.
 - **Enriquecimento:** form por perfil; readonly para Visualizador (`canViewEnrichment`).
 - **SIA:** campos identidade permanecem locked.
 
-Ver **[cadastros.md](cadastros.md)**.
+Helpers: `utils/enrichmentView.ts` → `buildFormasQuery`, `buildCbosQuery`, `formatCatalogCount`.
+
+Ver **[cadastros.md](cadastros.md)** e workflow forma/cbo em **[cadastros.md#workflow-forma-cbo-sia-sih](cadastros.md#workflow-forma-cbo-sia-sih)**.
 
 ## Componentes compartilhados
 
@@ -133,7 +144,7 @@ Ver **[cadastros.md](cadastros.md)**.
 | Arquivo | Conteúdo |
 |---------|----------|
 | `types/contrato.ts` | Dashboard JSON v3.1.0 |
-| `types/cadastros.ts` | Estabelecimento, EnrichmentSlug, enrichment unions |
+| `types/cadastros.ts` | Estabelecimento, `Forma`, `Cbo`, EnrichmentSlug, enrichment unions |
 | `types/painel.ts` | `PainelPerfil`, `PainelCatalogStatus` |
 | `types/importacao.ts` | preview enriquecido, `ResolucaoUpload`, mapeamentos |
 

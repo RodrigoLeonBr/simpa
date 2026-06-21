@@ -50,6 +50,20 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
     description: 'Catálogo SIGTAP sincronizado do MySQL. Somente leitura — use o botão de sync para atualizar.',
   },
   {
+    route: 'formas',
+    title: 'Formas de Organização',
+    tableName: 'formas_sia',
+    description:
+      'Forma de organização (grupo/subgrupo/forma) sincronizada do MySQL SIA. Somente leitura — use o botão de sync para atualizar.',
+  },
+  {
+    route: 'cbos',
+    title: 'CBOs',
+    tableName: 'cbos_sia',
+    description:
+      'Classificação Brasileira de Ocupações sincronizada do MySQL SIA. Somente leitura — use o botão de sync para atualizar.',
+  },
+  {
     route: 'equipes',
     title: 'Equipes',
     tableName: 'equipes',

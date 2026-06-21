@@ -24,6 +24,8 @@ describe('cadastros sync routes', () => {
       status: 'ok',
       estabelecimentos: { inserted: 2, updated: 5, inactivated: 0 },
       procedimentos: { inserted: 10, updated: 20, inactivated: 1 },
+      formas: { inserted: 3, updated: 4, inactivated: 0 },
+      cbos: { inserted: 5, updated: 6, inactivated: 0 },
       sincronizado_em: '2026-06-20T12:00:00Z',
     });
     listSyncHistory.mockResolvedValue({
@@ -34,6 +36,8 @@ describe('cadastros sync routes', () => {
           sincronizado_em: '2026-06-20T12:00:00Z',
           estabelecimentos: { inserted: 2, updated: 5, inactivated: 0 },
           procedimentos: { inserted: 10, updated: 20, inactivated: 1 },
+          formas: { inserted: 3, updated: 4, inactivated: 0 },
+          cbos: { inserted: 5, updated: 6, inactivated: 0 },
         },
       ],
       pagination: { page: 1, limit: 20, total: 1, pages: 1 },
@@ -44,6 +48,8 @@ describe('cadastros sync routes', () => {
       sincronizado_em: '2026-06-20T12:00:00Z',
       estabelecimentos: { inserted: 2, updated: 5, inactivated: 0 },
       procedimentos: { inserted: 10, updated: 20, inactivated: 1 },
+      formas: { inserted: 3, updated: 4, inactivated: 0 },
+      cbos: { inserted: 5, updated: 6, inactivated: 0 },
     });
     getEstabelecimentoById.mockRejectedValue(
       Object.assign(new Error('Estabelecimento não encontrado'), { status: 404 })
@@ -58,6 +64,8 @@ describe('cadastros sync routes', () => {
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('ok');
     expect(res.body.estabelecimentos.inserted).toBe(2);
+    expect(res.body.formas).toEqual({ inserted: 3, updated: 4, inactivated: 0 });
+    expect(res.body.cbos).toEqual({ inserted: 5, updated: 6, inactivated: 0 });
     expect(sincronizar).toHaveBeenCalledTimes(1);
     expect(logAudit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -106,6 +114,16 @@ describe('cadastros sync routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
     expect(res.body.pagination.total).toBe(1);
+    expect(res.body.data[0].formas).toEqual({
+      inserted: 3,
+      updated: 4,
+      inactivated: 0,
+    });
+    expect(res.body.data[0].cbos).toEqual({
+      inserted: 5,
+      updated: 6,
+      inactivated: 0,
+    });
     expect(listSyncHistory).toHaveBeenCalledWith({ page: '1', limit: '10' });
   });
 
@@ -128,6 +146,16 @@ describe('cadastros sync routes', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
+    expect(res.body.formas).toEqual({
+      inserted: 3,
+      updated: 4,
+      inactivated: 0,
+    });
+    expect(res.body.cbos).toEqual({
+      inserted: 5,
+      updated: 6,
+      inactivated: 0,
+    });
     expect(getLatestSync).toHaveBeenCalledTimes(1);
   });
 

@@ -206,6 +206,19 @@ def test_normalize_forma_row_derives_grupo_subgrupo_from_codigo(sync_ts):
     assert row["codigo_forma"] == "020202"
 
 
+def test_normalize_forma_row_pads_short_codigo(sync_ts):
+    row = sync.normalize_forma_row(
+        {
+            "codigo_forma": "10101",
+            "descricao": "FORMA CURTA",
+        },
+        sync_ts,
+    )
+    assert row["codigo_forma"] == "010101"
+    assert row["codigo_grupo"] == "01"
+    assert row["codigo_subgrupo"] == "0101"
+
+
 def test_normalize_cbo_row_returns_expected_fields(sync_ts):
     row = sync.normalize_cbo_row(
         {
@@ -229,6 +242,72 @@ def test_normalize_cbo_row_pads_codigo_to_six_chars(sync_ts):
         sync_ts,
     )
     assert row["codigo_cbo"] == "001234"
+
+
+def test_normalize_cbo_row_strips_spaces_and_truncates_prd_cbo(sync_ts):
+    row = sync.normalize_cbo_row(
+        {
+            "codigo_cbo": " 22350501 ",
+            "descricao": "ENFERMEIRO",
+        },
+        sync_ts,
+    )
+    assert row["codigo_cbo"] == "223505"
+
+
+def test_snapshot_allows_inactivation_empty_snapshot():
+    assert sync.snapshot_allows_inactivation(0, 10) is False
+
+
+def test_snapshot_allows_inactivation_respects_min_ratio():
+    assert sync.snapshot_allows_inactivation(2, 10, min_ratio=0.25) is False
+    assert sync.snapshot_allows_inactivation(3, 10, min_ratio=0.25) is True
+    assert sync.snapshot_allows_inactivation(5, 0, min_ratio=0.25) is True
+
+
+def test_inactivate_formas_skips_empty_snapshot():
+    cur = MagicMock()
+    count = sync._inactivate_formas(cur, set(), pg_write=True)
+    assert count == 0
+    cur.execute.assert_not_called()
+
+
+def test_inactivate_cbos_skips_empty_snapshot():
+    cur = MagicMock()
+    count = sync._inactivate_cbos(cur, set(), pg_write=True)
+    assert count == 0
+    cur.execute.assert_not_called()
+
+
+def test_invalid_forma_cbo_rows_emit_parcial_status(monkeypatch):
+    monkeypatch.setattr(sync, "mysql_configured", lambda: True)
+    monkeypatch.setattr(sync, "extrair_prestadores", lambda *_: [])
+    monkeypatch.setattr(sync, "extrair_procedimentos", lambda *_: [])
+    monkeypatch.setattr(
+        sync,
+        "extrair_formas",
+        lambda *_: [{"codigo_forma": "", "descricao": "INVALIDO"}],
+    )
+    monkeypatch.setattr(
+        sync,
+        "extrair_cbos",
+        lambda *_: [{"codigo_cbo": "223505", "descricao": ""}],
+    )
+
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+    mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+    mock_cursor.fetchall.return_value = []
+    monkeypatch.setattr(sync, "pg_connect", lambda: mock_conn)
+
+    result = sync.sincronizar(pg_write=False, dry_run=True)
+
+    assert result["status"] == "parcial"
+    assert result["skipped"]["formas"] == 1
+    assert result["skipped"]["cbos"] == 1
+    assert result["formas"]["inactivated"] == 0
+    assert result["cbos"]["inactivated"] == 0
 
 
 def test_dry_run_does_not_write_to_postgresql(monkeypatch, sync_ts):
@@ -317,6 +396,216 @@ def test_dry_run_includes_forma_cbo_counters(monkeypatch, sync_ts):
     assert result["formas"]["inserted"] == 1
     assert result["cbos"]["inserted"] == 1
     mock_conn.commit.assert_not_called()
+
+
+@pytest.mark.integration
+def test_inconsistent_forma_snapshot_skips_mass_inactivation(cadastro_pg, sync_ts):
+    pg_conn = cadastro_pg
+    legacy_codes = ("911111", "922222", "933333", "944444", "955555")
+
+    with pg_conn.cursor() as cur:
+        cur.execute("DELETE FROM formas_sia")
+        for code in legacy_codes:
+            cur.execute(
+                """
+                INSERT INTO formas_sia (
+                    codigo_grupo, codigo_subgrupo, codigo_forma, descricao, status
+                ) VALUES (%s, %s, %s, %s, 'ativo')
+                """,
+                (code[:2], code[:4], code, f"FORMA {code}"),
+            )
+    pg_conn.commit()
+
+    with pg_conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM formas_sia
+            WHERE status = 'ativo' AND codigo_forma = ANY(%s)
+            """,
+            (list(legacy_codes),),
+        )
+        active_legacy_before = cur.fetchone()[0]
+    assert active_legacy_before == len(legacy_codes)
+
+    partial = [
+        sync.normalize_forma_row(
+            {
+                "codigo_grupo": "01",
+                "codigo_subgrupo": "0101",
+                "codigo_forma": "010101",
+                "descricao": "CONSULTA PARCIAL",
+            },
+            sync_ts,
+        )
+    ]
+    counts = sync.sync_formas(pg_conn, partial, pg_write=True)
+    pg_conn.commit()
+
+    assert counts["inactivated"] == 0
+
+    with pg_conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM formas_sia
+            WHERE status = 'ativo' AND codigo_forma = ANY(%s)
+            """,
+            (list(legacy_codes),),
+        )
+        active_legacy_after = cur.fetchone()[0]
+        cur.execute(
+            "SELECT COUNT(*) FROM formas_sia WHERE codigo_forma = '010101' AND status = 'ativo'"
+        )
+        partial_count = cur.fetchone()[0]
+
+    assert active_legacy_after == active_legacy_before
+    assert partial_count == 1
+
+
+@pytest.mark.integration
+def test_partial_forma_sync_inactivates_when_ratio_allows(cadastro_pg, sync_ts, monkeypatch):
+    pg_conn = cadastro_pg
+    monkeypatch.setenv("CADASTRO_SNAPSHOT_MIN_RATIO", "0.01")
+    forma_codes = ("966666", "977777", "988888")
+
+    with pg_conn.cursor() as cur:
+        cur.execute("DELETE FROM formas_sia WHERE codigo_forma = ANY(%s)", (list(forma_codes),))
+        cur.execute(
+            """
+            INSERT INTO formas_sia (
+                codigo_grupo, codigo_subgrupo, codigo_forma, descricao, status
+            ) VALUES
+                ('96', '9666', '966666', 'FORMA A', 'ativo'),
+                ('97', '9777', '977777', 'FORMA B', 'ativo'),
+                ('98', '9888', '988888', 'FORMA C', 'ativo')
+            """
+        )
+    pg_conn.commit()
+
+    rows = [
+        sync.normalize_forma_row(
+            {
+                "codigo_grupo": "96",
+                "codigo_subgrupo": "9666",
+                "codigo_forma": "966666",
+                "descricao": "FORMA A ATUALIZADA",
+            },
+            sync_ts,
+        )
+    ]
+    counts = sync.sync_formas(pg_conn, rows, pg_write=True)
+    pg_conn.commit()
+
+    assert counts["updated"] == 1
+    assert counts["inactivated"] >= 2
+
+    with pg_conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM formas_sia
+            WHERE status = 'ativo' AND codigo_forma = ANY(%s)
+            """,
+            (list(forma_codes),),
+        )
+        active_target_after = cur.fetchone()[0]
+
+    assert active_target_after == 1
+
+
+@pytest.mark.integration
+def test_forma_inactivation_is_blocked_when_rows_were_skipped(cadastro_pg, sync_ts, monkeypatch):
+    pg_conn = cadastro_pg
+    monkeypatch.setenv("CADASTRO_SNAPSHOT_MIN_RATIO", "0.01")
+    forma_codes = ("866666", "877777", "888888")
+
+    with pg_conn.cursor() as cur:
+        cur.execute("DELETE FROM formas_sia WHERE codigo_forma = ANY(%s)", (list(forma_codes),))
+        cur.execute(
+            """
+            INSERT INTO formas_sia (
+                codigo_grupo, codigo_subgrupo, codigo_forma, descricao, status
+            ) VALUES
+                ('86', '8666', '866666', 'FORMA A', 'ativo'),
+                ('87', '8777', '877777', 'FORMA B', 'ativo'),
+                ('88', '8888', '888888', 'FORMA C', 'ativo')
+            """
+        )
+    pg_conn.commit()
+
+    rows = [
+        sync.normalize_forma_row(
+            {
+                "codigo_grupo": "86",
+                "codigo_subgrupo": "8666",
+                "codigo_forma": "866666",
+                "descricao": "FORMA A ATUALIZADA",
+            },
+            sync_ts,
+        )
+    ]
+    counts = sync.sync_formas(pg_conn, rows, pg_write=True, skipped_rows=1)
+    pg_conn.commit()
+
+    assert counts["updated"] == 1
+    assert counts["inactivated"] == 0
+
+    with pg_conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM formas_sia
+            WHERE status = 'ativo' AND codigo_forma = ANY(%s)
+            """,
+            (list(forma_codes),),
+        )
+        active_target_after = cur.fetchone()[0]
+        cur.execute("DELETE FROM formas_sia WHERE codigo_forma = ANY(%s)", (list(forma_codes),))
+    pg_conn.commit()
+
+    assert active_target_after == 3
+
+
+@pytest.mark.integration
+def test_cbo_inactivation_is_blocked_when_rows_were_skipped(cadastro_pg, sync_ts, monkeypatch):
+    pg_conn = cadastro_pg
+    monkeypatch.setenv("CADASTRO_SNAPSHOT_MIN_RATIO", "0.01")
+    cbo_codes = ("123456", "123457", "123458")
+
+    with pg_conn.cursor() as cur:
+        cur.execute("DELETE FROM cbos_sia WHERE codigo_cbo = ANY(%s)", (list(cbo_codes),))
+        cur.execute(
+            """
+            INSERT INTO cbos_sia (codigo_cbo, descricao, status) VALUES
+                ('123456', 'CBO A', 'ativo'),
+                ('123457', 'CBO B', 'ativo'),
+                ('123458', 'CBO C', 'ativo')
+            """
+        )
+    pg_conn.commit()
+
+    rows = [sync.normalize_cbo_row({"codigo_cbo": "123456", "descricao": "CBO A ATUALIZADO"}, sync_ts)]
+    counts = sync.sync_cbos(pg_conn, rows, pg_write=True, skipped_rows=2)
+    pg_conn.commit()
+
+    assert counts["updated"] == 1
+    assert counts["inactivated"] == 0
+
+    with pg_conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM cbos_sia
+            WHERE status = 'ativo' AND codigo_cbo = ANY(%s)
+            """,
+            (list(cbo_codes),),
+        )
+        active_target_after = cur.fetchone()[0]
+        cur.execute("DELETE FROM cbos_sia WHERE codigo_cbo = ANY(%s)", (list(cbo_codes),))
+    pg_conn.commit()
+
+    assert active_target_after == 3
 
 
 @pytest.mark.integration

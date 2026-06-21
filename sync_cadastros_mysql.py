@@ -16,10 +16,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import sys
 from datetime import datetime, timezone
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -30,6 +33,8 @@ DEFAULT_PERFIL_MAP: dict[str, Any] = {
     "tipouni": {"1": "APS", "2": "MAC", "3": "Hospitalar"},
     "default": "Outro",
 }
+
+DEFAULT_SNAPSHOT_MIN_RATIO = 0.25
 
 COUNT_TEMPLATE = {"inserted": 0, "updated": 0, "inactivated": 0}
 
@@ -268,7 +273,41 @@ def normalize_prestador_row(
     }
 
 
+def load_snapshot_min_ratio() -> float:
+    """Minimum snapshot/active ratio required before mass inactivation (default 25%)."""
+    raw = os.environ.get("CADASTRO_SNAPSHOT_MIN_RATIO")
+    if raw is None:
+        return DEFAULT_SNAPSHOT_MIN_RATIO
+    try:
+        ratio = float(raw)
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid CADASTRO_SNAPSHOT_MIN_RATIO: {raw!r} (expected float between 0 and 1)"
+        ) from exc
+    if ratio <= 0 or ratio > 1:
+        raise ValueError(
+            f"Invalid CADASTRO_SNAPSHOT_MIN_RATIO: {ratio} (expected float between 0 and 1)"
+        )
+    return ratio
+
+
+def snapshot_allows_inactivation(
+    snapshot_size: int,
+    existing_active: int,
+    *,
+    min_ratio: float | None = None,
+) -> bool:
+    """Guard against inconsistent MySQL snapshots that would inactivate most of the mirror."""
+    if snapshot_size <= 0:
+        return False
+    if existing_active <= 0:
+        return True
+    ratio = min_ratio if min_ratio is not None else load_snapshot_min_ratio()
+    return snapshot_size >= existing_active * ratio
+
+
 def _canonical_code(value: str, length: int) -> str:
+    """Left-pad short codes; truncate longer values (e.g. prd_cbo 8 chars -> 6)."""
     text = value.strip()
     if len(text) >= length:
         return text[:length]
@@ -279,6 +318,7 @@ def normalize_forma_row(
     row: dict[str, Any],
     sync_ts: datetime | None = None,
 ) -> dict[str, Any]:
+    """Canonicalize forma codes to 6 digits; derive grupo/subgrupo when absent."""
     sync_ts = sync_ts or datetime.now(timezone.utc)
     codigo_forma_raw = _clean_str(row.get("codigo_forma"), max_len=6)
     descricao = _clean_str(row.get("descricao"), max_len=120)
@@ -305,8 +345,9 @@ def normalize_cbo_row(
     row: dict[str, Any],
     sync_ts: datetime | None = None,
 ) -> dict[str, Any]:
+    """Canonicalize CBO to 6 chars (left pad or truncate prd_cbo-style 8-char values)."""
     sync_ts = sync_ts or datetime.now(timezone.utc)
-    codigo_raw = _clean_str(row.get("codigo_cbo"), max_len=6)
+    codigo_raw = _clean_str(row.get("codigo_cbo"), max_len=8)
     descricao = _clean_str(row.get("descricao"), max_len=160)
     if not codigo_raw or not descricao:
         raise ValueError("cbo row missing codigo_cbo or descricao")
@@ -419,8 +460,23 @@ def _inactivate_estabelecimentos(cur, snapshot_keys: set[str], pg_write: bool) -
     return len(to_inactivate)
 
 
+def _count_active_rows(cur, table: str, *, where: str = "status = 'ativo'") -> int:
+    cur.execute(f"SELECT COUNT(*) FROM {table} WHERE {where}")
+    return int(cur.fetchone()[0])
+
+
 def _inactivate_formas(cur, snapshot_keys: set[str], pg_write: bool) -> int:
     if not snapshot_keys:
+        return 0
+
+    existing_active = _count_active_rows(cur, "formas_sia")
+    if not snapshot_allows_inactivation(len(snapshot_keys), existing_active):
+        logger.warning(
+            "Skipping forma inactivation: snapshot=%s active=%s min_ratio=%s",
+            len(snapshot_keys),
+            existing_active,
+            load_snapshot_min_ratio(),
+        )
         return 0
 
     cur.execute(
@@ -445,6 +501,16 @@ def _inactivate_formas(cur, snapshot_keys: set[str], pg_write: bool) -> int:
 
 def _inactivate_cbos(cur, snapshot_keys: set[str], pg_write: bool) -> int:
     if not snapshot_keys:
+        return 0
+
+    existing_active = _count_active_rows(cur, "cbos_sia")
+    if not snapshot_allows_inactivation(len(snapshot_keys), existing_active):
+        logger.warning(
+            "Skipping cbo inactivation: snapshot=%s active=%s min_ratio=%s",
+            len(snapshot_keys),
+            existing_active,
+            load_snapshot_min_ratio(),
+        )
         return 0
 
     cur.execute(
@@ -544,6 +610,7 @@ def sync_formas(
     rows: list[dict[str, Any]],
     *,
     pg_write: bool,
+    skipped_rows: int = 0,
 ) -> dict[str, int]:
     counts = dict(COUNT_TEMPLATE)
     snapshot_keys = {row["codigo_forma"] for row in rows}
@@ -558,7 +625,14 @@ def sync_formas(
             for row in rows:
                 cur.execute(UPSERT_FORMA_SQL, row)
 
-        counts["inactivated"] = _inactivate_formas(cur, snapshot_keys, pg_write)
+        if skipped_rows > 0:
+            logger.warning(
+                "Skipping forma inactivation because %s row(s) were ignored during normalization",
+                skipped_rows,
+            )
+            counts["inactivated"] = 0
+        else:
+            counts["inactivated"] = _inactivate_formas(cur, snapshot_keys, pg_write)
 
     return counts
 
@@ -568,6 +642,7 @@ def sync_cbos(
     rows: list[dict[str, Any]],
     *,
     pg_write: bool,
+    skipped_rows: int = 0,
 ) -> dict[str, int]:
     counts = dict(COUNT_TEMPLATE)
     snapshot_keys = {row["codigo_cbo"] for row in rows}
@@ -582,7 +657,14 @@ def sync_cbos(
             for row in rows:
                 cur.execute(UPSERT_CBO_SQL, row)
 
-        counts["inactivated"] = _inactivate_cbos(cur, snapshot_keys, pg_write)
+        if skipped_rows > 0:
+            logger.warning(
+                "Skipping cbo inactivation because %s row(s) were ignored during normalization",
+                skipped_rows,
+            )
+            counts["inactivated"] = 0
+        else:
+            counts["inactivated"] = _inactivate_cbos(cur, snapshot_keys, pg_write)
 
     return counts
 
@@ -698,8 +780,9 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
     for row in raw_prest:
         try:
             prestadores.append(normalize_prestador_row(row, perfil_map, sync_ts))
-        except ValueError:
+        except ValueError as exc:
             skipped_estab += 1
+            logger.warning("Skipping invalid prestador row: %s", exc)
             continue
 
     procedimentos: list[dict[str, Any]] = []
@@ -707,8 +790,9 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
     for row in raw_proc:
         try:
             procedimentos.append(normalize_procedimento_row(row, sync_ts))
-        except ValueError:
+        except ValueError as exc:
             skipped_proc += 1
+            logger.warning("Skipping invalid procedimento row: %s", exc)
             continue
 
     formas: list[dict[str, Any]] = []
@@ -716,8 +800,9 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
     for row in raw_formas:
         try:
             formas.append(normalize_forma_row(row, sync_ts))
-        except ValueError:
+        except ValueError as exc:
             skipped_formas += 1
+            logger.warning("Skipping invalid forma row: %s", exc)
             continue
 
     cbos: list[dict[str, Any]] = []
@@ -725,16 +810,19 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
     for row in raw_cbos:
         try:
             cbos.append(normalize_cbo_row(row, sync_ts))
-        except ValueError:
+        except ValueError as exc:
             skipped_cbos += 1
+            logger.warning("Skipping invalid cbo row: %s", exc)
             continue
 
     conn_pg = pg_connect()
     try:
         estab_counts = sync_estabelecimentos(conn_pg, prestadores, pg_write=pg_write)
         proc_counts = sync_procedimentos(conn_pg, procedimentos, pg_write=pg_write)
-        forma_counts = sync_formas(conn_pg, formas, pg_write=pg_write)
-        cbo_counts = sync_cbos(conn_pg, cbos, pg_write=pg_write)
+        forma_counts = sync_formas(
+            conn_pg, formas, pg_write=pg_write, skipped_rows=skipped_formas
+        )
+        cbo_counts = sync_cbos(conn_pg, cbos, pg_write=pg_write, skipped_rows=skipped_cbos)
 
         skipped_total = skipped_estab + skipped_proc + skipped_formas + skipped_cbos
         status = "parcial" if skipped_total else "ok"

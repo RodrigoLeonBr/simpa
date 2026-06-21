@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Criar páginas frontend de listagem Formas e CBOs
 type: frontend
 complexity: medium
@@ -30,10 +30,10 @@ Implementar páginas read-only para os novos cadastros, com busca, tabela e esta
 </requirements>
 
 ## Subtasks
-- [ ] 09.1 Criar client API para formas/cbos
-- [ ] 09.2 Implementar tabela e filtros em FormasPage
-- [ ] 09.3 Implementar tabela e filtros em CbosPage
-- [ ] 09.4 Cobrir estados vazio/erro/carregando
+- [x] 09.1 Criar client API para formas/cbos
+- [x] 09.2 Implementar tabela e filtros em FormasPage
+- [x] 09.3 Implementar tabela e filtros em CbosPage
+- [x] 09.4 Cobrir estados vazio/erro/carregando
 
 ## Deliverables
 - `simpa-frontend/src/pages/Cadastros/FormasPage.tsx`
@@ -42,11 +42,11 @@ Implementar páginas read-only para os novos cadastros, com busca, tabela e esta
 
 ## Tests
 - Unit tests:
-  - [ ] Render inicial com loading
-  - [ ] Busca dispara request com `q`
-  - [ ] Tabela renderiza colunas esperadas
-  - [ ] Erro de API mostra feedback amigável
-- Coverage target: >=80% dos arquivos novos
+  - [x] Render inicial com loading
+  - [x] Busca dispara request com `q`
+  - [x] Tabela renderiza colunas esperadas
+  - [x] Erro de API mostra feedback amigável
+- Coverage target: >=80% dos arquivos novos (arquivos novos cobertos por suíte dedicada)
 
 ## Success Criteria
 - Usuário autenticado consulta Forma e CBO via telas dedicadas em Cadastros

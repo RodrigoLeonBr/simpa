@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Integrar descrições de forma e cbo no fluxo SIA
 type: backend
 complexity: medium
@@ -29,10 +29,10 @@ Usar os novos cadastros de referência para enriquecer saídas analíticas do SI
 </requirements>
 
 ## Subtasks
-- [ ] 11.1 Identificar consultas SIA elegíveis para enriquecimento
-- [ ] 11.2 Aplicar join por código canônico
-- [ ] 11.3 Expor `descricao_forma` e `descricao_cbo` no payload
-- [ ] 11.4 Cobrir regressão de performance e compatibilidade
+- [x] 11.1 Identificar consultas SIA elegíveis para enriquecimento
+- [x] 11.2 Aplicar join por código canônico
+- [x] 11.3 Expor `descricao_forma` e `descricao_cbo` no payload
+- [x] 11.4 Cobrir regressão de performance e compatibilidade
 
 ## Deliverables
 - serviços/queries SIA atualizados
@@ -40,11 +40,11 @@ Usar os novos cadastros de referência para enriquecer saídas analíticas do SI
 
 ## Tests
 - Unit tests:
-  - [ ] Canonicalização de código CBO e forma
-  - [ ] Null-safe join sem falhar quando não houver cadastro
+  - [x] Canonicalização de código CBO e forma
+  - [x] Null-safe join sem falhar quando não houver cadastro
 - Integration tests:
-  - [ ] Resposta SIA inclui descrições quando cadastro existe
-  - [ ] Resposta segue válida quando cadastro não existe
+  - [x] Resposta SIA inclui descrições quando cadastro existe
+  - [x] Resposta segue válida quando cadastro não existe
 
 ## Success Criteria
 - Relatórios SIA passam a ter legenda descritiva de Forma/CBO

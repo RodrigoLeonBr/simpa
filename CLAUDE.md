@@ -31,7 +31,7 @@ simpa/
 ├── docs/agent/            # referência modular (LEIA AQUI)
 ├── .compozy/tasks/        # PRD, TechSpec, tasks por feature
 ├── schema_full.sql        # schema base PG
-├── migration_002..006.sql # auth, cadastros, sync, perfil/enrichment, import de-para
+├── migration_002..009.sql # auth, cadastros, sync, perfil/enrichment, import de-para, forma/cbo
 ├── parse_esus_csv.py      # ETL e-SUS
 ├── consolidate_dashboard.py
 ├── sync_cadastros_mysql.py
@@ -91,8 +91,8 @@ Detalhes, scripts `.bat` e refresh: **[docs/agent/docker-env.md](docs/agent/dock
 
 ## Banco de dados
 
-- Init Docker: `schema_full.sql` + `migration_002` … `006` em `docker-compose.yml`.
-- Tabelas-chave: `estabelecimentos`, `procedimentos`, `enriquecimento_*`, `esus_cargas`, `dados_consolidados`, `usuarios`.
+- Init Docker: `schema_full.sql` + `migration_002` … `009` em `docker-compose.yml`.
+- Tabelas-chave: `estabelecimentos`, `procedimentos`, `formas_sia`, `cbos_sia`, `enriquecimento_*`, `esus_cargas`, `dados_consolidados`, `usuarios`.
 - Contrato dashboard lido de `dados_consolidados.dados_conteudo` (JSONB).
 
 Schema e migrations: **[docs/agent/database.md](docs/agent/database.md)**.
@@ -108,7 +108,7 @@ Scripts na raiz, invocados pela API (`parser.js`, `consolidator.js`, `cadastrosS
 | `parse_esus_csv.py` | CSV e-SUS → `esus_cargas` / raw |
 | `consolidate_dashboard.py` | raw → `dados_consolidados` |
 | `sync_sia_mysql.py` | SIA MySQL → PG |
-| `sync_cadastros_mysql.py` | prestador/procedimento → estabelecimentos/procedimentos |
+| `sync_cadastros_mysql.py` | prestador/procedimento/forma/cbo → estabelecimentos, procedimentos, formas_sia, cbos_sia |
 
 Detalhes: **[docs/agent/etl-python.md](docs/agent/etl-python.md)**.
 
@@ -172,6 +172,7 @@ Nenhum workflow ativo. Arquivados em `.compozy/tasks/_archived/`:
 |------|--------|----------|
 | `importacao-depara-unidade-equipe` | **arquivado ✅** | De-para e-SUS, preview gate, Painel por IDs |
 | `estabelecimentos-perfil-painel` | **arquivado ✅** | Perfil editável, enriquecimento por perfil, Painel multi-perfil |
+| `cadastros-forma-cbo-sia-sih` | **arquivado ✅** | Forma/CBO MySQL → PG, Cadastros read-only, enriquecimento SIA |
 
 Guia: **[docs/agent/compozy.md](docs/agent/compozy.md)**.
 
@@ -194,6 +195,14 @@ Resumo: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-importacao-
 **Commits principais:** `4c43959`, `8353acf`, `5e20371`.
 
 Resumo técnico: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-estabelecimentos-perfil-painel)** · Painel: **[frontend.md](docs/agent/frontend.md#painel)**.
+
+---
+
+## Feature concluída: cadastros-forma-cbo-sia-sih
+
+**Entregue:** espelho MySQL `forma`/`cbo` → `formas_sia`/`cbos_sia`; APIs read-only; cards e páginas Cadastros; enriquecimento `GET /api/sia/producao` com `descricao_forma`/`descricao_cbo`; contrato SIH em `cadastroReferenciaService.js`.
+
+Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Resumo: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-forma-cbo-sia-sih)** · API: **[backend-api.md](docs/agent/backend-api.md)** · UI: **[frontend.md](docs/agent/frontend.md#cadastros)**.
 
 ---
 
@@ -223,6 +232,8 @@ Resumo técnico: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-es
 | Como Painel lista unidades? | `useDashboard.ts` → `fetchEstabelecimentos(buildEstabelecimentosPerfilQuery(painelPerfil))` |
 | Como importação resolve de-para? | `importMappingService.js` + `routes/importacao.js` |
 | Como deriva perfil no sync? | `sync_cadastros_mysql.py` → `derive_perfil` |
+| Como enriquece forma/cbo no SIA? | `siaProducaoService.js` + `cadastroReferenciaService.js` |
+| Extensão SIH forma/cbo? | `cadastroReferenciaService.js` → `resolveFormaDescricao` / `resolveCboDescricao` |
 | Enriquecimento por perfil? | `PUT …/enriquecimento/:slug` + tabelas `enriquecimento_*` |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |
 | Roles de usuário | `requirePlanningStaff.js`, `admin.js` |
@@ -236,7 +247,7 @@ Resumo técnico: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-es
 | [README.md](docs/agent/README.md) | Índice e como usar |
 | [backend-api.md](docs/agent/backend-api.md) | Endpoints, services, middleware |
 | [frontend.md](docs/agent/frontend.md) | Páginas, hooks, componentes |
-| [cadastros.md](docs/agent/cadastros.md) | Estabelecimentos, procedimentos, sync, de-para importação |
+| [cadastros.md](docs/agent/cadastros.md) | Estabelecimentos, procedimentos, formas/cbo, sync, SIA/SIH |
 | [database.md](docs/agent/database.md) | Tabelas, migrations, FKs |
 | [etl-python.md](docs/agent/etl-python.md) | Scripts ETL e fluxo de dados |
 | [docker-env.md](docs/agent/docker-env.md) | Compose, env, scripts refresh |
@@ -246,4 +257,4 @@ Resumo técnico: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-es
 
 ---
 
-*Última atualização: 2026-06-20 · Manter CLAUDE.md ≤300 linhas; detalhes novos vão em `docs/agent/`.*
+*Última atualização: 2026-06-21 · Manter CLAUDE.md ≤300 linhas; detalhes novos vão em `docs/agent/`.*

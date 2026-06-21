@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Atualizar cadastrosSync.js para novos contadores
 type: backend
 complexity: low
@@ -28,9 +28,9 @@ Expandir o mapeamento de histórico e resultado de sincronização para incluir 
 </requirements>
 
 ## Subtasks
-- [ ] 04.1 Ajustar SELECTs com colunas `forma_*` e `cbo_*`
-- [ ] 04.2 Ajustar mapper de resposta
-- [ ] 04.3 Atualizar testes de serviço/rota
+- [x] 04.1 Ajustar SELECTs com colunas `forma_*` e `cbo_*`
+- [x] 04.2 Ajustar mapper de resposta
+- [x] 04.3 Atualizar testes de serviço/rota
 
 ## Deliverables
 - `simpa-backend/src/services/cadastrosSync.js` atualizado
@@ -38,10 +38,10 @@ Expandir o mapeamento de histórico e resultado de sincronização para incluir 
 
 ## Tests
 - Unit tests:
-  - [ ] `mapSyncRow` expõe `formas` e `cbos`
+  - [x] `mapSyncRow` expõe `formas` e `cbos`
 - Integration tests:
-  - [ ] `GET /api/cadastros/sincronizacoes`
-  - [ ] `GET /api/cadastros/sincronizacoes/ultima`
+  - [x] `GET /api/cadastros/sincronizacoes`
+  - [x] `GET /api/cadastros/sincronizacoes/ultima`
 
 ## Success Criteria
 - Histórico de sync retorna shape completo com quatro domínios (estab, proc, forma, cbo)

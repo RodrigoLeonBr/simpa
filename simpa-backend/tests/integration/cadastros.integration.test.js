@@ -272,6 +272,88 @@ describeIfPg('cadastros integration', () => {
     expect(res.status).toBe(405);
   });
 
+  itIfPg('GET /formas returns 200 with pagination', async () => {
+    const res = await request(app)
+      .get('/api/cadastros/formas')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.pagination).toMatchObject({
+      page: expect.any(Number),
+      limit: expect.any(Number),
+      total: expect.any(Number),
+      pages: expect.any(Number),
+    });
+  });
+
+  itIfPg('GET /cbos returns 200 with pagination', async () => {
+    const res = await request(app)
+      .get('/api/cadastros/cbos')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.pagination).toMatchObject({
+      page: expect.any(Number),
+      limit: expect.any(Number),
+      total: expect.any(Number),
+      pages: expect.any(Number),
+    });
+  });
+
+  itIfPg('POST /formas returns 405', async () => {
+    const res = await request(app)
+      .post('/api/cadastros/formas')
+      .set('Authorization', authHeader())
+      .send({ codigo_forma: '030101', descricao: 'X' });
+
+    expect(res.status).toBe(405);
+  });
+
+  itIfPg('PUT /formas/:id returns 405', async () => {
+    const res = await request(app)
+      .put('/api/cadastros/formas/1')
+      .set('Authorization', authHeader())
+      .send({ descricao: 'X' });
+
+    expect(res.status).toBe(405);
+  });
+
+  itIfPg('DELETE /formas/:id returns 405', async () => {
+    const res = await request(app)
+      .delete('/api/cadastros/formas/1')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(405);
+  });
+
+  itIfPg('POST /cbos returns 405', async () => {
+    const res = await request(app)
+      .post('/api/cadastros/cbos')
+      .set('Authorization', authHeader())
+      .send({ codigo_cbo: '225125', descricao: 'X' });
+
+    expect(res.status).toBe(405);
+  });
+
+  itIfPg('PUT /cbos/:id returns 405', async () => {
+    const res = await request(app)
+      .put('/api/cadastros/cbos/1')
+      .set('Authorization', authHeader())
+      .send({ descricao: 'X' });
+
+    expect(res.status).toBe(405);
+  });
+
+  itIfPg('DELETE /cbos/:id returns 405', async () => {
+    const res = await request(app)
+      .delete('/api/cadastros/cbos/1')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(405);
+  });
+
   itIfPg('equipes CRUD round-trip linked to estabelecimento', async () => {
     expect(estabelecimentoId).toBeTruthy();
 

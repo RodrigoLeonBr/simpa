@@ -53,6 +53,16 @@ function mapSyncRow(row) {
       updated: row.proc_atualizados,
       inactivated: row.proc_inativados,
     },
+    formas: {
+      inserted: row.forma_inseridos ?? 0,
+      updated: row.forma_atualizados ?? 0,
+      inactivated: row.forma_inativados ?? 0,
+    },
+    cbos: {
+      inserted: row.cbo_inseridos ?? 0,
+      updated: row.cbo_atualizados ?? 0,
+      inactivated: row.cbo_inativados ?? 0,
+    },
   };
 }
 
@@ -158,6 +168,8 @@ async function listSyncHistory({ page = 1, limit = 20 } = {}) {
     `SELECT id, status,
             estab_inseridos, estab_atualizados, estab_inativados,
             proc_inseridos, proc_atualizados, proc_inativados,
+            forma_inseridos, forma_atualizados, forma_inativados,
+            cbo_inseridos, cbo_atualizados, cbo_inativados,
             erro, sincronizado_em
      FROM cadastros_sincronizacoes
      ORDER BY sincronizado_em DESC
@@ -181,6 +193,8 @@ async function getLatestSync() {
     `SELECT id, status,
             estab_inseridos, estab_atualizados, estab_inativados,
             proc_inseridos, proc_atualizados, proc_inativados,
+            forma_inseridos, forma_atualizados, forma_inativados,
+            cbo_inseridos, cbo_atualizados, cbo_inativados,
             erro, sincronizado_em
      FROM cadastros_sincronizacoes
      WHERE status = 'ok'

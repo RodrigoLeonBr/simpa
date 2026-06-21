@@ -55,6 +55,8 @@ describe('cadastrosSync service', () => {
       status: 'ok',
       estabelecimentos: { inserted: 2, updated: 3, inactivated: 0 },
       procedimentos: { inserted: 10, updated: 0, inactivated: 0 },
+      formas: { inserted: 1, updated: 2, inactivated: 0 },
+      cbos: { inserted: 3, updated: 4, inactivated: 1 },
       sincronizado_em: '2026-06-20T12:00:00Z',
     };
     expect(parseSyncOutput(JSON.stringify(payload))).toEqual(payload);
@@ -172,6 +174,12 @@ describe('cadastrosSync service', () => {
         proc_inseridos: 3,
         proc_atualizados: 4,
         proc_inativados: 0,
+        forma_inseridos: 5,
+        forma_atualizados: 6,
+        forma_inativados: 1,
+        cbo_inseridos: 7,
+        cbo_atualizados: 8,
+        cbo_inativados: 2,
         erro: null,
         sincronizado_em: '2026-06-20T12:00:00Z',
       })
@@ -182,6 +190,28 @@ describe('cadastrosSync service', () => {
       erro: null,
       estabelecimentos: { inserted: 1, updated: 2, inactivated: 0 },
       procedimentos: { inserted: 3, updated: 4, inactivated: 0 },
+      formas: { inserted: 5, updated: 6, inactivated: 1 },
+      cbos: { inserted: 7, updated: 8, inactivated: 2 },
+    });
+  });
+
+  it('mapSyncRow defaults forma/cbo counters when columns are absent', () => {
+    expect(
+      mapSyncRow({
+        id: 1,
+        status: 'ok',
+        estab_inseridos: 0,
+        estab_atualizados: 0,
+        estab_inativados: 0,
+        proc_inseridos: 0,
+        proc_atualizados: 0,
+        proc_inativados: 0,
+        erro: null,
+        sincronizado_em: '2026-06-20T12:00:00Z',
+      })
+    ).toMatchObject({
+      formas: { inserted: 0, updated: 0, inactivated: 0 },
+      cbos: { inserted: 0, updated: 0, inactivated: 0 },
     });
   });
 
@@ -199,6 +229,12 @@ describe('cadastrosSync service', () => {
             proc_inseridos: 2,
             proc_atualizados: 0,
             proc_inativados: 0,
+            forma_inseridos: 3,
+            forma_atualizados: 0,
+            forma_inativados: 0,
+            cbo_inseridos: 4,
+            cbo_atualizados: 0,
+            cbo_inativados: 0,
             erro: null,
             sincronizado_em: '2026-06-20T12:00:00Z',
           },
@@ -210,6 +246,12 @@ describe('cadastrosSync service', () => {
     expect(result.data).toHaveLength(1);
     expect(result.pagination.total).toBe(1);
     expect(result.data[0].estabelecimentos.inserted).toBe(1);
+    expect(result.data[0].formas.inserted).toBe(3);
+    expect(result.data[0].cbos.inserted).toBe(4);
+    expect(query).toHaveBeenLastCalledWith(
+      expect.stringContaining('forma_inseridos'),
+      expect.any(Array)
+    );
   });
 
   it('getLatestSync returns most recent ok row', async () => {
@@ -224,6 +266,12 @@ describe('cadastrosSync service', () => {
           proc_inseridos: 0,
           proc_atualizados: 10,
           proc_inativados: 0,
+          forma_inseridos: 0,
+          forma_atualizados: 11,
+          forma_inativados: 0,
+          cbo_inseridos: 0,
+          cbo_atualizados: 12,
+          cbo_inativados: 0,
           erro: null,
           sincronizado_em: '2026-06-21T08:00:00Z',
         },
@@ -233,6 +281,11 @@ describe('cadastrosSync service', () => {
     const latest = await getLatestSync();
     expect(latest.id).toBe(2);
     expect(latest.procedimentos.updated).toBe(10);
+    expect(latest.formas.updated).toBe(11);
+    expect(latest.cbos.updated).toBe(12);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('cbo_atualizados')
+    );
   });
 
   it('getLatestSync throws 404 when empty', async () => {

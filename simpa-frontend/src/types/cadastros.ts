@@ -19,6 +19,8 @@ export interface CadastroSyncRecord {
   erro?: string | null;
   estabelecimentos: CadastroSyncCounts;
   procedimentos: CadastroSyncCounts;
+  formas?: CadastroSyncCounts;
+  cbos?: CadastroSyncCounts;
 }
 
 export type EstabelecimentoPerfil = 'APS' | 'MAC' | 'Hospitalar' | 'Misto' | 'Outro';
@@ -112,6 +114,24 @@ export interface Procedimento {
   sincronizado_em?: string | null;
 }
 
+export interface Forma {
+  id: number;
+  codigo_grupo: string;
+  codigo_subgrupo: string;
+  codigo_forma: string;
+  descricao: string;
+  status: string;
+  sincronizado_em?: string | null;
+}
+
+export interface Cbo {
+  id: number;
+  codigo_cbo: string;
+  descricao: string;
+  status: string;
+  sincronizado_em?: string | null;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {
@@ -124,5 +144,7 @@ export interface PaginatedResponse<T> {
 
 export type EstabelecimentosListResponse = PaginatedResponse<Estabelecimento>;
 export type ProcedimentosListResponse = PaginatedResponse<Procedimento>;
+export type FormasListResponse = PaginatedResponse<Forma>;
+export type CbosListResponse = PaginatedResponse<Cbo>;
 
 export type EstabelecimentoPerfilFilter = '' | EstabelecimentoPerfil;

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Expor rotas GET de formas e cbos em cadastros
 type: backend
 complexity: low
@@ -29,20 +29,20 @@ Adicionar os endpoints de leitura para os novos cadastros de referência no rout
 </requirements>
 
 ## Subtasks
-- [ ] 06.1 Registrar handlers GET
-- [ ] 06.2 Adicionar handlers 405 para POST/PUT/DELETE
-- [ ] 06.3 Mapear query params para serviços
+- [x] 06.1 Registrar handlers GET
+- [x] 06.2 Adicionar handlers 405 para POST/PUT/DELETE
+- [x] 06.3 Mapear query params para serviços
 
 ## Deliverables
 - `simpa-backend/src/routes/cadastros.js` atualizado
 
 ## Tests
 - Unit tests:
-  - [ ] Handler de formas chama serviço correto
-  - [ ] Handler de cbos chama serviço correto
+  - [x] Handler de formas chama serviço correto
+  - [x] Handler de cbos chama serviço correto
 - Integration tests:
-  - [ ] GET autenticado retorna 200
-  - [ ] POST/PUT/DELETE retornam 405
+  - [x] GET autenticado retorna 200
+  - [x] POST/PUT/DELETE retornam 405
 
 ## Success Criteria
 - Endpoints novos disponíveis no contrato de API de cadastros

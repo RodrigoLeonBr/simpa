@@ -2,6 +2,7 @@ const express = require('express');
 const { query } = require('../services/db');
 const { sincronizar } = require('../services/sia');
 const { runConsolidation } = require('../services/consolidator');
+const { listProducao } = require('../services/siaProducaoService');
 
 const router = express.Router();
 
@@ -44,32 +45,7 @@ router.get('/sincronizacoes', async (req, res, next) => {
 
 router.get('/producao', async (req, res, next) => {
   try {
-    const { competencia, unidade, codigo_sigtap } = req.query;
-    const conditions = [];
-    const params = [];
-
-    if (competencia) {
-      params.push(`${competencia}-01`);
-      conditions.push(`competencia = $${params.length}`);
-    }
-    if (unidade) {
-      params.push(`%${unidade}%`);
-      conditions.push(`unidade ILIKE $${params.length}`);
-    }
-    if (codigo_sigtap) {
-      params.push(codigo_sigtap);
-      conditions.push(`codigo_sigtap = $${params.length}`);
-    }
-
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const { rows } = await query(
-      `SELECT codigo_sigtap, descricao, faixa_etaria, sexo, cbo,
-              SUM(quantidade) AS quantidade, SUM(valor_aprovado) AS valor_aprovado
-       FROM sia_producao ${where}
-       GROUP BY codigo_sigtap, descricao, faixa_etaria, sexo, cbo
-       ORDER BY quantidade DESC`,
-      params
-    );
+    const rows = await listProducao(req.query);
     return res.json(rows);
   } catch (err) {
     return next(err);

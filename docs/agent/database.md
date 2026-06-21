@@ -12,8 +12,9 @@
 | `migration_006_import_depara.sql` | `esus_import_mapeamentos`, FKs em `esus_cargas` / `dados_consolidados` |
 | `migration_007_atendimento_domiciliar.sql` | CHECK `tipo_relatorio` inclui `atendimento_domiciliar` |
 | `migration_008_painel_widgets.sql` | `painel_metricas_catalogo`, `painel_widgets` (layout dinâmico APS) |
+| `migration_009_cadastros_forma_cbo.sql` | `formas_sia`, `cbos_sia`; contadores forma/cbo em `cadastros_sincronizacoes` |
 
-Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `08` em `/docker-entrypoint-initdb.d/`.
+Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `009` em `/docker-entrypoint-initdb.d/`.
 
 ## Tabelas por domínio
 
@@ -35,7 +36,10 @@ Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … 
 | `enriquecimento_aps` … `enriquecimento_outro` | enriquecimento manual por perfil |
 | `estabelecimentos.enriquecimento` | JSONB legado (somente leitura/backfill) |
 | `procedimentos` | Códigos SIGTAP |
-| `cadastros_sync_log` | Histórico sync MySQL |
+| `formas_sia` | Forma de organização (grupo/subgrupo/forma 6 chars); espelho MySQL `forma` |
+| `cbos_sia` | CBO canônico 6 chars; espelho MySQL `cbo` |
+| `cadastros_sincronizacoes` | Histórico sync cadastros (incl. contadores forma/cbo) |
+| `cadastros_sync_log` | Histórico sync MySQL (legado) |
 
 ### Painel dinâmico (migration 008)
 
@@ -97,6 +101,16 @@ Montada em `docker-compose.yml` (`05-migration_005_…`). DB existente: aplicar 
 
 Novas importações devem gravar FKs (app layer); linhas legadas permanecem nullable.
 
+## Migration 009 (aplicada)
+
+`migration_009_cadastros_forma_cbo.sql` — ordem Docker: `09-migration_009_cadastros_forma_cbo.sql`.
+
+- **`formas_sia`:** `codigo_grupo`, `codigo_subgrupo`, `codigo_forma` (UNIQUE 6 chars), `descricao`, `status`, `sincronizado_em`.
+- **`cbos_sia`:** `codigo_cbo` (UNIQUE 6 chars), `descricao`, `status`, `sincronizado_em`.
+- **`cadastros_sincronizacoes`:** colunas `forma_inseridos/atualizados/inativados`, `cbo_inseridos/atualizados/inativados`.
+
+Join analítico SIA: `left(trim(codigo_sigtap), 6)` → `formas_sia.codigo_forma`; CBO canônico 6 chars → `cbos_sia.codigo_cbo`. Detalhe: [cadastros.md#workflow-forma-cbo-sia-sih](cadastros.md#workflow-forma-cbo-sia-sih).
+
 ## Queries úteis
 
 ```sql
@@ -118,7 +132,11 @@ FROM esus_import_mapeamentos WHERE status = 'ativo' LIMIT 10;
 SELECT perfil, COUNT(*) FROM estabelecimentos GROUP BY perfil;
 
 -- Último sync cadastros
-SELECT * FROM cadastros_sync_log ORDER BY started_at DESC LIMIT 1;
+SELECT * FROM cadastros_sincronizacoes ORDER BY sincronizado_em DESC LIMIT 1;
+
+-- Formas/CBOs ativos (referência SIA)
+SELECT codigo_forma, descricao FROM formas_sia WHERE status = 'ativo' LIMIT 10;
+SELECT codigo_cbo, descricao FROM cbos_sia WHERE status = 'ativo' LIMIT 10;
 ```
 
 ## MySQL (SIA / cadastros)

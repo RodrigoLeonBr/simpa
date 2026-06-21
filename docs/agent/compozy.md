@@ -53,6 +53,21 @@ Local: `.compozy/tasks/_archived/1781985788688-5f17b4aa-estabelecimentos-perfil-
 
 **Commits principais:** `4c43959`, `8353acf`, `5e20371`
 
+### `cadastros-forma-cbo-sia-sih`
+
+Local: `.compozy/tasks/_archived/1782059930411-1eccf03e-cadastros-forma-cbo-sia-sih/`
+
+| Artefato | Conteúdo |
+|----------|----------|
+| `_prd.md` | Espelho forma/cbo MySQL, Cadastros read-only, SIA/SIH |
+| `_techspec.md` | migration 009, sync Python, APIs, UI, join SIA |
+| `_tasks.md` | 12 tasks — **todas completed** |
+| `reviews-001/` | 1 issue resolvido (inativação com skips) |
+
+**Entregáveis:** migration 009 · `formas_sia`/`cbos_sia` · sync cadastros · APIs/UI Cadastros · `GET /api/sia/producao` enriquecido · `cadastroReferenciaService` (contrato SIH) · docs agent.
+
+Resumo: **[cadastros.md](cadastros.md#workflow-forma-cbo-sia-sih)** · API: **[backend-api.md](backend-api.md)** · UI: **[frontend.md](frontend.md#cadastros)**.
+
 ## Comandos úteis
 
 ```powershell

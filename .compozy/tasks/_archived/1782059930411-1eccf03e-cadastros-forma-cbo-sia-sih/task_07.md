@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Testes backend das novas rotas e histórico de sync
 type: test
 complexity: medium
@@ -29,20 +29,20 @@ Cobrir com testes de backend a exposição dos novos cadastros e o novo shape de
 </requirements>
 
 ## Subtasks
-- [ ] 07.1 Criar suíte de rotas novas
-- [ ] 07.2 Atualizar suíte de sincronização existente
-- [ ] 07.3 Garantir cobertura mínima do código novo
+- [x] 07.1 Criar suíte de rotas novas
+- [x] 07.2 Atualizar suíte de sincronização existente
+- [x] 07.3 Garantir cobertura mínima do código novo
 
 ## Deliverables
 - novos/ajustados testes em `simpa-backend/tests/*`
 
 ## Tests
 - Unit tests:
-  - [ ] mapeamento de shape em `cadastrosSync`
+  - [x] mapeamento de shape em `cadastrosSync`
 - Integration tests:
-  - [ ] `GET /api/cadastros/formas` 200
-  - [ ] `GET /api/cadastros/cbos` 200
-  - [ ] `GET /api/cadastros/sincronizacoes` inclui novos blocos
+  - [x] `GET /api/cadastros/formas` 200
+  - [x] `GET /api/cadastros/cbos` 200
+  - [x] `GET /api/cadastros/sincronizacoes` inclui novos blocos
 - Coverage target: >=80% dos arquivos tocados
 
 ## Success Criteria

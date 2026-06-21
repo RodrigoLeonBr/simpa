@@ -107,6 +107,28 @@ export function buildProcedimentosQuery(q: string, page = 1): Record<string, str
   return query;
 }
 
+export function buildFormasQuery(q: string, page = 1): Record<string, string> {
+  const query: Record<string, string> = {
+    limit: '200',
+    page: String(page),
+  };
+  if (q.trim()) {
+    query.q = q.trim();
+  }
+  return query;
+}
+
+export function buildCbosQuery(q: string, page = 1): Record<string, string> {
+  const query: Record<string, string> = {
+    limit: '200',
+    page: String(page),
+  };
+  if (q.trim()) {
+    query.q = q.trim();
+  }
+  return query;
+}
+
 export function formatCatalogCount(shown: number, total: number): string {
   if (total <= shown) {
     return String(total);

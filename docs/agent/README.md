@@ -14,7 +14,7 @@
 |---------|------------|
 | [backend-api.md](backend-api.md) | Novos endpoints, services, middleware |
 | [frontend.md](frontend.md) | Páginas, hooks, componentes, tipos |
-| [cadastros.md](cadastros.md) | Estabelecimentos, procedimentos, enriquecimento, workflows perfil-painel e import de-para |
+| [cadastros.md](cadastros.md) | Estabelecimentos, procedimentos, formas/cbo, enriquecimento, workflows perfil-painel, import de-para e forma-cbo-sia-sih |
 | [database.md](database.md) | Migrations, schema, queries |
 | [etl-python.md](etl-python.md) | Scripts Python, sync MySQL |
 | [docker-env.md](docker-env.md) | Compose, variáveis, portas |
