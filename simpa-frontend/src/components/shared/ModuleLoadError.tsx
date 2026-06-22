@@ -8,6 +8,16 @@ import {
 } from 'react';
 import { ModuleLoadingFallback } from './ModuleLoadingFallback';
 
+function isChunkLoadError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message ?? '';
+  return (
+    error.name === 'ChunkLoadError' ||
+    message.includes('Failed to fetch dynamically imported module') ||
+    message.includes('Loading chunk')
+  );
+}
+
 interface ModuleLoadErrorProps {
   onRetry?: () => void;
 }
@@ -49,12 +59,16 @@ export class ModuleLoadErrorBoundary extends Component<
 > {
   state: ModuleLoadErrorBoundaryState = { hasError: false };
 
-  static getDerivedStateFromError(): ModuleLoadErrorBoundaryState {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown): ModuleLoadErrorBoundaryState {
+    return { hasError: isChunkLoadError(error) };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Module load error:', error, info);
+    if (isChunkLoadError(error)) {
+      console.error('Module load error:', error, info);
+      return;
+    }
+    throw error;
   }
 
   handleRetry = () => {

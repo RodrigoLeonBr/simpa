@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { EChart, indicadorHistoryOption } from '../../components/charts/EChart';
+import { EChart, indicadorHistoryOption } from '../../components/charts/LazyEChart';
+import { DashboardPageShell } from '../../components/shared/DashboardPageShell';
 import { ProgressBar } from '../../components/shared/ProgressBar';
 import { useDashboard } from '../../hooks/useDashboard';
 import {
@@ -22,16 +23,14 @@ export default function IndicadoresPage() {
     ? buildUnitComparison(selected.indicador, unidades, data?.filtros_ativos.unidade)
     : [];
 
-  if (loading) {
-    return <div className="analytics-state">Carregando indicadores…</div>;
-  }
-
-  if (error || !data || !selected) {
-    return <div className="analytics-state analytics-state-error">{error ?? 'Indicadores indisponíveis'}</div>;
-  }
+  const shellError = loading
+    ? null
+    : (error ?? (!data || !selected ? 'Indicadores indisponíveis' : null));
 
   return (
-    <div className="analytics-page simpa-rise">
+    <DashboardPageShell loading={loading} error={shellError} loadingLabel="Carregando indicadores…">
+      {() => (
+      <div className="analytics-page simpa-rise">
       <div className="analytics-header">
         <h2 className="analytics-title">Painel de Indicadores</h2>
         <p className="analytics-subtitle">
@@ -151,6 +150,8 @@ export default function IndicadoresPage() {
           </section>
         </div>
       </div>
-    </div>
+      </div>
+      )}
+    </DashboardPageShell>
   );
 }

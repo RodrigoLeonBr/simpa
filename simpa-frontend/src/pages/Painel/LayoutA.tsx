@@ -5,7 +5,7 @@ import {
   buildTrendSeries,
   type RankingRow,
 } from '../../utils/dashboardView';
-import { EChart, trendOption } from '../../components/charts/EChart';
+import { EChart, trendOption } from '../../components/charts/LazyEChart';
 import { KpiCard } from '../../components/painel/KpiCard';
 import { usePainelLayout } from '../../hooks/usePainelLayout';
 import {

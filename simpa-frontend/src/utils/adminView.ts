@@ -1,4 +1,5 @@
 import type { CadastroColumnDef, CadastroFieldDef } from '../config/cadastroEntities';
+import type { AdminUsuario } from '../types/admin';
 import { ADMIN_PERFIS } from '../types/admin';
 
 export function canAccessAdminModule(perfil: string | undefined): boolean {
@@ -67,3 +68,49 @@ export function usuarioRowForTable(row: Record<string, unknown>): Record<string,
     ultimo_login: formatAdminDate(row.ultimo_login),
   };
 }
+
+export type UsuarioCreatePayload = {
+  username: string;
+  senha: string;
+  nome: string;
+  perfil: string;
+};
+
+export type UsuarioUpdatePayload = Partial<{
+  nome: string;
+  perfil: string;
+  ativo: boolean;
+  senha: string;
+}>;
+
+export function mapUsuarioForTable(row: AdminUsuario) {
+  return usuarioRowForTable(row as unknown as Record<string, unknown>);
+}
+
+export function mapUsuarioCreatePayload(values: Record<string, string>): UsuarioCreatePayload {
+  return {
+    username: values.username.trim(),
+    senha: values.senha,
+    nome: values.nome.trim(),
+    perfil: values.perfil,
+  };
+}
+
+export function mapUsuarioUpdatePayload(values: Record<string, string>): UsuarioUpdatePayload {
+  const payload: UsuarioUpdatePayload = {
+    nome: values.nome.trim(),
+    perfil: values.perfil,
+    ativo: values.ativo.trim().toLowerCase() === 'sim',
+  };
+  if (values.senha.trim()) {
+    payload.senha = values.senha;
+  }
+  return payload;
+}
+
+export const USUARIO_CRUD_MESSAGES = {
+  created: 'Usuário criado',
+  updated: 'Usuário atualizado',
+  inactivated: 'Usuário inativado',
+  operationFailed: 'Falha ao inativar',
+};

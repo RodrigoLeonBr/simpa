@@ -45,6 +45,7 @@ export function ReadOnlyCatalogPage<T extends { id?: number | string }>({
     pages,
     loading,
     error,
+    carregar,
     handleSearch,
   } = catalog;
 
@@ -82,7 +83,12 @@ export function ReadOnlyCatalogPage<T extends { id?: number | string }>({
         {loading ? (
           <div className="analytics-state">{loadingMessage}</div>
         ) : error ? (
-          <div className="analytics-state analytics-state-error">{error}</div>
+          <div className="analytics-state analytics-state-error">
+            <p>{error}</p>
+            <button type="button" className="cadastro-btn" onClick={() => void carregar()}>
+              Tentar novamente
+            </button>
+          </div>
         ) : rows.length === 0 ? (
           <p className="analytics-empty">{emptyMessage}</p>
         ) : (

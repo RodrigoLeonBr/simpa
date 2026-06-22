@@ -12,6 +12,12 @@ vi.mock('echarts/core', () => ({
   })),
 }));
 
+vi.mock('../../components/charts/LazyEChart', () => ({
+  EChart: ({ testId }: { testId?: string }) => <div data-testid={testId} />,
+  trendOption: vi.fn(() => ({})),
+  sparklineOption: vi.fn(() => ({})),
+}));
+
 vi.mock('../../hooks/usePainelLayout', () => ({
   usePainelLayout: vi.fn(),
 }));

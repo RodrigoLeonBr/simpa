@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Vite manualChunks + lazy EChart import
 type: frontend
 complexity: medium
@@ -22,9 +22,9 @@ Configure Vite chunk splitting and defer ECharts component load until chart rend
 
 ## Subtasks
 
-- [ ] 13.1 Update vite.config.ts
-- [ ] 13.2 Dynamic import EChart.tsx
-- [ ] 13.3 Lazy analytics routes; verify build output
+- [x] 13.1 Update vite.config.ts
+- [x] 13.2 Dynamic import EChart.tsx
+- [x] 13.3 Lazy analytics routes; verify build output
 
 ## Related ADRs
 - [ADR-003](../adrs/adr-003.md)
@@ -32,3 +32,11 @@ Configure Vite chunk splitting and defer ECharts component load until chart rend
 ## Success Criteria
 - Build shows separate vendor/echarts chunks
 - Painel still renders charts after lazy load
+
+## Verification (2026-06-21)
+
+- `manualChunks`: `vendor` (react/router), `echarts` (echarts/*)
+- `LazyEChart.tsx` + `chartOptions.ts`; consumidores importam de `LazyEChart`
+- Metas/Indicadores/Relatórios → `React.lazy` + `LazyModuleRoute`
+- Build chunks gzip: index **14.8 KB**, vendor **74.5 KB**, echarts **167 KB** (on demand)
+- Testes Painel/Indicadores/Metas/Relatórios: passing

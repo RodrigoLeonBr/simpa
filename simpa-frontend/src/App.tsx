@@ -8,13 +8,13 @@ import { AppShell } from './components/layout/AppShell';
 import { LazyModuleRoute } from './components/shared/ModuleLoadError';
 import LoginPage from './pages/Login';
 import PainelPage from './pages/Painel';
-import MetasPage from './pages/Metas';
-import IndicadoresPage from './pages/Indicadores';
-import RelatoriosPage from './pages/Relatorios';
 
 const CadastrosPage = lazy(() => import('./pages/Cadastros'));
 const ImportacaoPage = lazy(() => import('./pages/Importacao'));
 const AdminPage = lazy(() => import('./pages/Administracao'));
+const MetasPage = lazy(() => import('./pages/Metas'));
+const IndicadoresPage = lazy(() => import('./pages/Indicadores'));
+const RelatoriosPage = lazy(() => import('./pages/Relatorios'));
 
 export default function App() {
   return (
@@ -35,9 +35,9 @@ export default function App() {
               <Route path="/" element={<PainelPage />} />
               <Route path="/importacao" element={<LazyModuleRoute Page={ImportacaoPage} />} />
               <Route path="/cadastros/*" element={<LazyModuleRoute Page={CadastrosPage} />} />
-              <Route path="/metas" element={<MetasPage />} />
-              <Route path="/indicadores" element={<IndicadoresPage />} />
-              <Route path="/relatorios" element={<RelatoriosPage />} />
+              <Route path="/metas" element={<LazyModuleRoute Page={MetasPage} />} />
+              <Route path="/indicadores" element={<LazyModuleRoute Page={IndicadoresPage} />} />
+              <Route path="/relatorios" element={<LazyModuleRoute Page={RelatoriosPage} />} />
               <Route path="/admin/*" element={<LazyModuleRoute Page={AdminPage} />} />
             </Route>
           </Route>

@@ -167,7 +167,9 @@ Detalhes: **[docs/agent/testing-ci.md](docs/agent/testing-ci.md)**.
 
 ## Compozy (spec-driven)
 
-Nenhum workflow ativo. Arquivados em `.compozy/tasks/_archived/`:
+Workflow concluído (aguardando archive): `frontend-manutenibilidade` — ver **[docs/agent/compozy.md](docs/agent/compozy.md)**.
+
+Arquivados em `.compozy/tasks/_archived/`:
 
 | Slug | Estado | Conteúdo |
 |------|--------|----------|
@@ -177,6 +179,14 @@ Nenhum workflow ativo. Arquivados em `.compozy/tasks/_archived/`:
 | `painel-widgets-dinamicos` | **arquivado ✅** | Widgets/métricas governadas, Layout A dinâmico, cadastro Indicadores do Painel |
 
 Guia: **[docs/agent/compozy.md](docs/agent/compozy.md)**.
+
+---
+
+## Feature concluída: frontend-manutenibilidade
+
+**Entregue:** catálogo unificado read-only; `useEntityCrud`; lazy routes + `manualChunks` (index ~15 KB gzip); split enrichment/utils/drawer; registry `cadastroEntities` com `mode`; docs agent.
+
+Spec: `.compozy/tasks/frontend-manutenibilidade/` · Resumo padrões: **[frontend.md](docs/agent/frontend.md#patterns)**.
 
 ---
 

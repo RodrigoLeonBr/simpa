@@ -37,9 +37,11 @@ describe('ModuleLoadError', () => {
 describe('ModuleLoadErrorBoundary', () => {
   afterEach(() => cleanup());
 
-  it('captura erro de render e exibe fallback', () => {
+  it('captura erro de chunk e exibe fallback', () => {
     function Broken() {
-      throw new Error('chunk failed');
+      const error = new Error('Failed to fetch dynamically imported module');
+      error.name = 'ChunkLoadError';
+      throw error;
     }
 
     render(
@@ -49,5 +51,19 @@ describe('ModuleLoadErrorBoundary', () => {
     );
 
     expect(screen.getByTestId('module-load-error')).toBeInTheDocument();
+  });
+
+  it('não mascara erro de runtime não relacionado a chunk', () => {
+    function BrokenRuntime() {
+      throw new Error('runtime bug');
+    }
+
+    expect(() =>
+      render(
+        <ModuleLoadErrorBoundary>
+          <BrokenRuntime />
+        </ModuleLoadErrorBoundary>,
+      ),
+    ).toThrow('runtime bug');
   });
 });

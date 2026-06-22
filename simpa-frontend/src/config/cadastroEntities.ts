@@ -1,5 +1,7 @@
 export type CadastroEntityKey = 'equipes' | 'emendas';
 
+export type CadastroEntityMode = 'readonly' | 'crud' | 'custom';
+
 export type FieldType = 'text' | 'number' | 'select';
 
 export interface CadastroFieldDef {
@@ -22,6 +24,7 @@ export interface CadastroEntityConfig {
   title: string;
   tableName: string;
   description: string;
+  mode: CadastroEntityMode;
   columns: CadastroColumnDef[];
   fields: CadastroFieldDef[];
 }
@@ -31,6 +34,7 @@ export interface CadastroGridItem {
   title: string;
   tableName: string;
   description: string;
+  mode: CadastroEntityMode;
   /** Link absoluto fora de /cadastros (ex.: Admin) */
   external?: boolean;
 }
@@ -40,6 +44,7 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
     route: 'estabelecimentos',
     title: 'Estabelecimentos',
     tableName: 'estabelecimentos',
+    mode: 'custom',
     description:
       'Espelho unificado de prestadores (APS, MAC, Hospitalar). Campos SIA somente leitura; enriquecimento para perfil hospitalar.',
   },
@@ -47,12 +52,14 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
     route: 'procedimentos',
     title: 'Procedimentos',
     tableName: 'procedimentos',
+    mode: 'readonly',
     description: 'Catálogo SIGTAP sincronizado do MySQL. Somente leitura — use o botão de sync para atualizar.',
   },
   {
     route: 'formas',
     title: 'Formas de Organização',
     tableName: 'formas_sia',
+    mode: 'readonly',
     description:
       'Forma de organização (grupo/subgrupo/forma) sincronizada do MySQL SIA. Somente leitura — use o botão de sync para atualizar.',
   },
@@ -60,6 +67,7 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
     route: 'cbos',
     title: 'CBOs',
     tableName: 'cbos_sia',
+    mode: 'readonly',
     description:
       'Classificação Brasileira de Ocupações sincronizada do MySQL SIA. Somente leitura — use o botão de sync para atualizar.',
   },
@@ -67,18 +75,21 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
     route: 'equipes',
     title: 'Equipes',
     tableName: 'equipes',
+    mode: 'crud',
     description: 'Código e-SUS, nome, estabelecimento vinculado, tipo (ESF/EAP), status.',
   },
   {
     route: 'emendas',
     title: 'Emendas Parlamentares',
     tableName: 'emendas_parlamentares',
+    mode: 'crud',
     description: 'id_emenda, esfera, tipo, autor, objeto, valor repassado, status.',
   },
   {
     route: 'indicadores-painel',
     title: 'Indicadores do Painel',
     tableName: 'painel_widgets',
+    mode: 'custom',
     description:
       'Configuração dinâmica dos cards e gráficos do Painel APS (layout e métricas governadas).',
   },
@@ -86,6 +97,7 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
     route: '/admin',
     title: 'Indicadores e Metas',
     tableName: 'admin',
+    mode: 'custom',
     description: 'Metas regulamentadas e indicadores de qualidade — gerenciados na Administração.',
     external: true,
   },
@@ -97,6 +109,7 @@ export const CADASTRO_ENTITIES: CadastroEntityConfig[] = [
     route: 'equipes',
     title: 'Equipes',
     tableName: 'equipes',
+    mode: 'crud',
     description: 'Equipes e-SUS vinculadas aos estabelecimentos.',
     columns: [
       { key: 'codigo', label: 'Código e-SUS', mono: true },
@@ -117,6 +130,7 @@ export const CADASTRO_ENTITIES: CadastroEntityConfig[] = [
     route: 'emendas',
     title: 'Emendas Parlamentares',
     tableName: 'emendas_parlamentares',
+    mode: 'crud',
     description: 'Emendas vinculadas ao financiamento municipal.',
     columns: [
       { key: 'id_emenda', label: 'ID Emenda', mono: true },
@@ -139,6 +153,10 @@ export const CADASTRO_ENTITIES: CadastroEntityConfig[] = [
 
 export function getCadastroEntity(route: string): CadastroEntityConfig | undefined {
   return CADASTRO_ENTITIES.find((entity) => entity.route === route);
+}
+
+export function getCadastroGridItem(route: string): CadastroGridItem | undefined {
+  return CADASTRO_GRID_ITEMS.find((item) => item.route === route);
 }
 
 export function cadastroGridTestId(route: string): string {

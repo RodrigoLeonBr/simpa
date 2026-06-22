@@ -20,6 +20,11 @@ vi.mock('echarts/core', () => ({
   })),
 }));
 
+vi.mock('../../components/charts/LazyEChart', () => ({
+  EChart: ({ testId }: { testId?: string }) => <div data-testid={testId ?? 'mock-echart'} />,
+  situacaoTrendOption: vi.fn(() => ({})),
+}));
+
 vi.mock('../../hooks/useDashboard', () => ({
   useDashboard: vi.fn(),
 }));

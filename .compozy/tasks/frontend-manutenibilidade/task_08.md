@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Hook useEntityCrud extracted from CRUD pages
 type: frontend
 complexity: high
@@ -22,9 +22,9 @@ Extract shared list/form/confirm/toast state machine from UsuariosPage and Cadas
 
 ## Subtasks
 
-- [ ] 8.1 Extract state/handlers from UsuariosPage analysis
-- [ ] 8.2 Implement hook with generic typing
-- [ ] 8.3 Unit test all handler paths
+- [x] 8.1 Extract state/handlers from UsuariosPage analysis
+- [x] 8.2 Implement hook with generic typing
+- [x] 8.3 Unit test all handler paths
 
 ## Related ADRs
 - [ADR-004](../adrs/adr-004.md)

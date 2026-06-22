@@ -8,8 +8,8 @@ import {
 } from '../../utils/enrichmentView';
 import {
   EstabelecimentoDetailDrawer,
-  EstabelecimentosPageShell,
 } from './EstabelecimentoDetailDrawer';
+import { EstabelecimentosPageShell } from './EstabelecimentosPageShell';
 
 const PERFIL_CHIPS: { key: EstabelecimentoPerfilFilter; label: string }[] = [
   { key: '', label: 'Todos' },

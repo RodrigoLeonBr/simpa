@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Partition dashboardView, indicadoresView, importacaoView
 type: refactor
 complexity: high
@@ -21,11 +21,20 @@ Split god utils into domain subfolders with temporary re-exports from original p
 
 ## Subtasks
 
-- [ ] 15.1 Split dashboardView → utils/painel/*
-- [ ] 15.2 Split indicadoresView → metas/indicadores/relatorios/shared
-- [ ] 15.3 Split importacaoView → utils/importacao/*
-- [ ] 15.4 Run full frontend test suite
+- [x] 15.1 Split dashboardView → utils/painel/*
+- [x] 15.2 Split indicadoresView → metas/indicadores/relatorios/shared
+- [x] 15.3 Split importacaoView → utils/importacao/*
+- [x] 15.4 Run full frontend test suite
 
 ## Success Criteria
 - All utils tests pass
 - dashboardView.ts either removed or thin re-export only
+
+## Completion notes (2026-06-21)
+
+- `dashboardView.ts`, `importacaoView.ts` → re-export fino (`export *`)
+- `indicadoresView.ts` → barrel explícito para metas/indicadores/relatorios/shared
+- Novos módulos: `utils/painel/*`, `utils/metas/metasView.ts`, `utils/indicadores/qualidadeView.ts`, `utils/relatorios/comparativoView.ts`, `utils/shared/metaStatus.ts`, `utils/importacao/*`
+- Maior arquivo novo: `previewHelpers.ts` (197 linhas)
+- Utils tests: 35/35 · suite completa: 350/350 (fix mock LazyEChart em `Situacao.test.tsx`)
+- `tsc -b` + build OK

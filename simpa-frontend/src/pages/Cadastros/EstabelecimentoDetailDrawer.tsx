@@ -1,58 +1,27 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
 import { updateEnrichmentBySlug, updatePerfil } from '../../api/cadastros';
+import { EstabelecimentoDrawerChrome } from '../../components/cadastros/estabelecimento/EstabelecimentoDrawerChrome';
 import {
-  EnrichmentFormByPerfil,
-  enrichmentSectionTitle,
-} from '../../components/cadastros/EnrichmentFormByPerfil';
-import { ModalPortal } from '../../components/cadastros/ModalPortal';
-import { ToastBanner, useToast } from '../../components/shared/Toast';
+  EstabelecimentoEnrichmentPanel,
+  resolveLeitosSummary,
+} from '../../components/cadastros/estabelecimento/EstabelecimentoEnrichmentPanel';
+import { EstabelecimentoPerfilEditor } from '../../components/cadastros/estabelecimento/EstabelecimentoPerfilEditor';
+import { EstabelecimentoSyncedSection } from '../../components/cadastros/estabelecimento/EstabelecimentoSyncedSection';
+import { useToast } from '../../components/shared/Toast';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Estabelecimento, EstabelecimentoPerfil } from '../../types/cadastros';
 import { canEditCadastrosEstabelecimento } from '../../utils/adminView';
-import { formatCadastroCell, formatCadastroStatus } from '../../utils/cadastroView';
 import {
   enrichmentSlugForPerfil,
-  ESTABELECIMENTO_PERFIS,
   resolveEstabelecimentoEnrichment,
 } from '../../utils/enrichmentByPerfil';
-import {
-  canEditEnrichment,
-  canViewEnrichment,
-  formatLeitosSummary,
-} from '../../utils/enrichmentView';
-import { formatImportDate, canEditImportMappings } from '../../utils/importacaoView';
+import { canEditEnrichment, canViewEnrichment } from '../../utils/enrichmentView';
+import { canEditImportMappings } from '../../utils/importacaoView';
 
 interface EstabelecimentoDetailDrawerProps {
   estabelecimento: Estabelecimento;
   onClose: () => void;
   onSaved: (updated: Estabelecimento) => void;
-}
-
-interface EstabelecimentosPageShellProps {
-  children: ReactNode;
-}
-
-function LockedField({ label, value }: { label: string; value: string }) {
-  return (
-    <label className="cadastro-field cadastro-field-locked">
-      <span>
-        {label} <span aria-hidden="true">🔒</span>
-      </span>
-      <input
-        type="text"
-        disabled
-        readOnly
-        value={value}
-        title="Sincronizado do SIA — somente leitura"
-        data-testid={`locked-field-${label.toLowerCase().replace(/\s+/g, '-')}`}
-      />
-    </label>
-  );
-}
-
-function isEstabelecimentoPerfil(value: string): value is EstabelecimentoPerfil {
-  return ESTABELECIMENTO_PERFIS.includes(value as EstabelecimentoPerfil);
 }
 
 export function EstabelecimentoDetailDrawer({
@@ -75,12 +44,7 @@ export function EstabelecimentoDetailDrawer({
   const showEnrichment = canViewEnrichment(enrichmentPerfil);
   const canEditEnrichmentForm =
     canEditEnrichment(enrichmentPerfil, canEdit) && !perfilUnsaved;
-  const leitosSummary =
-    enrichmentPerfil === 'Hospitalar' || enrichmentPerfil === 'Misto'
-      ? formatLeitosSummary(
-          (enrichment as { leitos?: Record<string, number> } | undefined)?.leitos,
-        )
-      : null;
+  const leitosSummary = resolveLeitosSummary(enrichmentPerfil, enrichment);
 
   useEffect(() => {
     setPerfilDraft(estabelecimento.perfil);
@@ -105,176 +69,39 @@ export function EstabelecimentoDetailDrawer({
   }
 
   return (
-    <ModalPortal>
-      <div className="cadastro-dialog-backdrop" data-testid="estabelecimento-drawer-backdrop">
-        <div
-          className="cadastro-dialog card cadastro-detail-drawer"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="estabelecimento-detail-title"
-          data-testid="estabelecimento-detail-drawer"
-        >
-          <div className="cadastro-dialog-head">
-            <h3 id="estabelecimento-detail-title">{estabelecimento.nome}</h3>
-            <button
-              type="button"
-              className="cadastro-dialog-close"
-              onClick={onClose}
-              aria-label="Fechar"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="cadastro-detail-body">
-            <section className="cadastro-detail-section">
-              <h4>Dados sincronizados (SIA)</h4>
-              <div className="cadastro-detail-grid">
-                <LockedField label="Código externo" value={estabelecimento.codigo_externo} />
-                <LockedField label="Nome" value={estabelecimento.nome} />
-                <LockedField label="CNPJ" value={formatCadastroCell(estabelecimento.cnpj)} />
-                <LockedField label="RE tipo" value={formatCadastroCell(estabelecimento.re_tipo)} />
-                <LockedField label="Tipo unidade" value={formatCadastroCell(estabelecimento.tipouni)} />
-                <LockedField label="Status" value={formatCadastroStatus(estabelecimento.status)} />
-                <LockedField
-                  label="Sincronizado em"
-                  value={
-                    estabelecimento.sincronizado_em
-                      ? formatImportDate(estabelecimento.sincronizado_em)
-                      : '—'
-                  }
-                />
-              </div>
-            </section>
-
-            {canManageImportMappings ? (
-              <section className="cadastro-detail-section">
-                <h4>Importação e-SUS</h4>
-                <p className="cadastro-detail-hint">
-                  Vínculos persistentes entre rótulos do e-SUS e este estabelecimento.
-                </p>
-                <Link
-                  to={`/importacao?tab=mapeamentos&q=${encodeURIComponent(estabelecimento.codigo_externo)}`}
-                  className="cadastro-btn ghost"
-                  data-testid="estabelecimento-mapeamentos-link"
-                >
-                  Ver mapeamentos e-SUS →
-                </Link>
-              </section>
-            ) : null}
-
-            <section className="cadastro-detail-section">
-              <h4>Perfil operacional</h4>
-              {canEdit ? (
-                <form
-                  className="cadastro-form cadastro-perfil-form"
-                  data-testid="estabelecimento-perfil-form"
-                  onSubmit={(event) => void handlePerfilSave(event)}
-                >
-                  <label className="cadastro-field">
-                    <span>Perfil</span>
-                    <select
-                      value={perfilDraft}
-                      data-testid="estabelecimento-perfil-select"
-                      onChange={(event) => {
-                        const next = event.target.value;
-                        if (isEstabelecimentoPerfil(next)) {
-                          setPerfilDraft(next);
-                        }
-                      }}
-                    >
-                      {ESTABELECIMENTO_PERFIS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {estabelecimento.perfil_editado ? (
-                    <p className="cadastro-detail-hint">Perfil editado manualmente.</p>
-                  ) : null}
-                  {perfilUnsaved ? (
-                    <p className="cadastro-detail-hint">
-                      Salve o perfil antes de editar o enriquecimento.
-                    </p>
-                  ) : null}
-                  {perfilError ? <p className="cadastro-form-error">{perfilError}</p> : null}
-                  <div className="cadastro-form-actions">
-                    <button
-                      type="submit"
-                      className="cadastro-btn primary"
-                      disabled={savingPerfil || perfilDraft === estabelecimento.perfil}
-                    >
-                      {savingPerfil ? 'Salvando…' : 'Salvar perfil'}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <label className="cadastro-field cadastro-field-locked">
-                  <span>Perfil</span>
-                  <input
-                    type="text"
-                    disabled
-                    readOnly
-                    value={estabelecimento.perfil}
-                    data-testid="estabelecimento-perfil-readonly"
-                  />
-                </label>
-              )}
-            </section>
-
-            {showEnrichment ? (
-              <section className="cadastro-detail-section">
-                <h4>{enrichmentSectionTitle(enrichmentPerfil)}</h4>
-                {leitosSummary ? (
-                  <p className="cadastro-detail-hint">Leitos atuais: {leitosSummary}</p>
-                ) : null}
-                <EnrichmentFormByPerfil
-                  perfil={enrichmentPerfil}
-                  enrichment={enrichment}
-                  readOnly={!canEditEnrichmentForm}
-                  onSubmit={async (payload) => {
-                    const slug = enrichmentSlugForPerfil(enrichmentPerfil);
-                    const updated = await updateEnrichmentBySlug(
-                      estabelecimento.id,
-                      slug,
-                      payload,
-                    );
-                    onSaved(updated);
-                    showToast('Enriquecimento salvo');
-                  }}
-                />
-              </section>
-            ) : (
-              <p className="analytics-empty cadastro-detail-readonly-hint">
-                Enriquecimento não disponível para este perfil.
-              </p>
-            )}
-          </div>
-
-          <ToastBanner message={toast.message} visible={toast.visible} />
-        </div>
-      </div>
-    </ModalPortal>
-  );
-}
-
-export function EstabelecimentosPageShell({ children }: EstabelecimentosPageShellProps) {
-  return (
-    <div className="cadastro-page simpa-rise" data-testid="estabelecimentos-page">
-      <div className="cadastro-crud-head">
-        <div>
-          <Link to="/cadastros" className="cadastro-back-link">
-            ← Cadastros
-          </Link>
-          <h2 className="analytics-title">Estabelecimentos</h2>
-          <p className="analytics-subtitle">
-            Espelho unificado de prestadores — campos SIA bloqueados; perfil e enriquecimento
-            editáveis para equipe de planejamento.
-          </p>
-        </div>
-      </div>
-      {children}
-    </div>
+    <EstabelecimentoDrawerChrome
+      title={estabelecimento.nome}
+      onClose={onClose}
+      toastMessage={toast.message}
+      toastVisible={toast.visible}
+    >
+      <EstabelecimentoSyncedSection
+        estabelecimento={estabelecimento}
+        showImportMappingsLink={canManageImportMappings}
+      />
+      <EstabelecimentoPerfilEditor
+        estabelecimento={estabelecimento}
+        canEdit={canEdit}
+        perfilDraft={perfilDraft}
+        perfilUnsaved={perfilUnsaved}
+        savingPerfil={savingPerfil}
+        perfilError={perfilError}
+        onPerfilChange={setPerfilDraft}
+        onSubmit={(event) => void handlePerfilSave(event)}
+      />
+      <EstabelecimentoEnrichmentPanel
+        perfil={enrichmentPerfil}
+        enrichment={enrichment}
+        showEnrichment={showEnrichment}
+        canEditEnrichmentForm={canEditEnrichmentForm}
+        leitosSummary={leitosSummary}
+        onSubmit={async (payload) => {
+          const slug = enrichmentSlugForPerfil(enrichmentPerfil);
+          const updated = await updateEnrichmentBySlug(estabelecimento.id, slug, payload);
+          onSaved(updated);
+          showToast('Enriquecimento salvo');
+        }}
+      />
+    </EstabelecimentoDrawerChrome>
   );
 }

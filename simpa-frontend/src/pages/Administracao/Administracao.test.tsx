@@ -115,6 +115,26 @@ describe('Administração pages', () => {
     });
   });
 
+  it('blocks editing the logged user account', async () => {
+    vi.mocked(fetchUsuarios).mockResolvedValue([
+      {
+        id: 1,
+        username: 'user1',
+        nome: 'Usuário Logado',
+        perfil: 'Administrador',
+        ativo: true,
+      },
+    ]);
+
+    const user = userEvent.setup();
+    renderAdmin('/admin/usuarios', 'Administrador');
+
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+
+    expect(screen.queryByTestId('form-dialog')).not.toBeInTheDocument();
+    expect(updateUsuario).not.toHaveBeenCalled();
+  });
+
   it('redirects Planejamento from usuarios to auditoria', async () => {
     renderAdmin('/admin/usuarios', 'Planejamento');
 

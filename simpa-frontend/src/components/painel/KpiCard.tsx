@@ -1,5 +1,5 @@
 import type { PainelKpi } from '../../utils/dashboardView';
-import { EChart, sparklineOption } from '../charts/EChart';
+import { EChart, sparklineOption } from '../charts/LazyEChart';
 
 interface KpiCardProps {
   kpi: PainelKpi;

@@ -1,6 +1,6 @@
 import type { ContratoDashboard, Unidade } from '../../types/contrato';
 import { buildPainelKpis, buildTrendSeries } from '../../utils/dashboardView';
-import { EChart, heroTrendOption } from '../../components/charts/EChart';
+import { EChart, heroTrendOption } from '../../components/charts/LazyEChart';
 import { KpiCard } from '../../components/painel/KpiCard';
 import { QualityBars } from '../../components/painel/QualityBars';
 

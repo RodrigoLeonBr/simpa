@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 
 export interface PaginatedCatalogResult<T> {
   data: T[];
@@ -44,22 +44,28 @@ export function usePaginatedCatalog<T>(
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   const carregar = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
     setLoading(true);
     setError(null);
 
     try {
       const result = await fetchPage(buildQuery(appliedSearch, page));
+      if (requestId !== requestIdRef.current) return;
       setRows(result.data);
       setTotal(result.pagination.total);
       setPages(result.pagination.pages);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       setError(err instanceof Error ? err.message : errorMessage);
       setRows([]);
       setTotal(0);
       setPages(1);
     } finally {
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
   }, [appliedSearch, page, fetchPage, buildQuery, errorMessage]);

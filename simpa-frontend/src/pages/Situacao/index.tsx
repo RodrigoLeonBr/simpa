@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { EChart, situacaoTrendOption } from '../../components/charts/EChart';
+import { EChart, situacaoTrendOption } from '../../components/charts/LazyEChart';
 import { useApp } from '../../contexts/AppContext';
 import { useDashboard } from '../../hooks/useDashboard';
 import { useFilters } from '../../hooks/useFilters';

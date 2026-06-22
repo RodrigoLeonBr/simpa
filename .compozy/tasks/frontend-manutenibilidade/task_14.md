@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Split EnrichmentFormByPerfil by perfil
 type: frontend
 complexity: high
@@ -21,9 +21,9 @@ Break 418-line EnrichmentFormByPerfil into per-perfil components under `componen
 
 ## Subtasks
 
-- [ ] 14.1 Create enrichment/ folder structure
-- [ ] 14.2 Move APS form first; verify drawer
-- [ ] 14.3 Move remaining perfis; delete dead code from monolith
+- [x] 14.1 Create enrichment/ folder structure
+- [x] 14.2 Move APS form first; verify drawer
+- [x] 14.3 Move remaining perfis; delete dead code from monolith
 
 ## Relevant Files
 - `simpa-frontend/src/components/cadastros/EnrichmentFormByPerfil.tsx`
@@ -32,3 +32,10 @@ Break 418-line EnrichmentFormByPerfil into per-perfil components under `componen
 ## Success Criteria
 - No file in enrichment/ > 200 lines
 - Enrichment save/load unchanged
+
+## Verification (2026-06-21)
+
+- `enrichment/`: shared + Aps/Mac/Hospitalar/Misto/Outro forms
+- Orquestrador `PERFIL_FORMS` em `EnrichmentFormByPerfil.tsx` (~47 linhas)
+- `enrichmentByPerfil.ts` inalterado
+- EnrichmentFormByPerfil + EnrichmentForm + drawer + EstabelecimentosPage tests: passing

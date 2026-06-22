@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { ProgressBar } from '../../components/shared/ProgressBar';
+import { DashboardPageShell } from '../../components/shared/DashboardPageShell';
 import { StatusBadge } from '../../components/shared/StatusBadge';
 import { useDashboard } from '../../hooks/useDashboard';
 import { useFilters } from '../../hooks/useFilters';
@@ -13,17 +14,12 @@ export default function MetasPage() {
     [data?.indicadores_qualidade],
   );
   const resumo = useMemo(() => buildMetasResumo(data?.indicadores_qualidade ?? []), [data?.indicadores_qualidade]);
-
-  if (loading) {
-    return <div className="analytics-state">Carregando metas…</div>;
-  }
-
-  if (error || !data) {
-    return <div className="analytics-state analytics-state-error">{error ?? 'Metas indisponíveis'}</div>;
-  }
+  const shellError = loading ? null : (error ?? (!data ? 'Metas indisponíveis' : null));
 
   return (
-    <div className="analytics-page simpa-rise">
+    <DashboardPageShell loading={loading} error={shellError} loadingLabel="Carregando metas…">
+      {() => (
+      <div className="analytics-page simpa-rise">
       <div className="analytics-header">
         <h2 className="analytics-title">Acompanhamento de Metas</h2>
         <p className="analytics-subtitle">
@@ -87,6 +83,8 @@ export default function MetasPage() {
           ))}
         </div>
       </section>
-    </div>
+      </div>
+      )}
+    </DashboardPageShell>
   );
 }

@@ -7,7 +7,7 @@ vi.mock('../../utils/dashboardView', () => ({
   buildTrendSeries: vi.fn(),
 }));
 
-vi.mock('../../components/charts/EChart', () => ({
+vi.mock('../../components/charts/LazyEChart', () => ({
   EChart: () => <div data-testid="layout-b-echart" />,
   heroTrendOption: vi.fn(() => ({ series: [] })),
 }));

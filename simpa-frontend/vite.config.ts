@@ -11,6 +11,24 @@ export default defineConfig({
       '/auth': 'http://localhost:3001',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/echarts')) {
+            return 'echarts';
+          }
+          if (
+            id.includes('node_modules/react-dom') ||
+            id.includes('node_modules/react-router') ||
+            id.includes('node_modules/react/')
+          ) {
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
@@ -24,6 +42,7 @@ export default defineConfig({
         'src/hooks/useFilters.tsx',
         'src/hooks/useDashboard.ts',
         'src/hooks/usePaginatedCatalog.ts',
+        'src/hooks/useEntityCrud.ts',
         'src/components/ProtectedRoute.tsx',
         'src/components/Logo.tsx',
         'src/components/layout/**',

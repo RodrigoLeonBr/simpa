@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { DashboardPageShell } from '../../components/shared/DashboardPageShell';
 import { ProgressBar } from '../../components/shared/ProgressBar';
 import { ToastBanner, useToast } from '../../components/shared/Toast';
 import { useDashboard } from '../../hooks/useDashboard';
@@ -32,17 +33,14 @@ export default function RelatoriosPage() {
     [selected, benchmarkRows],
   );
   const mapPins = useMemo(() => buildMapPins(benchmarkRows), [benchmarkRows]);
-
-  if (loading) {
-    return <div className="analytics-state">Carregando relatórios…</div>;
-  }
-
-  if (error || !data || !selected) {
-    return <div className="analytics-state analytics-state-error">{error ?? 'Relatórios indisponíveis'}</div>;
-  }
+  const shellError = loading
+    ? null
+    : (error ?? (!data || !selected ? 'Relatórios indisponíveis' : null));
 
   return (
-    <div className="analytics-page simpa-rise">
+    <DashboardPageShell loading={loading} error={shellError} loadingLabel="Carregando relatórios…">
+      {() => (
+      <div className="analytics-page simpa-rise">
       <ToastBanner message={toast.message} visible={toast.visible} />
 
       <div className="relatorios-top">
@@ -173,6 +171,8 @@ export default function RelatoriosPage() {
           </section>
         </div>
       </div>
-    </div>
+      </div>
+      )}
+    </DashboardPageShell>
   );
 }

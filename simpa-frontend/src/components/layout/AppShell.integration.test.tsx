@@ -18,6 +18,11 @@ vi.mock('echarts/core', () => ({
   })),
 }));
 
+vi.mock('../../components/charts/LazyEChart', () => ({
+  EChart: ({ testId }: { testId?: string }) => <div data-testid={testId ?? 'mock-echart'} />,
+  situacaoTrendOption: vi.fn(() => ({})),
+}));
+
 function HomePage() {
   return <div>shell-home</div>;
 }

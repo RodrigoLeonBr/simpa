@@ -1,13 +1,21 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { FormEvent } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { usePaginatedCatalog } from './usePaginatedCatalog';
+import { type PaginatedCatalogResult, usePaginatedCatalog } from './usePaginatedCatalog';
 
 function mockResult<T>(data: T[], total = data.length, pages = 1) {
   return {
     data,
     pagination: { page: 1, limit: 200, total, pages },
   };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
 }
 
 describe('usePaginatedCatalog', () => {
@@ -115,5 +123,39 @@ describe('usePaginatedCatalog', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.error).toBe('Falha ao carregar CBOs');
+  });
+
+  it('ignores stale responses from previous requests', async () => {
+    const first = deferred<PaginatedCatalogResult<{ id: string }>>();
+    const second = deferred<PaginatedCatalogResult<{ id: string }>>();
+    const fetchPage = vi
+      .fn()
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+    const buildQuery = vi
+      .fn()
+      .mockReturnValueOnce({ limit: '200', page: '1' })
+      .mockReturnValueOnce({ limit: '200', page: '2' });
+
+    const { result } = renderHook(() => usePaginatedCatalog({ fetchPage, buildQuery }));
+
+    act(() => {
+      result.current.setPage(2);
+    });
+
+    act(() => {
+      second.resolve(mockResult([{ id: 'new' }]));
+    });
+    await waitFor(() => expect(result.current.rows).toEqual([{ id: 'new' }]));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => {
+      first.resolve(mockResult([{ id: 'stale' }]));
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.rows).toEqual([{ id: 'new' }]);
   });
 });

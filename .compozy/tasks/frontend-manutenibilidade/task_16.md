@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Split EstabelecimentoDetailDrawer + cadastroEntities + docs
 type: frontend
 complexity: medium
@@ -24,13 +24,21 @@ Final structural cleanup: drawer subcomponents, extended cadastro registry metad
 
 ## Subtasks
 
-- [ ] 16.1 Split drawer components
-- [ ] 16.2 Extend cadastroEntities registry
-- [ ] 16.3 Document patterns in docs/agent/frontend.md
-- [ ] 16.4 Run full CI: npm test, npm run build, test:e2e if stack available
+- [x] 16.1 Split drawer components
+- [x] 16.2 Extend cadastroEntities registry
+- [x] 16.3 Document patterns in docs/agent/frontend.md
+- [x] 16.4 Run full CI: npm test, npm run build, test:e2e if stack available
 
 ## Success Criteria
 - Drawer files ≤200 lines each
 - Registry lists all cadastro grid items
 - Docs agent updated
 - Ready for cy-review-round
+
+## Completion notes (2026-06-21)
+
+- Drawer split → `components/cadastros/estabelecimento/*` (chrome, synced, perfil, enrichment); orquestrador 107 linhas
+- `EstabelecimentosPageShell` → arquivo próprio
+- `cadastroEntities`: `CadastroEntityMode`, `mode` em grid + CRUD entities, `getCadastroGridItem`
+- Docs: `frontend.md` (#patterns, lazy, styles/, utils partition), `compozy.md`, `CLAUDE.md`
+- Vitest 352/352 · build OK · E2E 4/5 após `seed:e2e` (`critical-flow` import upload flaky)

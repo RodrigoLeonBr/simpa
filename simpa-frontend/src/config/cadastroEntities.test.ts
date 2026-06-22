@@ -3,7 +3,20 @@ import {
   CADASTRO_GRID_ITEMS,
   cadastroGridTestId,
   getCadastroEntity,
+  getCadastroGridItem,
+  type CadastroEntityMode,
 } from './cadastroEntities';
+
+const EXPECTED_GRID_MODES: Record<string, CadastroEntityMode> = {
+  estabelecimentos: 'custom',
+  procedimentos: 'readonly',
+  formas: 'readonly',
+  cbos: 'readonly',
+  equipes: 'crud',
+  emendas: 'crud',
+  'indicadores-painel': 'custom',
+  '/admin': 'custom',
+};
 
 describe('cadastroEntities config', () => {
   it('includes indicadores-painel grid entry', () => {
@@ -26,9 +39,22 @@ describe('cadastroEntities config', () => {
     expect(cbos?.description).toMatch(/Somente leitura/i);
   });
 
+  it('assigns mode to every grid item', () => {
+    expect(CADASTRO_GRID_ITEMS).toHaveLength(Object.keys(EXPECTED_GRID_MODES).length);
+    for (const item of CADASTRO_GRID_ITEMS) {
+      expect(item.mode).toBe(EXPECTED_GRID_MODES[item.route]);
+    }
+  });
+
   it('resolves entity by route', () => {
     const entity = getCadastroEntity('equipes');
     expect(entity?.key).toBe('equipes');
+    expect(entity?.mode).toBe('crud');
+  });
+
+  it('resolves grid item by route', () => {
+    expect(getCadastroGridItem('formas')?.mode).toBe('readonly');
+    expect(getCadastroGridItem('estabelecimentos')?.mode).toBe('custom');
   });
 
   it('builds expected grid test ids', () => {
