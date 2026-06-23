@@ -446,6 +446,7 @@ def test_consolidate_group_id_path_uses_cadastro_labels(monkeypatch):
         lambda *_a, **kwargs: captured.update(kwargs) or [],
     )
     monkeypatch.setattr(consolidator, "sia_sync_exists", lambda *_a, **_k: False)
+    monkeypatch.setattr(consolidator, "fetch_pop_row", lambda *_a, **_k: None)
 
     payload = consolidator.consolidate_group(
         object(),

@@ -1,0 +1,299 @@
+e-SUS - Atenção Primária
+MINISTÉRIO DA SAÚDE
+ESTADO DE SÃO PAULO
+MUNICÍPIO DE AMERICANA
+UNIDADE DE SAÚDE PRONTO ATENDIMENTO LUIZA DA MOTTA TEBALDI
+
+Relatório de cadastro individual - Analítico
+
+FILTROS
+Data;31/01/2026
+Equipe;Todas
+Profissional;Todos
+CBO;Todos
+Filtros personalizados;Nenhum
+
+
+Dados processados em ;22/06/2026; às ;00:10;
+Gerado em ;22/06/2026; às ;11:48; por ;Rodrigo Alexander Diaz Leon
+
+O resultado pode contemplar informações de equipes vinculadas.
+
+Dados gerais
+Descrição;Quantidade;
+Cidadãos ativos;2;
+Saída de cidadãos do cadastro;0;
+
+Identificação do usuário / cidadão - Faixa etária
+Descrição;Masculino;Feminino;Indeterminado;Não informado;
+Menos de 01 ano;0;0;0;0;
+01 ano;0;0;0;0;
+02 anos;0;0;0;0;
+03 anos;0;0;0;0;
+04 anos;0;0;0;0;
+05 a 09 anos;0;0;0;0;
+10 a 14 anos;0;1;0;0;
+15 a 19 anos;0;0;0;0;
+20 a 24 anos;0;0;0;0;
+25 a 29 anos;0;0;0;0;
+30 a 34 anos;0;0;0;0;
+35 a 39 anos;0;1;0;0;
+40 a 44 anos;0;0;0;0;
+45 a 49 anos;0;0;0;0;
+50 a 54 anos;0;0;0;0;
+55 a 59 anos;0;0;0;0;
+60 a 64 anos;0;0;0;0;
+65 a 69 anos;0;0;0;0;
+70 a 74 anos;0;0;0;0;
+75 a 79 anos;0;0;0;0;
+80 anos ou mais;0;0;0;0;
+Não informado;0;0;0;0;
+
+Identificação do usuário / cidadão
+Descrição;Sim;Não;Não informado;
+Desconhece nome da mãe;0;2;;
+Desconhece nome do pai;0;2;;
+Responsável familiar;0;0;2;
+
+Identificação do usuário / cidadão - Sexo
+Descrição;Quantidade;
+Masculino;0;
+Feminino;2;
+Indeterminado;0;
+Não informado;0;
+
+Identificação do usuário / cidadão - Raça / Cor
+Descrição;Quantidade;
+Branca;2;
+Preta;0;
+Amarela;0;
+Parda;0;
+Indígena;0;
+Não informado;0;
+
+Identificação do usuário / cidadão - Etnia
+Descrição;Quantidade;
+Não informado;2;
+
+Identificação do usuário / cidadão - Nacionalidade
+Descrição;Quantidade;
+Brasileira;2;
+Naturalizado;0;
+Estrangeiro;0;
+Não informado;0;
+
+Informações sociodemográficas - Relação de parentesco com o responsável familiar
+Descrição;Quantidade;
+Cônjuge / Companheiro(a);0;
+Filho(a);0;
+Enteado(a);0;
+Neto(a) / Bisneto(a);0;
+Pai / Mãe;0;
+Sogro(a);0;
+Irmão / Irmã;0;
+Genro / Nora;0;
+Outro parente;0;
+Não parente;0;
+Não informado;2;
+
+Informações sociodemográficas - Ocupação
+Descrição;Quantidade;
+;2;
+
+Informações sociodemográficas - Qual é o curso mais elevado que frequenta ou frequentou
+Descrição;Quantidade;
+Creche;0;
+Pré-escola (exceto CA);0;
+Classe de alfabetização - CA;0;
+Ensino fundamental 1ª a 4ª séries;0;
+Ensino fundamental 5ª a 8ª séries;0;
+Ensino fundamental completo;0;
+Ensino fundamental especial;0;
+Ensino fundamental EJA - séries iniciais (supletivo 1ª a 4ª);0;
+Ensino fundamental EJA - séries finais (supletivo 5ª a 8ª);0;
+Ensino médio, médio 2º ciclo (científico, técnico e etc);0;
+Ensino médio especial;0;
+Ensino médio EJA (supletivo);0;
+Superior, aperfeiçoamento, especialização, mestrado, doutorado;0;
+Alfabetização para adultos (Mobral, etc);0;
+Nenhum;0;
+Não informado;2;
+
+Informações sociodemográficas - Situação no mercado de trabalho
+Descrição;Quantidade;
+Empregador;0;
+Assalariado com carteira de trabalho;0;
+Assalariado sem carteira de trabalho;0;
+Autônomo com previdência social;0;
+Autônomo sem previdência social;0;
+Aposentado / Pensionista;0;
+Desempregado;0;
+Não trabalha;0;
+Servidor público / Militar;0;
+Outro;0;
+Não informado;2;
+
+Informações sociodemográficas - Crianças de 0 a 9 anos, com quem fica
+Descrição;Quantidade;
+Adulto responsável;0;
+Outra(s) criança(s);0;
+Adolescente;0;
+Sozinha;0;
+Creche;0;
+Outro;0;
+Não informado;2;
+
+Informações sociodemográficas - Orientação sexual
+Descrição;Sub Descrição;Quantidade;
+Deseja informar orientação sexual?;Sim;0;
+Deseja informar orientação sexual?;Não;0;
+Deseja informar orientação sexual?;N. Inf;2;
+Heterossexual;;0;
+Homossexual (gay / lésbica);;0;
+Bissexual;;0;
+Gay;;0;
+Lésbica;;0;
+Assexual;;0;
+Panssexual;;0;
+Outro;;0;
+
+Informações sociodemográficas - Identidade de gênero
+Descrição;Sub Descrição;Quantidade;
+Deseja informar identidade de gênero?;Sim;0;
+Deseja informar identidade de gênero?;Não;0;
+Deseja informar identidade de gênero?;N. Inf;2;
+Homem transgênero;;0;
+Mulher transgênero;;0;
+Travesti;;0;
+Homem cisgênero;;0;
+Mulher cisgênero;;0;
+Transgênero;;0;
+Não-Binário;;0;
+Outro;;0;
+
+Informações sociodemográficas - Deficiência
+Descrição;Sub Descrição;Quantidade;
+Tem alguma deficiência?;Sim;0;
+Tem alguma deficiência?;Não;2;
+Auditiva;;0;
+Física;;0;
+Intelectual / Cognitiva;;0;
+Visual;;0;
+Outra;;0;
+TEA;;0;
+
+Informações sociodemográficas - Povos e comunidades
+A lista apresenta registros do LEDI versão 4.2.1 ou superior.
+Descrição;Sub Descrição;Quantidade;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;Sim;0;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;Não;0;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;N. Inf;2;
+
+Outras informações sociodemográficas
+Descrição;Sim;Não;Não informado;
+Frequenta cuidador tradicional?;0;0;2;
+Frequenta escola ou creche;0;0;2;
+Participa de algum grupo comunitário?;0;0;2;
+Possui plano de saúde privado?;0;0;2;
+
+Motivo de saída do cidadão do cadastro
+Descrição;Quantidade;
+Mudança de território;0;
+Óbito;0;
+
+Condições / Situações de saúde gerais
+Descrição;Sim;Não;Não informado;
+Está acamado;0;0;2;
+Está com hanseníase;0;0;2;
+Está com tuberculose;0;0;2;
+Está domiciliado;0;0;2;
+Está fumante;0;0;2;
+Está gestante;0;0;2;
+Faz uso de álcool;0;0;2;
+Faz uso de outras drogas;0;0;2;
+PIC;0;0;2;
+Tem diabetes;0;0;2;
+Tem hipertensão arterial;0;0;2;
+Tem ou teve câncer;0;0;2;
+Teve AVC / derrame;0;0;2;
+Teve diagnóstico de algum problema de saúde mental por profissional de saúde;0;0;2;
+Teve infarto;0;0;2;
+Teve internação nos últimos 12 meses?;0;0;2;
+Usa plantas medicinais;0;0;2;
+
+Condições / Situações de saúde gerais - Sobre seu peso, você se considera
+Descrição;Quantidade;
+Abaixo do peso;0;
+Peso adequado;0;
+Acima do peso;0;
+Não informado;2;
+
+Condições / Situações de saúde gerais - Doença respiratória
+Descrição;Sub Descrição;Quantidade;
+Tem doença respiratória / no pulmão?;Sim;0;
+Tem doença respiratória / no pulmão?;Não;0;
+Tem doença respiratória / no pulmão?;N. Inf;2;
+Asma;;0;
+DPOC / Enfisema;;0;
+Outra;;0;
+Não sabe;;0;
+
+Condições / Situações de saúde gerais - Doença cardíaca
+Descrição;Sub Descrição;Quantidade;
+Tem doença cardíaca / do coração?;Sim;0;
+Tem doença cardíaca / do coração?;Não;0;
+Tem doença cardíaca / do coração?;N. Inf;2;
+Insuficiência cardíaca;;0;
+Não sabe;;0;
+Outra;;0;
+
+Condições / Situações de saúde gerais - Problemas nos rins
+Descrição;Sub Descrição;Quantidade;
+Tem ou teve problemas nos rins?;Sim;0;
+Tem ou teve problemas nos rins?;Não;0;
+Tem ou teve problemas nos rins?;N. Inf;2;
+Insuficiência renal;;0;
+Outra;;0;
+Não sabe;;0;
+
+Cidadão em situação de rua
+Descrição;Sim;Não;Não informado;
+É acompanhado por outra instituição;0;0;2;
+Possui referência familiar?;0;0;2;
+Recebe algum benefício;0;0;2;
+Visita algum familiar com frequência;0;0;2;
+
+Cidadão em situação de rua - Tempo em situação de rua
+Descrição;Sub Descrição;Quantidade;
+Deseja informar?;Sim;0;
+Deseja informar?;Não;0;
+Menos de 6 meses;;0;
+6 a 12 meses;;0;
+1 a 5 anos;;0;
+Mais de 5 anos;;0;
+
+Cidadão em situação de rua - Quantas vezes se alimenta ao dia
+Descrição;Quantidade;
+1 vez;0;
+2 ou 3 vezes;0;
+Mais de 3 vezes;0;
+Não informado;2;
+
+Cidadão em situação de rua - Qual a origem da alimentação
+Descrição;Quantidade;
+Restaurante popular;0;
+Doação restaurante;0;
+Outros;0;
+Doação grupo religioso;0;
+Doação de popular;0;
+Não informado;2;
+
+Cidadão em situação de rua - Tem acesso à higiene pessoal
+Descrição;Sub Descrição;Quantidade;
+Tem acesso à higiene pessoal?;Sim;0;
+Tem acesso à higiene pessoal?;Não;0;
+Tem acesso à higiene pessoal?;N. Inf;2;
+Banho;;0;
+Acesso ao sanitário;;0;
+Higiene bucal;;0;
+Outros;;0;

@@ -32,6 +32,8 @@ export interface PreviewCargaEnriquecida {
   error?: string;
   /** Campo legado opcional retornado por versões anteriores da API */
   unidade?: string;
+  /** Cidadãos ativos — presente somente para tipo_relatorio = 'cadastro_individual' */
+  cidadaos_ativos?: number;
 }
 
 export interface ResolucaoUpload {

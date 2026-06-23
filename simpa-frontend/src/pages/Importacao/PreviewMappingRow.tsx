@@ -44,6 +44,11 @@ export function PreviewMappingRow({
             </span>
           ) : null}
           <span className="import-preview-tag mono">{item.tipo_relatorio}</span>
+          {item.tipo_relatorio === 'cadastro_individual' && item.cidadaos_ativos != null ? (
+            <span className="import-preview-badge-pop" data-testid="cidadaos-ativos-badge">
+              {item.cidadaos_ativos.toLocaleString('pt-BR')} cidadãos
+            </span>
+          ) : null}
           {item.ja_importado ? (
             <span className="import-preview-warning">já importado</span>
           ) : null}

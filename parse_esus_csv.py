@@ -40,6 +40,42 @@ TIPO_RELATORIO_MAP = {
     "Relatório de atividade coletiva - Analítico": "atividade_coletiva",
     "Relatório de marcadores de consumo alimentar - Analítico": "marcadores_consumo_alimentar",
     "Relatório de procedimentos individualizados - Analítico": "procedimentos_individualizados",
+    "Relatório de cadastro individual - Analítico": "cadastro_individual",
+}
+
+# Mapa: normalize_key(nome da seção) → categoria de campo em populacao_cadastrada
+CADASTRO_SECTION_MAP = {
+    "dados_gerais": "dados_gerais",
+    "identificacao_do_usuario_cidadao_faixa_etaria": "faixa_etaria",
+    "identificacao_do_usuario_cidadao_sexo": "sexo",
+    "identificacao_do_usuario_cidadao_raca_cor": "raca_cor",
+    "condicoes_situacoes_de_saude_gerais": "condicoes_saude",
+    "informacoes_sociodemograficas_deficiencia": "deficiencia",
+    "informacoes_sociodemograficas_situacao_no_mercado_de_trabalho": "mercado_trabalho",
+    "informacoes_sociodemograficas_qual_e_o_curso_mais_elevado_que_frequenta_ou_frequentou": "escolaridade",
+    "outras_informacoes_sociodemograficas": "outras_sociodemograficas",
+    "informacoes_sociodemograficas_relacao_de_parentesco_com_o_responsavel_familiar": "parentesco",
+    "informacoes_sociodemograficas_criancas_de_0_a_9_anos_com_quem_fica": "criancas_com_quem_fica",
+}
+
+# Mapa: normalize_key(descrição da condição) → chave limpa em condicoes_saude JSONB
+CONDICOES_SAUDE_MAP = {
+    "esta_gestante": "gestante",
+    "tem_hipertensao_arterial": "hipertensao",
+    "tem_diabetes": "diabetes",
+    "esta_fumante": "fumante",
+    "esta_acamado": "acamado",
+    "teve_avc_derrame": "avc_derrame",
+    "tem_ou_teve_cancer": "cancer",
+    "teve_diagnostico_de_algum_problema_de_saude_mental_por_profissional_de_saude": "saude_mental",
+    "faz_uso_de_alcool": "alcool",
+    "esta_com_tuberculose": "tuberculose",
+    "esta_com_hanseniase": "hanseniase",
+    "teve_infarto": "infarto",
+    "esta_domiciliado": "domiciliado",
+    "faz_uso_de_outras_drogas": "drogas",
+    "teve_internacao_nos_ultimos_12_meses": "internacao_12m",
+    "usa_plantas_medicinais": "plantas_medicinais",
 }
 
 # Linhas de cabecalho institucional que nunca sao secoes de dados
@@ -129,6 +165,12 @@ def parse_report(path: Path):
         meta["periodo_inicio"] = parse_br_date(m.group(1))
         meta["periodo_fim"] = parse_br_date(m.group(2))
         meta["competencia"] = meta["periodo_inicio"].replace(day=1)
+    elif meta.get("filtro_data"):
+        # Cadastro individual usa "Data;DD/MM/YYYY" ao invés de "Período;... a ..."
+        data = parse_br_date(meta["filtro_data"])
+        meta["periodo_fim"] = data
+        meta["periodo_inicio"] = data.replace(day=1)
+        meta["competencia"] = data.replace(day=1)
 
     # Equipe -> equipe_codigo / equipe_nome
     equipe = meta.get("filtro_equipe", "Todas")
@@ -209,6 +251,18 @@ def parse_report(path: Path):
         i += 1
 
     _finalize_registros_meta(meta, sections)
+
+    # Para cadastro_individual: extrair cidadaos_ativos/saidas no meta (usado em --json-out e preview)
+    if meta.get("tipo_relatorio") == "cadastro_individual":
+        for sec_name, rows in sections:
+            if normalize_key(sec_name) == "dados_gerais":
+                for descricao, _, valores in rows:
+                    k = normalize_key(descricao)
+                    if k == "cidadaos_ativos":
+                        meta["cidadaos_ativos"] = int(valores.get("quantidade") or 0)
+                    elif k == "saida_de_cidadaos_do_cadastro":
+                        meta["saidas_cadastro"] = int(valores.get("quantidade") or 0)
+                break
 
     return meta, sections
 
@@ -424,6 +478,165 @@ def carga_insert_sql(use_id_conflict):
         """
 
 
+def _build_populacao_from_sections(sections: list) -> dict:
+    """Converte seções do cadastro individual em dict estruturado para populacao_cadastrada."""
+    result: dict = {
+        "cidadaos_ativos": 0,
+        "saidas": 0,
+        "sexo_masculino": None,
+        "sexo_feminino": None,
+        "faixa_etaria": [],
+        "condicoes_saude": {},
+        "raca_cor": {},
+        "sociodemografico": {},
+        "extras": {},
+    }
+
+    for sec_name, rows in sections:
+        field = CADASTRO_SECTION_MAP.get(normalize_key(sec_name))
+
+        if field == "dados_gerais":
+            for descricao, _, valores in rows:
+                k = normalize_key(descricao)
+                if k == "cidadaos_ativos":
+                    result["cidadaos_ativos"] = int(valores.get("quantidade") or 0)
+                elif k == "saida_de_cidadaos_do_cadastro":
+                    result["saidas"] = int(valores.get("quantidade") or 0)
+
+        elif field == "faixa_etaria":
+            for descricao, _, valores in rows:
+                if descricao:
+                    result["faixa_etaria"].append({
+                        "faixa": descricao,
+                        "masculino": int(valores.get("masculino") or 0),
+                        "feminino": int(valores.get("feminino") or 0),
+                        "indeterminado": int(valores.get("indeterminado") or 0),
+                        "nao_informado": int(valores.get("nao_informado") or 0),
+                    })
+
+        elif field == "sexo":
+            for descricao, _, valores in rows:
+                k = normalize_key(descricao)
+                if k == "masculino":
+                    result["sexo_masculino"] = int(valores.get("quantidade") or 0)
+                elif k == "feminino":
+                    result["sexo_feminino"] = int(valores.get("quantidade") or 0)
+
+        elif field == "raca_cor":
+            for descricao, _, valores in rows:
+                if descricao:
+                    k = normalize_key(descricao)
+                    result["raca_cor"][k] = int(valores.get("quantidade") or 0)
+
+        elif field == "condicoes_saude":
+            for descricao, _, valores in rows:
+                raw_key = normalize_key(descricao)
+                clean_key = CONDICOES_SAUDE_MAP.get(raw_key, raw_key)
+                result["condicoes_saude"][clean_key] = {
+                    "sim": int(valores.get("sim") or 0),
+                    "nao": int(valores.get("nao") or 0),
+                    "nao_informado": int(valores.get("nao_informado") or 0),
+                }
+
+        elif field == "deficiencia":
+            defic: dict = {}
+            for descricao, _, valores in rows:
+                raw_key = normalize_key(descricao)
+                if "tem_alguma_deficiencia" in raw_key:
+                    sub = str(valores.get("sub_descricao") or "").lower()
+                    if "sim" in sub:
+                        defic["sim"] = int(valores.get("quantidade") or 0)
+                    elif sub and "sim" not in sub and "n" in sub[:2]:
+                        defic["nao"] = int(valores.get("quantidade") or 0)
+                elif descricao:
+                    defic[raw_key] = int(valores.get("quantidade") or 0)
+            if defic:
+                result["condicoes_saude"]["deficiencia"] = defic
+
+        elif field in ("mercado_trabalho", "escolaridade", "outras_sociodemograficas",
+                       "parentesco", "criancas_com_quem_fica"):
+            sec_data: dict = {}
+            for descricao, _, valores in rows:
+                if descricao:
+                    k = normalize_key(descricao)
+                    qtd = valores.get("quantidade")
+                    sec_data[k] = int(qtd) if qtd is not None else valores
+            result["sociodemografico"][field] = sec_data
+
+        else:
+            # Seção não mapeada → extras (compatibilidade com versões futuras do e-SUS PEC)
+            sec_data = {}
+            for descricao, _, valores in rows:
+                if descricao:
+                    k = normalize_key(descricao)
+                    sec_data[k] = valores
+            if sec_data:
+                result["extras"][normalize_key(sec_name)] = sec_data
+
+    return result
+
+
+def _write_cadastro_to_pg(meta, sections, cur, estabelecimento_id, equipe_id, use_id_conflict):
+    """Escreve cadastro individual em esus_cargas + populacao_cadastrada (nunca em esus_indicadores_raw)."""
+    if estabelecimento_id is None:
+        raise ValueError("cadastro_individual requer --estabelecimento-id")
+
+    insert_sql = carga_insert_sql(use_id_conflict)
+    carga_params = build_carga_params(meta, estabelecimento_id, equipe_id)
+    cur.execute(insert_sql, carga_params)
+    carga_id = cur.fetchone()[0]
+
+    pop = _build_populacao_from_sections(sections)
+
+    cur.execute(
+        """
+        INSERT INTO populacao_cadastrada (
+            carga_id, estabelecimento_id, competencia,
+            cidadaos_ativos, saidas, sexo_masculino, sexo_feminino,
+            faixa_etaria, condicoes_saude, raca_cor, sociodemografico, extras
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s,
+                  %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb)
+        ON CONFLICT (competencia, estabelecimento_id) DO UPDATE SET
+            carga_id         = EXCLUDED.carga_id,
+            cidadaos_ativos  = EXCLUDED.cidadaos_ativos,
+            saidas           = EXCLUDED.saidas,
+            sexo_masculino   = EXCLUDED.sexo_masculino,
+            sexo_feminino    = EXCLUDED.sexo_feminino,
+            faixa_etaria     = EXCLUDED.faixa_etaria,
+            condicoes_saude  = EXCLUDED.condicoes_saude,
+            raca_cor         = EXCLUDED.raca_cor,
+            sociodemografico = EXCLUDED.sociodemografico,
+            extras           = EXCLUDED.extras,
+            importado_em     = now()
+        """,
+        (
+            carga_id,
+            estabelecimento_id,
+            meta["competencia"],
+            pop["cidadaos_ativos"],
+            pop["saidas"],
+            pop["sexo_masculino"],
+            pop["sexo_feminino"],
+            json.dumps(pop["faixa_etaria"], ensure_ascii=False),
+            json.dumps(pop["condicoes_saude"], ensure_ascii=False),
+            json.dumps(pop["raca_cor"], ensure_ascii=False),
+            json.dumps(pop["sociodemografico"], ensure_ascii=False),
+            json.dumps(pop["extras"], ensure_ascii=False),
+        ),
+    )
+
+    return {
+        "carga_id": carga_id,
+        "tipo_relatorio": meta["tipo_relatorio"],
+        "competencia": str(meta["competencia"]),
+        "unidade": meta["unidade"],
+        "equipe_nome": meta["equipe_nome"],
+        "cidadaos_ativos": pop["cidadaos_ativos"],
+        "indicadores": 0,
+        "status": "ok",
+    }
+
+
 def write_to_pg(reports, estabelecimento_id=None, equipe_id=None):
     """Grava lista de (meta, sections) no PostgreSQL via psycopg2."""
     import psycopg2
@@ -443,6 +656,14 @@ def write_to_pg(reports, estabelecimento_id=None, equipe_id=None):
         with conn:
             with conn.cursor() as cur:
                 for meta, sections in reports:
+                    # Cadastro individual: rota dedicada para populacao_cadastrada
+                    if meta["tipo_relatorio"] == "cadastro_individual":
+                        result = _write_cadastro_to_pg(
+                            meta, sections, cur, estabelecimento_id, equipe_id, use_id_conflict
+                        )
+                        results.append(result)
+                        continue
+
                     carga_params = build_carga_params(
                         meta, estabelecimento_id, equipe_id
                     )

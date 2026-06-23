@@ -258,23 +258,72 @@ def _temas_coletivos(indexed: dict) -> list[dict[str, Any]]:
     return temas
 
 
-def _build_indicadores_qualidade() -> list[dict[str, Any]]:
+def _denominadores(pop_row: dict[str, Any] | None) -> dict[str, Any]:
+    """Extrai denominadores de qualidade a partir do snapshot populacao_cadastrada.
+
+    Retorna dict vazio quando pop_row é None ou cidadaos_ativos == 0.
+    Indicadores odontológicos (B1-B3, B5-B6, M1, M2) não estão presentes —
+    seus denominadores vêm de dados de produção, não do cadastro individual.
+    """
+    if pop_row is None:
+        return {}
+    ativos = int(pop_row.get("cidadaos_ativos") or 0)
+    if not ativos:
+        return {}
+
+    result: dict[str, Any] = {
+        "C1": ativos,
+        "IGM-APS": ativos,
+        "IGM-ICSAP": ativos,
+    }
+
+    # IGM-PN: gestantes registradas com "Está gestante = Sim"
+    cond = pop_row.get("condicoes_saude") or {}
+    gest_sim = (cond.get("gestante") or {}).get("sim")
+    if gest_sim is not None and int(gest_sim) > 0:
+        result["IGM-PN"] = int(gest_sim)
+
+    # IGM-VAC: crianças menores de 1 ano
+    faixas = pop_row.get("faixa_etaria") or []
+    for f in faixas:
+        if f.get("faixa") == "Menos de 01 ano":
+            total = (f.get("masculino") or 0) + (f.get("feminino") or 0)
+            if total > 0:
+                result["IGM-VAC"] = total
+            break
+
+    # B4: escovação supervisionada (6-12 anos) — aproximado com faixas 05-09 + 10-14
+    b4_total = 0
+    for f in faixas:
+        if f.get("faixa") in ("05 a 09 anos", "10 a 14 anos"):
+            b4_total += (f.get("masculino") or 0) + (f.get("feminino") or 0)
+    if b4_total > 0:
+        result["B4"] = b4_total
+
+    return result
+
+
+def _build_indicadores_qualidade(
+    pop_row: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    dens = _denominadores(pop_row)
     result = []
     for item in INDICADORES_QUALIDADE_CATALOG:
-        result.append(
-            {
-                "cod": item["cod"],
-                "nomeCurto": item["nomeCurto"],
-                "nome": item["nome"],
-                "categoria": item["categoria"],
-                "meta": None,
-                "exec": None,
-                "num": "—",
-                "den": "—",
-                "fonte": item["fonte"],
-                "periodicidade": item["periodicidade"],
-            }
-        )
+        entry: dict[str, Any] = {
+            "cod": item["cod"],
+            "nomeCurto": item["nomeCurto"],
+            "nome": item["nome"],
+            "categoria": item["categoria"],
+            "meta": None,
+            "exec": None,
+            "num": "—",
+            "den": dens.get(item["cod"], "—"),
+            "fonte": item["fonte"],
+            "periodicidade": item["periodicidade"],
+        }
+        if item["cod"] == "B4":
+            entry["den_nota"] = "Aproximado: faixas 05-09 + 10-14 anos"
+        result.append(entry)
     return result
 
 
@@ -365,6 +414,7 @@ def build_payload(
     raw_rows: list[dict[str, Any]],
     sia_rows: list[dict[str, Any]] | None = None,
     mysql_available: bool = False,
+    pop_row: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Transform staged rows into ContratoDashboard v3.1.0 JSON."""
     sia_rows = sia_rows or []
@@ -426,5 +476,5 @@ def build_payload(
             },
         },
         "emendas_parlamentares": [],
-        "indicadores_qualidade": _build_indicadores_qualidade(),
+        "indicadores_qualidade": _build_indicadores_qualidade(pop_row),
     }

@@ -19,6 +19,7 @@ services:
       - ./migration_009_cadastros_forma_cbo.sql:/docker-entrypoint-initdb.d/09-migration_009_cadastros_forma_cbo.sql:ro
       - ./migration_010_sia_producao_cnes.sql:/docker-entrypoint-initdb.d/10-migration_010_sia_producao_cnes.sql:ro
       - ./migration_011_rubricas_sia.sql:/docker-entrypoint-initdb.d/11-migration_011_rubricas_sia.sql:ro
+      - ./migration_012_populacao_cadastrada.sql:/docker-entrypoint-initdb.d/12-migration_012_populacao_cadastrada.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

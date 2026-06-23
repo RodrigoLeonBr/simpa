@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS esus_cargas (
                                     'atendimento_odontologico',
                                     'atividade_coletiva',
                                     'marcadores_consumo_alimentar',
-                                    'procedimentos_individualizados'
+                                    'procedimentos_individualizados',
+                                    'cadastro_individual'
                                 )),
     competencia                 DATE NOT NULL,
     periodo_inicio              DATE NOT NULL,
@@ -77,7 +78,46 @@ COMMENT ON TABLE esus_indicadores_raw IS
     'EAV: uma linha por (seção, descrição) de cada relatório e-SUS. valores = JSONB com colunas normalizadas.';
 
 -- ----------------------------------------------------------------------------
--- 3. dados_consolidados
+-- 3. populacao_cadastrada
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS populacao_cadastrada (
+    id                  BIGSERIAL PRIMARY KEY,
+    carga_id            BIGINT       NOT NULL REFERENCES esus_cargas(id) ON DELETE CASCADE,
+    estabelecimento_id  BIGINT       NOT NULL REFERENCES estabelecimentos(id),
+    competencia         DATE         NOT NULL,
+    cidadaos_ativos     INT          NOT NULL DEFAULT 0,
+    saidas              INT          NOT NULL DEFAULT 0,
+    sexo_masculino      INT,
+    sexo_feminino       INT,
+    faixa_etaria        JSONB        NOT NULL DEFAULT '[]',
+    condicoes_saude     JSONB        NOT NULL DEFAULT '{}',
+    raca_cor            JSONB        NOT NULL DEFAULT '{}',
+    sociodemografico    JSONB        NOT NULL DEFAULT '{}',
+    extras              JSONB        NOT NULL DEFAULT '{}',
+    importado_em        TIMESTAMP    NOT NULL DEFAULT now(),
+    UNIQUE (carga_id),
+    UNIQUE (competencia, estabelecimento_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pop_cad_competencia
+    ON populacao_cadastrada (competencia, estabelecimento_id);
+
+CREATE INDEX IF NOT EXISTS idx_pop_cad_condicoes_gin
+    ON populacao_cadastrada USING GIN (condicoes_saude);
+
+COMMENT ON TABLE populacao_cadastrada IS
+    'Snapshot agregado do relatório de cadastro individual e-SUS por unidade e competência. '
+    'Uma linha por (competencia, estabelecimento_id). Fonte dos denominadores de indicadores de qualidade APS.';
+
+COMMENT ON COLUMN populacao_cadastrada.faixa_etaria IS
+    'Array JSON: [{faixa, masculino, feminino, indeterminado, nao_informado}] na ordem do CSV.';
+COMMENT ON COLUMN populacao_cadastrada.condicoes_saude IS
+    'Condições de saúde: {hipertensao, diabetes, gestante, fumante, …}: {sim, nao, nao_informado}.';
+COMMENT ON COLUMN populacao_cadastrada.extras IS
+    'Seções do CSV não mapeadas para colunas estruturadas. Preserva compatibilidade com versões futuras do e-SUS PEC.';
+
+-- ----------------------------------------------------------------------------
+-- 4. dados_consolidados
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS dados_consolidados (
     id              BIGSERIAL PRIMARY KEY,

@@ -10,6 +10,7 @@ import LoginPage from './pages/Login';
 import PainelPage from './pages/Painel';
 
 const CadastrosPage = lazy(() => import('./pages/Cadastros'));
+const PopulacaoPage = lazy(() => import('./pages/Painel/PopulacaoPage'));
 const ImportacaoPage = lazy(() => import('./pages/Importacao'));
 const AdminPage = lazy(() => import('./pages/Administracao'));
 const MetasPage = lazy(() => import('./pages/Metas'));
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="/metas" element={<LazyModuleRoute Page={MetasPage} />} />
               <Route path="/indicadores" element={<LazyModuleRoute Page={IndicadoresPage} />} />
               <Route path="/relatorios" element={<LazyModuleRoute Page={RelatoriosPage} />} />
+              <Route path="/painel/populacao" element={<LazyModuleRoute Page={PopulacaoPage} />} />
               <Route path="/admin/*" element={<LazyModuleRoute Page={AdminPage} />} />
             </Route>
           </Route>

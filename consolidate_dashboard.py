@@ -367,6 +367,39 @@ def write_payload(
     return meta
 
 
+def fetch_pop_row(
+    conn,
+    competencia: date,
+    estabelecimento_id: int | None,
+) -> dict | None:
+    """Busca snapshot de população cadastrada para denominadores de indicadores.
+
+    Retorna None quando estabelecimento_id é None (path legado sem FK) ou
+    quando não há dados de cadastro individual para (competencia, estabelecimento_id).
+    """
+    if estabelecimento_id is None:
+        return None
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT cidadaos_ativos, saidas, faixa_etaria, condicoes_saude, raca_cor
+            FROM populacao_cadastrada
+            WHERE competencia = %s AND estabelecimento_id = %s
+            """,
+            (competencia, estabelecimento_id),
+        )
+        row = cur.fetchone()
+    if row is None:
+        return None
+    return {
+        "cidadaos_ativos": row[0],
+        "saidas": row[1],
+        "faixa_etaria": row[2] or [],
+        "condicoes_saude": row[3] or {},
+        "raca_cor": row[4] or {},
+    }
+
+
 def consolidate_group(
     conn,
     competencia: date,
@@ -400,6 +433,7 @@ def consolidate_group(
         unidade,
         estabelecimento_id=estabelecimento_id,
     )
+    pop_row = fetch_pop_row(conn, competencia, estabelecimento_id)
     payload = build_payload(
         competencia=competencia,
         municipio=municipio,
@@ -408,6 +442,7 @@ def consolidate_group(
         raw_rows=raw_rows,
         sia_rows=sia_rows,
         mysql_available=sia_sync_exists(conn, competencia),
+        pop_row=pop_row,
     )
 
     if pg_write:

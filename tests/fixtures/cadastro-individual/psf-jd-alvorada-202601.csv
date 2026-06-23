@@ -1,0 +1,314 @@
+e-SUS - Atenção Primária
+MINISTÉRIO DA SAÚDE
+ESTADO DE SÃO PAULO
+MUNICÍPIO DE AMERICANA
+UNIDADE DE SAÚDE PSF JD ALVORADA
+
+Relatório de cadastro individual - Analítico
+
+FILTROS
+Data;31/01/2026
+Equipe;Todas
+Profissional;Todos
+CBO;Todos
+Filtros personalizados;Nenhum
+
+
+Dados processados em ;22/06/2026; às ;00:10;
+Gerado em ;22/06/2026; às ;11:52; por ;Rodrigo Alexander Diaz Leon
+
+O resultado pode contemplar informações de equipes vinculadas.
+
+Dados gerais
+Descrição;Quantidade;
+Cidadãos ativos;3337;
+Saída de cidadãos do cadastro;1198;
+
+Identificação do usuário / cidadão - Faixa etária
+Descrição;Masculino;Feminino;Indeterminado;Não informado;
+Menos de 01 ano;31;26;0;0;
+01 ano;19;16;0;0;
+02 anos;18;20;0;0;
+03 anos;24;18;0;0;
+04 anos;23;25;0;0;
+05 a 09 anos;108;113;0;0;
+10 a 14 anos;109;102;0;0;
+15 a 19 anos;79;99;0;0;
+20 a 24 anos;134;129;0;0;
+25 a 29 anos;130;157;0;0;
+30 a 34 anos;125;143;0;0;
+35 a 39 anos;146;113;0;0;
+40 a 44 anos;111;121;0;0;
+45 a 49 anos;94;119;0;0;
+50 a 54 anos;102;125;0;0;
+55 a 59 anos;104;97;0;0;
+60 a 64 anos;65;94;0;0;
+65 a 69 anos;63;91;0;0;
+70 a 74 anos;43;60;0;0;
+75 a 79 anos;24;44;0;0;
+80 anos ou mais;31;42;0;0;
+Não informado;0;0;0;0;
+
+Identificação do usuário / cidadão
+Descrição;Sim;Não;Não informado;
+Desconhece nome da mãe;6;3331;;
+Desconhece nome do pai;171;3166;;
+Responsável familiar;1083;2072;182;
+
+Identificação do usuário / cidadão - Sexo
+Descrição;Quantidade;
+Masculino;1583;
+Feminino;1754;
+Indeterminado;0;
+Não informado;0;
+
+Identificação do usuário / cidadão - Raça / Cor
+Descrição;Quantidade;
+Branca;2570;
+Preta;92;
+Amarela;34;
+Parda;638;
+Indígena;3;
+Não informado;0;
+
+Identificação do usuário / cidadão - Etnia
+Descrição;Quantidade;
+KARAJA (CARAJA);1;
+WASSU;2;
+Não informado;3334;
+
+Identificação do usuário / cidadão - Nacionalidade
+Descrição;Quantidade;
+Brasileira;3290;
+Naturalizado;0;
+Estrangeiro;47;
+Não informado;0;
+
+Informações sociodemográficas - Relação de parentesco com o responsável familiar
+Descrição;Quantidade;
+Cônjuge / Companheiro(a);547;
+Filho(a);774;
+Enteado(a);13;
+Neto(a) / Bisneto(a);96;
+Pai / Mãe;34;
+Sogro(a);6;
+Irmão / Irmã;36;
+Genro / Nora;31;
+Outro parente;58;
+Não parente;9;
+Não informado;1733;
+
+Informações sociodemográficas - Ocupação
+Descrição;Quantidade;
+AÇOUGUEIRO;1;
+ARTESÃO TECELÃO;1;
+ATENDENTE DE LOJAS E MERCADOS;1;
+BORRACHEIRO;1;
+COLETOR DE LIXO DOMICILIAR;1;
+COMERCIANTE VAREJISTA;1;
+CORTADOR DE ARTEFATOS DE COURO (EXCETO ROUPAS E CALÇADOS);1;
+COSTUREIRO NA CONFECÇÃO EM SÉRIE;1;
+FORNEIRO DE REAQUECIMENTO E TRATAMENTO TÉRMICO NA METALURGIA;1;
+MÉDICO VETERINÁRIO;1;
+PEDREIRO;1;
+REPRESENTANTE COMERCIAL AUTÔNOMO;1;
+SERRALHEIRO;1;
+;3324;
+
+Informações sociodemográficas - Qual é o curso mais elevado que frequenta ou frequentou
+Descrição;Quantidade;
+Creche;31;
+Pré-escola (exceto CA);18;
+Classe de alfabetização - CA;1;
+Ensino fundamental 1ª a 4ª séries;77;
+Ensino fundamental 5ª a 8ª séries;97;
+Ensino fundamental completo;35;
+Ensino fundamental especial;0;
+Ensino fundamental EJA - séries iniciais (supletivo 1ª a 4ª);1;
+Ensino fundamental EJA - séries finais (supletivo 5ª a 8ª);2;
+Ensino médio, médio 2º ciclo (científico, técnico e etc);29;
+Ensino médio especial;9;
+Ensino médio EJA (supletivo);2;
+Superior, aperfeiçoamento, especialização, mestrado, doutorado;12;
+Alfabetização para adultos (Mobral, etc);0;
+Nenhum;10;
+Não informado;3013;
+
+Informações sociodemográficas - Situação no mercado de trabalho
+Descrição;Quantidade;
+Empregador;0;
+Assalariado com carteira de trabalho;14;
+Assalariado sem carteira de trabalho;4;
+Autônomo com previdência social;2;
+Autônomo sem previdência social;2;
+Aposentado / Pensionista;25;
+Desempregado;3;
+Não trabalha;12;
+Servidor público / Militar;1;
+Outro;9;
+Não informado;3265;
+
+Informações sociodemográficas - Crianças de 0 a 9 anos, com quem fica
+Descrição;Quantidade;
+Adulto responsável;31;
+Outra(s) criança(s);0;
+Adolescente;0;
+Sozinha;0;
+Creche;1;
+Outro;2;
+Não informado;3304;
+
+Informações sociodemográficas - Orientação sexual
+Descrição;Sub Descrição;Quantidade;
+Deseja informar orientação sexual?;Sim;7;
+Deseja informar orientação sexual?;Não;1626;
+Deseja informar orientação sexual?;N. Inf;1704;
+Heterossexual;;6;
+Homossexual (gay / lésbica);;0;
+Bissexual;;1;
+Gay;;0;
+Lésbica;;0;
+Assexual;;0;
+Panssexual;;0;
+Outro;;0;
+
+Informações sociodemográficas - Identidade de gênero
+Descrição;Sub Descrição;Quantidade;
+Deseja informar identidade de gênero?;Sim;1;
+Deseja informar identidade de gênero?;Não;1609;
+Deseja informar identidade de gênero?;N. Inf;1727;
+Homem transgênero;;0;
+Mulher transgênero;;0;
+Travesti;;0;
+Homem cisgênero;;0;
+Mulher cisgênero;;0;
+Transgênero;;0;
+Não-Binário;;0;
+Outro;;0;
+
+Informações sociodemográficas - Deficiência
+Descrição;Sub Descrição;Quantidade;
+Tem alguma deficiência?;Sim;56;
+Tem alguma deficiência?;Não;3281;
+Auditiva;;7;
+Física;;31;
+Intelectual / Cognitiva;;16;
+Visual;;5;
+Outra;;0;
+TEA;;0;
+
+Informações sociodemográficas - Povos e comunidades
+A lista apresenta registros do LEDI versão 4.2.1 ou superior.
+Descrição;Sub Descrição;Quantidade;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;Sim;1;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;Não;495;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;N. Inf;4046;
+
+Outras informações sociodemográficas
+Descrição;Sim;Não;Não informado;
+Frequenta cuidador tradicional?;2;819;2516;
+Frequenta escola ou creche;319;1439;1579;
+Participa de algum grupo comunitário?;6;831;2500;
+Possui plano de saúde privado?;276;715;2346;
+
+Motivo de saída do cidadão do cadastro
+Descrição;Quantidade;
+Mudança de território;1058;
+Óbito;140;
+
+Condições / Situações de saúde gerais
+Descrição;Sim;Não;Não informado;
+Está acamado;4;785;2548;
+Está com hanseníase;1;734;2602;
+Está com tuberculose;0;693;2644;
+Está domiciliado;16;715;2606;
+Está fumante;38;721;2578;
+Está gestante;24;284;3029;
+Faz uso de álcool;23;799;2515;
+Faz uso de outras drogas;8;786;2543;
+PIC;2;493;2842;
+Tem diabetes;123;762;2452;
+Tem hipertensão arterial;313;603;2421;
+Tem ou teve câncer;11;805;2521;
+Teve AVC / derrame;15;791;2531;
+Teve diagnóstico de algum problema de saúde mental por profissional de saúde;69;640;2628;
+Teve infarto;6;702;2629;
+Teve internação nos últimos 12 meses?;18;801;2518;
+Usa plantas medicinais;4;774;2559;
+
+Condições / Situações de saúde gerais - Sobre seu peso, você se considera
+Descrição;Quantidade;
+Abaixo do peso;5;
+Peso adequado;562;
+Acima do peso;39;
+Não informado;2731;
+
+Condições / Situações de saúde gerais - Doença respiratória
+Descrição;Sub Descrição;Quantidade;
+Tem doença respiratória / no pulmão?;Sim;9;
+Tem doença respiratória / no pulmão?;Não;816;
+Tem doença respiratória / no pulmão?;N. Inf;2512;
+Asma;;2;
+DPOC / Enfisema;;2;
+Outra;;4;
+Não sabe;;1;
+
+Condições / Situações de saúde gerais - Doença cardíaca
+Descrição;Sub Descrição;Quantidade;
+Tem doença cardíaca / do coração?;Sim;35;
+Tem doença cardíaca / do coração?;Não;786;
+Tem doença cardíaca / do coração?;N. Inf;2516;
+Insuficiência cardíaca;;13;
+Não sabe;;15;
+Outra;;8;
+
+Condições / Situações de saúde gerais - Problemas nos rins
+Descrição;Sub Descrição;Quantidade;
+Tem ou teve problemas nos rins?;Sim;12;
+Tem ou teve problemas nos rins?;Não;765;
+Tem ou teve problemas nos rins?;N. Inf;2560;
+Insuficiência renal;;6;
+Outra;;4;
+Não sabe;;2;
+
+Cidadão em situação de rua
+Descrição;Sim;Não;Não informado;
+É acompanhado por outra instituição;0;1;3336;
+Possui referência familiar?;0;2;3335;
+Recebe algum benefício;0;2;3335;
+Visita algum familiar com frequência;0;1;3336;
+
+Cidadão em situação de rua - Tempo em situação de rua
+Descrição;Sub Descrição;Quantidade;
+Deseja informar?;Sim;5;
+Deseja informar?;Não;2205;
+Menos de 6 meses;;0;
+6 a 12 meses;;0;
+1 a 5 anos;;0;
+Mais de 5 anos;;0;
+
+Cidadão em situação de rua - Quantas vezes se alimenta ao dia
+Descrição;Quantidade;
+1 vez;0;
+2 ou 3 vezes;0;
+Mais de 3 vezes;0;
+Não informado;3337;
+
+Cidadão em situação de rua - Qual a origem da alimentação
+Descrição;Quantidade;
+Restaurante popular;0;
+Doação restaurante;0;
+Outros;0;
+Doação grupo religioso;0;
+Doação de popular;0;
+Não informado;3337;
+
+Cidadão em situação de rua - Tem acesso à higiene pessoal
+Descrição;Sub Descrição;Quantidade;
+Tem acesso à higiene pessoal?;Sim;0;
+Tem acesso à higiene pessoal?;Não;1;
+Tem acesso à higiene pessoal?;N. Inf;3336;
+Banho;;0;
+Acesso ao sanitário;;0;
+Higiene bucal;;0;
+Outros;;0;

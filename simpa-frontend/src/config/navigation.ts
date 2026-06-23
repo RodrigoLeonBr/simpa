@@ -22,6 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/metas', label: 'Metas', icon: 'metas' },
   { to: '/indicadores', label: 'Indicadores', icon: 'indicadores' },
   { to: '/relatorios', label: 'Relatórios', icon: 'relatorios' },
+  { to: '/painel/populacao', label: 'População Cadastrada', icon: 'cadastros' },
   { to: '/admin', label: 'Administração', icon: 'admin' },
 ];
 

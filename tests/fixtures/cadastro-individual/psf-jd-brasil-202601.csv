@@ -1,0 +1,401 @@
+e-SUS - Atenção Primária
+MINISTÉRIO DA SAÚDE
+ESTADO DE SÃO PAULO
+MUNICÍPIO DE AMERICANA
+UNIDADE DE SAÚDE PSF JARDIM BRASIL
+
+Relatório de cadastro individual - Analítico
+
+FILTROS
+Data;31/01/2026
+Equipe;Todas
+Profissional;Todos
+CBO;Todos
+Filtros personalizados;Nenhum
+
+
+Dados processados em ;22/06/2026; às ;00:10;
+Gerado em ;22/06/2026; às ;11:51; por ;Rodrigo Alexander Diaz Leon
+
+O resultado pode contemplar informações de equipes vinculadas.
+
+Dados gerais
+Descrição;Quantidade;
+Cidadãos ativos;6834;
+Saída de cidadãos do cadastro;2409;
+
+Identificação do usuário / cidadão - Faixa etária
+Descrição;Masculino;Feminino;Indeterminado;Não informado;
+Menos de 01 ano;24;28;0;0;
+01 ano;35;17;0;0;
+02 anos;31;28;0;0;
+03 anos;31;21;0;0;
+04 anos;26;38;0;0;
+05 a 09 anos;182;178;0;0;
+10 a 14 anos;192;190;0;0;
+15 a 19 anos;224;179;0;0;
+20 a 24 anos;207;240;0;0;
+25 a 29 anos;222;233;0;0;
+30 a 34 anos;184;261;0;0;
+35 a 39 anos;200;215;0;0;
+40 a 44 anos;185;250;0;0;
+45 a 49 anos;211;259;0;0;
+50 a 54 anos;219;237;0;0;
+55 a 59 anos;216;311;0;0;
+60 a 64 anos;228;272;0;0;
+65 a 69 anos;219;273;0;0;
+70 a 74 anos;176;188;0;0;
+75 a 79 anos;82;116;0;0;
+80 anos ou mais;75;131;0;0;
+Não informado;0;0;0;0;
+
+Identificação do usuário / cidadão
+Descrição;Sim;Não;Não informado;
+Desconhece nome da mãe;6;6828;;
+Desconhece nome do pai;353;6481;;
+Responsável familiar;1820;3470;1544;
+
+Identificação do usuário / cidadão - Sexo
+Descrição;Quantidade;
+Masculino;3169;
+Feminino;3665;
+Indeterminado;0;
+Não informado;0;
+
+Identificação do usuário / cidadão - Raça / Cor
+Descrição;Quantidade;
+Branca;4967;
+Preta;208;
+Amarela;72;
+Parda;1587;
+Indígena;0;
+Não informado;0;
+
+Identificação do usuário / cidadão - Etnia
+Descrição;Quantidade;
+Não informado;6834;
+
+Identificação do usuário / cidadão - Nacionalidade
+Descrição;Quantidade;
+Brasileira;6817;
+Naturalizado;0;
+Estrangeiro;17;
+Não informado;0;
+
+Informações sociodemográficas - Relação de parentesco com o responsável familiar
+Descrição;Quantidade;
+Cônjuge / Companheiro(a);813;
+Filho(a);1251;
+Enteado(a);21;
+Neto(a) / Bisneto(a);238;
+Pai / Mãe;79;
+Sogro(a);18;
+Irmão / Irmã;54;
+Genro / Nora;72;
+Outro parente;54;
+Não parente;10;
+Não informado;4224;
+
+Informações sociodemográficas - Ocupação
+Descrição;Quantidade;
+ACABADOR DE EMBALAGENS (FLEXÍVEIS E CARTOTÉCNICAS);1;
+AÇOUGUEIRO;1;
+AGENTE COMUNITÁRIO DE SAÚDE;3;
+AGENTE DE SEGURANÇA;1;
+AJUDANTE DE CONFECÇÃO;1;
+AJUDANTE DE MOTORISTA;1;
+AJUSTADOR MECÂNICO;3;
+ALMOXARIFE;1;
+ANALISTA DE RECURSOS HUMANOS;2;
+ANALISTA FINANCEIRO (INSTITUIÇÕES FINANCEIRAS);1;
+ARTESÃO BORDADOR;2;
+ARTESÃO CROCHETEIRO;1;
+ASSISTENTE ADMINISTRATIVO;1;
+ATLETA PROFISSIONAL DE LUTA;1;
+AUXILIAR DE ENFERMAGEM;1;
+AUXILIAR DE ESCRITÓRIO;1;
+AUXILIAR DE FATURAMENTO;1;
+AUXILIAR DE LABORATÓRIO DE ANÁLISES CLÍNICAS;1;
+CABELEIREIRO;5;
+CAMINHONEIRO AUTÔNOMO (ROTAS REGIONAIS E INTERNACIONAIS);1;
+COMERCIANTE VAREJISTA;2;
+CONFEITEIRO;3;
+CONFERENTE DE CARGA E DESCARGA;1;
+CONTADOR;2;
+COPEIRO DE HOSPITAL;1;
+CORTADOR DE TAPEÇARIA;1;
+COSTUREIRA DE PEÇAS SOB ENCOMENDA;14;
+COSTUREIRA DE REPARAÇÃO DE ROUPAS;4;
+COSTUREIRO NA CONFECÇÃO EM SÉRIE;10;
+COSTUREIRO, A MÁQUINA NA CONFECÇÃO EM SÉRIE;5;
+COZINHEIRO GERAL;3;
+CUIDADOR DE IDOSOS;1;
+CUIDADOR EM SAÚDE;1;
+DESENHISTA INDUSTRIAL GRÁFICO (DESIGNER GRÁFICO);1;
+ELETRICISTA DE INSTALAÇÕES;2;
+ELETRICISTA DE INSTALAÇÕES (VEÍCULOS AUTOMOTORES E MÁQUINAS OPERATRIZES, EXCETO AERONAVES E EMBARCAÇÕES);1;
+EMPREGADO DOMÉSTICO DIARISTA;7;
+EMPREGADO DOMÉSTICO NOS SERVIÇOS GERAIS;2;
+ENFERMEIRO;2;
+ENGENHEIRO AMBIENTAL;1;
+ESTETICISTA;1;
+ESTOQUISTA;1;
+FAXINEIRO;1;
+FISIOTERAPEUTA GERAL;1;
+FRENTISTA;5;
+FUNILEIRO DE VEÍCULOS (REPARAÇÃO);2;
+GERENTE COMERCIAL;1;
+GERENTE DE VENDAS;1;
+GESSEIRO;2;
+INSPETOR DE ALUNOS DE ESCOLA PÚBLICA;1;
+INSTRUTOR DE APRENDIZAGEM E TREINAMENTO INDUSTRIAL;1;
+JARDINEIRO;1;
+LAVADOR DE VEÍCULOS;1;
+MANICURE/PEDICURE;6;
+MANOBRADOR;2;
+MARCENEIRO;3;
+MASSOTERAPEUTA;1;
+MECÂNICO DE MANUTENÇÃO DE AUTOMÓVEIS, MOTOCICLETAS E VEÍCULOS SIMILARES;4;
+MODELISTA DE ROUPAS;1;
+MONTADOR DE MÓVEIS E ARTEFATOS DE MADEIRA;2;
+MOTOFRETISTA;1;
+MOTORISTA DE CAMINHÃO (ROTAS REGIONAIS E INTERNACIONAIS);11;
+MOTORISTA DE ÔNIBUS RODOVIÁRIO;1;
+MOTORISTA DE ÔNIBUS URBANO;1;
+MOTORNEIRO;1;
+OPERADOR DE ABASTECIMENTO DE COMBUSTÍVEL DE AERONAVE;1;
+OPERADOR DE CAIXA;4;
+OPERADOR DE CALDEIRA;1;
+OPERADOR DE EMPILHADEIRA;3;
+OPERADOR DE MÁQUINAS OPERATRIZES;1;
+OPERADOR DE URDIDEIRA;1;
+OPERADOR POLIVALENTE DA INDÚSTRIA TÊXTIL;1;
+PADEIRO;1;
+PEDAGOGO;1;
+PEDREIRO;9;
+PEDREIRO DE EDIFICAÇÕES;1;
+PINTOR A PINCEL E ROLO (EXCETO OBRAS E ESTRUTURAS METÁLICAS);1;
+PINTOR DE OBRAS;2;
+PORTEIRO DE EDIFÍCIOS;5;
+PROFESSOR DA EDUCAÇÃO DE JOVENS E ADULTOS DO ENSINO FUNDAMENTAL (PRIMEIRA A QUARTA SÉRIE);3;
+PROFESSOR DE LÍNGUA ESTRANGEIRA MODERNA DO ENSINO FUNDAMENTAL;1;
+PROFESSOR DE NÍVEL MÉDIO NA EDUCAÇÃO INFANTIL;1;
+RECEPCIONISTA DE CONSULTÓRIO MÉDICO OU DENTÁRIO;2;
+RECEPCIONISTA, EM GERAL;3;
+REPOSITOR DE MERCADORIAS;5;
+REPRESENTANTE COMERCIAL AUTÔNOMO;2;
+REVISOR DE FIOS (PRODUÇÃO TÊXTIL);1;
+REVISOR DE TECIDOS ACABADOS;1;
+SERRALHEIRO;2;
+SERVENTE DE OBRAS;1;
+SOLDADO DA POLÍCIA MILITAR;1;
+SOLDADOR;2;
+SUPERVISOR DE CAIXAS E BILHETEIROS (EXCETO CAIXA DE BANCO);1;
+TECELÃO (TEAR AUTOMÁTICO);6;
+TÉCNICO DE ENFERMAGEM;2;
+TÉCNICO DE MANUTENÇÃO ELETRÔNICA;1;
+TÉCNICO EM MANUTENÇÃO DE EQUIPAMENTOS DE INFORMÁTICA;1;
+TRABALHADOR DE SERVIÇOS DE LIMPEZA E CONSERVAÇÃO DE ÁREAS PÚBLICAS;1;
+VENDEDOR DE COMÉRCIO VAREJISTA;6;
+VENDEDOR EM DOMICÍLIO;2;
+VIDRACEIRO;1;
+VIGILANTE;1;
+;6608;
+
+Informações sociodemográficas - Qual é o curso mais elevado que frequenta ou frequentou
+Descrição;Quantidade;
+Creche;59;
+Pré-escola (exceto CA);59;
+Classe de alfabetização - CA;48;
+Ensino fundamental 1ª a 4ª séries;858;
+Ensino fundamental 5ª a 8ª séries;1098;
+Ensino fundamental completo;213;
+Ensino fundamental especial;61;
+Ensino fundamental EJA - séries iniciais (supletivo 1ª a 4ª);5;
+Ensino fundamental EJA - séries finais (supletivo 5ª a 8ª);31;
+Ensino médio, médio 2º ciclo (científico, técnico e etc);626;
+Ensino médio especial;673;
+Ensino médio EJA (supletivo);65;
+Superior, aperfeiçoamento, especialização, mestrado, doutorado;284;
+Alfabetização para adultos (Mobral, etc);3;
+Nenhum;77;
+Não informado;2674;
+
+Informações sociodemográficas - Situação no mercado de trabalho
+Descrição;Quantidade;
+Empregador;3;
+Assalariado com carteira de trabalho;1145;
+Assalariado sem carteira de trabalho;84;
+Autônomo com previdência social;287;
+Autônomo sem previdência social;190;
+Aposentado / Pensionista;963;
+Desempregado;111;
+Não trabalha;780;
+Servidor público / Militar;20;
+Outro;168;
+Não informado;3083;
+
+Informações sociodemográficas - Crianças de 0 a 9 anos, com quem fica
+Descrição;Quantidade;
+Adulto responsável;341;
+Outra(s) criança(s);0;
+Adolescente;2;
+Sozinha;0;
+Creche;18;
+Outro;2;
+Não informado;6487;
+
+Informações sociodemográficas - Orientação sexual
+Descrição;Sub Descrição;Quantidade;
+Deseja informar orientação sexual?;Sim;3424;
+Deseja informar orientação sexual?;Não;1381;
+Deseja informar orientação sexual?;N. Inf;2029;
+Heterossexual;;3412;
+Homossexual (gay / lésbica);;6;
+Bissexual;;0;
+Gay;;1;
+Lésbica;;1;
+Assexual;;0;
+Panssexual;;1;
+Outro;;0;
+
+Informações sociodemográficas - Identidade de gênero
+Descrição;Sub Descrição;Quantidade;
+Deseja informar identidade de gênero?;Sim;47;
+Deseja informar identidade de gênero?;Não;4392;
+Deseja informar identidade de gênero?;N. Inf;2395;
+Homem transgênero;;7;
+Mulher transgênero;;2;
+Travesti;;0;
+Homem cisgênero;;15;
+Mulher cisgênero;;22;
+Transgênero;;0;
+Não-Binário;;0;
+Outro;;1;
+
+Informações sociodemográficas - Deficiência
+Descrição;Sub Descrição;Quantidade;
+Tem alguma deficiência?;Sim;152;
+Tem alguma deficiência?;Não;6682;
+Auditiva;;18;
+Física;;50;
+Intelectual / Cognitiva;;62;
+Visual;;25;
+Outra;;6;
+TEA;;9;
+
+Informações sociodemográficas - Povos e comunidades
+A lista apresenta registros do LEDI versão 4.2.1 ou superior.
+Descrição;Sub Descrição;Quantidade;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;Sim;14;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;Não;5664;
+É membro de Povo ou Comunidade Tradicional ou Campo, Floresta e Águas?;N. Inf;3595;
+
+Outras informações sociodemográficas
+Descrição;Sim;Não;Não informado;
+Frequenta cuidador tradicional?;6;4591;2237;
+Frequenta escola ou creche;937;3693;2204;
+Participa de algum grupo comunitário?;17;4566;2251;
+Possui plano de saúde privado?;558;4087;2189;
+
+Motivo de saída do cidadão do cadastro
+Descrição;Quantidade;
+Mudança de território;2053;
+Óbito;356;
+
+Condições / Situações de saúde gerais
+Descrição;Sim;Não;Não informado;
+Está acamado;19;4624;2191;
+Está com hanseníase;0;4632;2202;
+Está com tuberculose;0;4608;2226;
+Está domiciliado;76;4545;2213;
+Está fumante;235;4403;2196;
+Está gestante;16;1400;5418;
+Faz uso de álcool;59;4594;2181;
+Faz uso de outras drogas;32;4617;2185;
+PIC;18;4068;2748;
+Tem diabetes;506;4153;2175;
+Tem hipertensão arterial;1149;3515;2170;
+Tem ou teve câncer;110;4543;2181;
+Teve AVC / derrame;62;4584;2188;
+Teve diagnóstico de algum problema de saúde mental por profissional de saúde;431;4167;2236;
+Teve infarto;56;4571;2207;
+Teve internação nos últimos 12 meses?;37;4582;2215;
+Usa plantas medicinais;20;4569;2245;
+
+Condições / Situações de saúde gerais - Sobre seu peso, você se considera
+Descrição;Quantidade;
+Abaixo do peso;25;
+Peso adequado;4134;
+Acima do peso;412;
+Não informado;2263;
+
+Condições / Situações de saúde gerais - Doença respiratória
+Descrição;Sub Descrição;Quantidade;
+Tem doença respiratória / no pulmão?;Sim;70;
+Tem doença respiratória / no pulmão?;Não;4580;
+Tem doença respiratória / no pulmão?;N. Inf;2184;
+Asma;;34;
+DPOC / Enfisema;;9;
+Outra;;25;
+Não sabe;;2;
+
+Condições / Situações de saúde gerais - Doença cardíaca
+Descrição;Sub Descrição;Quantidade;
+Tem doença cardíaca / do coração?;Sim;155;
+Tem doença cardíaca / do coração?;Não;4487;
+Tem doença cardíaca / do coração?;N. Inf;2192;
+Insuficiência cardíaca;;30;
+Não sabe;;21;
+Outra;;106;
+
+Condições / Situações de saúde gerais - Problemas nos rins
+Descrição;Sub Descrição;Quantidade;
+Tem ou teve problemas nos rins?;Sim;46;
+Tem ou teve problemas nos rins?;Não;4512;
+Tem ou teve problemas nos rins?;N. Inf;2276;
+Insuficiência renal;;16;
+Outra;;24;
+Não sabe;;7;
+
+Cidadão em situação de rua
+Descrição;Sim;Não;Não informado;
+É acompanhado por outra instituição;0;1;6833;
+Possui referência familiar?;1;0;6833;
+Recebe algum benefício;0;1;6833;
+Visita algum familiar com frequência;0;1;6833;
+
+Cidadão em situação de rua - Tempo em situação de rua
+Descrição;Sub Descrição;Quantidade;
+Deseja informar?;Sim;2;
+Deseja informar?;Não;5106;
+Menos de 6 meses;;0;
+6 a 12 meses;;1;
+1 a 5 anos;;0;
+Mais de 5 anos;;0;
+
+Cidadão em situação de rua - Quantas vezes se alimenta ao dia
+Descrição;Quantidade;
+1 vez;1;
+2 ou 3 vezes;0;
+Mais de 3 vezes;0;
+Não informado;6833;
+
+Cidadão em situação de rua - Qual a origem da alimentação
+Descrição;Quantidade;
+Restaurante popular;0;
+Doação restaurante;0;
+Outros;1;
+Doação grupo religioso;0;
+Doação de popular;0;
+Não informado;6833;
+
+Cidadão em situação de rua - Tem acesso à higiene pessoal
+Descrição;Sub Descrição;Quantidade;
+Tem acesso à higiene pessoal?;Sim;0;
+Tem acesso à higiene pessoal?;Não;1;
+Tem acesso à higiene pessoal?;N. Inf;6833;
+Banho;;0;
+Acesso ao sanitário;;0;
+Higiene bucal;;0;
+Outros;;0;
