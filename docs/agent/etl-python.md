@@ -8,7 +8,8 @@ Scripts na **raiz** do repositório. Invocados via `child_process` no Node ou CL
 CSV e-SUS → parse_esus_csv.py → esus_cargas / raw tables
                               → consolidate_dashboard.py → dados_consolidados (JSONB)
 
-MySQL SIA → sync_sia_mysql.py → tabelas SIA no PG
+MySQL SIA (produção agregada por competência) → sync_sia_mysql.py → sia_sincronizacoes + sia_producao (cnes, estabelecimento_id, métricas apresentado)
+                                            → consolidate_dashboard.py (ambulatorial_sia por FK com fallback legado por unidade)
 
 MySQL prestador/procedimento/forma/cbo → sync_cadastros_mysql.py → estabelecimentos, procedimentos, formas_sia, cbos_sia
 ```
@@ -24,12 +25,16 @@ MySQL prestador/procedimento/forma/cbo → sync_cadastros_mysql.py → estabelec
 ### `consolidate_dashboard.py`
 
 - Agrega raw → contrato dashboard v3.1.0 em `dados_consolidados`.
+- Para SIA usa `fetch_sia_rows` por `competencia` + `estabelecimento_id` quando disponível; fallback legado por `unidade` em linhas sem FK.
+- Módulo `ambulatorial_sia` passa a carregar também `quantidade_apresentada` e `valor_apresentado`.
 - Chamado por: `consolidator.js` (API `/dashboard/consolidar` ou pós-importação).
 
 ### `sync_sia_mysql.py`
 
-- Lê MySQL SIA, grava PostgreSQL.
-- Chamado por: `siaSync.js` → `POST /api/sia/sync`.
+- Lê MySQL SIA por `--competencia YYYY-MM`, agrega e grava PostgreSQL em batch.
+- Suporta `--reimportar` (DELETE por competência antes de inserir novamente).
+- Retorna payload com `registros` (linhas agregadas), `linhas_mysql_raw`, `orphan_cnes`, `estabelecimentos_resolvidos`.
+- Chamado por: `simpa-backend/src/services/sia.js` → `POST /api/sia/sincronizar`.
 
 ### `sync_cadastros_mysql.py`
 
@@ -61,6 +66,13 @@ spawn(PYTHON_PATH, [scriptPath, ...args], { env: process.env })
 ```
 
 `PYTHON_PATH`: default `python` (Windows: pode ser `python` do venv).
+
+## Workflow produção SIA (API/UI)
+
+1. UI `SiaProducaoSyncBanner` envia `POST /api/sia/sincronizar` com `competencia`.
+2. API aplica gate 409 para competência já importada; retry com `reimportar: true`.
+3. Serviço Node executa `sync_sia_mysql.py` e depois `consolidate_dashboard.py` (`runConsolidation({ all: true })`).
+4. UI consulta histórico (`GET /api/sia/sincronizacoes`) e badge de existência (`GET /api/sia/sincronizacoes/existe`).
 
 ## Testes
 

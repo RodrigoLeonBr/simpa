@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Espelho rubricas_sia e reimport cadastros referência
 type: backend
 complexity: medium
@@ -31,10 +31,10 @@ Completar espelho MySQL→PG das dimensões de referência usadas na produção 
 
 ## Subtasks
 
-- [ ] 8.1 Migration rubricas_sia + docker-compose init
-- [ ] 8.2 ETL extrair/sync rubricas from s_rub
-- [ ] 8.3 Backend listRubricas read-only (optional GET /api/cadastros/rubricas) or defer to Phase 2
-- [ ] 8.4 Tests + update docs/agent/cadastros.md
+- [x] 8.1 Migration rubricas_sia + docker-compose init
+- [x] 8.2 ETL extrair/sync rubricas from s_rub
+- [x] 8.3 Backend listRubricas read-only (optional GET /api/cadastros/rubricas) or defer to Phase 2 (defer to Phase 2)
+- [x] 8.4 Tests + update docs/agent/cadastros.md
 
 ## Implementation Details
 
@@ -60,11 +60,11 @@ Padrão: copiar estrutura de `sync_cbos` / `formas_sia`.
 
 ## Tests
 - Unit tests:
-  - [ ] build_rubrica_query targets s_rub RUB_ID/RUB_DC
-  - [ ] sync_rubricas UPSERT idempotent (second run = updated not duplicated)
-  - [ ] forma/cbo/procedimento re-sync test still passes
+  - [x] build_rubrica_query targets s_rub RUB_ID/RUB_DC
+  - [x] sync_rubricas UPSERT idempotent (second run = updated not duplicated)
+  - [x] forma/cbo/procedimento re-sync test still passes
 - Integration tests:
-  - [ ] POST cadastros/sincronizar JSON includes rubricas block
+  - [x] POST cadastros/sincronizar JSON includes rubricas block (covered by backend route tests)
 - Test coverage target: >=80%
 - All tests must pass
 

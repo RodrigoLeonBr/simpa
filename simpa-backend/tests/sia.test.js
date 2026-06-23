@@ -73,6 +73,28 @@ describe('sia service', () => {
     );
   });
 
+  it('adds --reimportar when requested', async () => {
+    mockSpawn({
+      stdout: JSON.stringify([
+        {
+          sincronizacao_id: 2,
+          competencia: '2026-05-01',
+          registros: 11,
+          erros: 0,
+          status: 'ok',
+        },
+      ]),
+    });
+
+    await sincronizar('2026-05', { reimportar: true });
+
+    expect(spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining(['--competencia', '2026-05', '--pg-write', '--reimportar']),
+      expect.any(Object)
+    );
+  });
+
   it('handles subprocess failure gracefully', async () => {
     mockSpawn({ code: 1, stderr: 'MySQL connection refused' });
 

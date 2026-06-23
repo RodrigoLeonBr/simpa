@@ -57,6 +57,7 @@ describe('cadastrosSync service', () => {
       procedimentos: { inserted: 10, updated: 0, inactivated: 0 },
       formas: { inserted: 1, updated: 2, inactivated: 0 },
       cbos: { inserted: 3, updated: 4, inactivated: 1 },
+      rubricas: { inserted: 5, updated: 6, inactivated: 0 },
       sincronizado_em: '2026-06-20T12:00:00Z',
     };
     expect(parseSyncOutput(JSON.stringify(payload))).toEqual(payload);
@@ -180,6 +181,9 @@ describe('cadastrosSync service', () => {
         cbo_inseridos: 7,
         cbo_atualizados: 8,
         cbo_inativados: 2,
+        rubrica_inseridos: 9,
+        rubrica_atualizados: 10,
+        rubrica_inativados: 3,
         erro: null,
         sincronizado_em: '2026-06-20T12:00:00Z',
       })
@@ -192,6 +196,7 @@ describe('cadastrosSync service', () => {
       procedimentos: { inserted: 3, updated: 4, inactivated: 0 },
       formas: { inserted: 5, updated: 6, inactivated: 1 },
       cbos: { inserted: 7, updated: 8, inactivated: 2 },
+      rubricas: { inserted: 9, updated: 10, inactivated: 3 },
     });
   });
 
@@ -212,6 +217,7 @@ describe('cadastrosSync service', () => {
     ).toMatchObject({
       formas: { inserted: 0, updated: 0, inactivated: 0 },
       cbos: { inserted: 0, updated: 0, inactivated: 0 },
+      rubricas: { inserted: 0, updated: 0, inactivated: 0 },
     });
   });
 
@@ -235,6 +241,9 @@ describe('cadastrosSync service', () => {
             cbo_inseridos: 4,
             cbo_atualizados: 0,
             cbo_inativados: 0,
+            rubrica_inseridos: 5,
+            rubrica_atualizados: 0,
+            rubrica_inativados: 0,
             erro: null,
             sincronizado_em: '2026-06-20T12:00:00Z',
           },
@@ -248,6 +257,7 @@ describe('cadastrosSync service', () => {
     expect(result.data[0].estabelecimentos.inserted).toBe(1);
     expect(result.data[0].formas.inserted).toBe(3);
     expect(result.data[0].cbos.inserted).toBe(4);
+    expect(result.data[0].rubricas.inserted).toBe(5);
     expect(query).toHaveBeenLastCalledWith(
       expect.stringContaining('forma_inseridos'),
       expect.any(Array)
@@ -272,6 +282,9 @@ describe('cadastrosSync service', () => {
           cbo_inseridos: 0,
           cbo_atualizados: 12,
           cbo_inativados: 0,
+          rubrica_inseridos: 0,
+          rubrica_atualizados: 13,
+          rubrica_inativados: 0,
           erro: null,
           sincronizado_em: '2026-06-21T08:00:00Z',
         },
@@ -283,6 +296,7 @@ describe('cadastrosSync service', () => {
     expect(latest.procedimentos.updated).toBe(10);
     expect(latest.formas.updated).toBe(11);
     expect(latest.cbos.updated).toBe(12);
+    expect(latest.rubricas.updated).toBe(13);
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining('cbo_atualizados')
     );

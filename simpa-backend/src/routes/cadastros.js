@@ -44,6 +44,9 @@ router.post('/sincronizar', requirePlanningStaff, async (req, res, next) => {
         detalhes: JSON.stringify({
           estabelecimentos: resultado.estabelecimentos,
           procedimentos: resultado.procedimentos,
+          formas: resultado.formas,
+          cbos: resultado.cbos,
+          rubricas: resultado.rubricas,
         }),
         ip: req.ip,
       });

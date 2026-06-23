@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: UI SiaProducaoSyncBanner e client api/sia
 type: frontend
 complexity: medium
@@ -36,11 +36,11 @@ Criar client HTTP e banner com **seletor ano/mês** para importar produção SIA
 
 ## Subtasks
 
-- [ ] 5.1 Types `types/sia.ts`
-- [ ] 5.2 API client functions
-- [ ] 5.3 Banner component + CSS classes (reuse cadastro-sync-*)
-- [ ] 5.4 Wire into Cadastros index page
-- [ ] 5.5 RTL tests loading/success/error
+- [x] 5.1 Types `types/sia.ts`
+- [x] 5.2 API client functions
+- [x] 5.3 Banner component + CSS classes (reuse cadastro-sync-*)
+- [x] 5.4 Wire into Cadastros index page
+- [x] 5.5 RTL tests loading/success/error
 
 ## Implementation Details
 
@@ -58,16 +58,16 @@ Criar client HTTP e banner com **seletor ano/mês** para importar produção SIA
 
 ## Tests
 - Unit tests:
-  - [ ] Renders last sync when loaded
-  - [ ] Shows syncing state on click
-  - [ ] Month picker sends correct YYYY-MM to API
-  - [ ] Toast mentions aggregated import count
-  - [ ] ConfirmDialog shown on 409; confirm sends reimportar:true
-  - [ ] Badge "Já importada" when GET existe returns true
+  - [x] Renders last sync when loaded
+  - [x] Shows syncing state on click
+  - [x] Month picker sends correct YYYY-MM to API
+  - [x] Toast mentions aggregated import count
+  - [x] ConfirmDialog shown on 409; confirm sends reimportar:true
+  - [x] Badge "Já importada" when GET existe returns true
 - Integration tests:
   - [ ] (optional) E2E smoke cadastros sia sync
 - Test coverage target: >=80%
-- All tests must pass
+- [x] All tests must pass
 
 ## Success Criteria
 - All tests passing

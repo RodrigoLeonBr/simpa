@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import sys
+import warnings
 from datetime import datetime, timezone
 from typing import Any
 
@@ -107,6 +108,18 @@ UPSERT_CBO_SQL = """
         sincronizado_em = EXCLUDED.sincronizado_em
 """
 
+UPSERT_RUBRICA_SQL = """
+    INSERT INTO rubricas_sia (
+        codigo_rubrica, descricao, status, sincronizado_em
+    ) VALUES (
+        %(codigo_rubrica)s, %(descricao)s, %(status)s, %(sincronizado_em)s
+    )
+    ON CONFLICT (codigo_rubrica) DO UPDATE SET
+        descricao = EXCLUDED.descricao,
+        status = EXCLUDED.status,
+        sincronizado_em = EXCLUDED.sincronizado_em
+"""
+
 
 def _cadastro_env(name: str, default: str) -> str:
     return os.environ.get(name, default)
@@ -133,12 +146,15 @@ def build_cadastro_config() -> dict[str, str]:
         "col_financiamento": _cadastro_env("SIA_COL_PROC_FINANCIAMENTO", "FINANCIAMENTO"),
         "table_forma": _cadastro_env("SIA_TABLE_FORMA", "forma"),
         "table_cbo": _cadastro_env("SIA_TABLE_CBO", "cbo"),
+        "table_rubrica": _cadastro_env("SIA_TABLE_RUBRICA", "s_rub"),
         "col_forma_grupo": _cadastro_env("SIA_COL_FORMA_GRUPO", "grupo"),
         "col_forma_subgrupo": _cadastro_env("SIA_COL_FORMA_SUBGRUPO", "subgrupo"),
         "col_forma_codigo": _cadastro_env("SIA_COL_FORMA_CODIGO", "forma"),
         "col_forma_desc": _cadastro_env("SIA_COL_FORMA_DESC", "descricao"),
         "col_cbo_codigo": _cadastro_env("SIA_COL_CBO_CODIGO", "CBO"),
         "col_cbo_desc": _cadastro_env("SIA_COL_CBO_DESC", "DS_CBO"),
+        "col_rubrica_codigo": _cadastro_env("SIA_COL_RUBRICA_CODIGO", "RUB_ID"),
+        "col_rubrica_desc": _cadastro_env("SIA_COL_RUBRICA_DESC", "RUB_DC"),
     }
 
 
@@ -191,6 +207,16 @@ def build_cbo_query(cfg: dict[str, str] | None = None) -> str:
             c.{cfg['col_cbo_codigo']} AS codigo_cbo,
             c.{cfg['col_cbo_desc']} AS descricao
         FROM {cfg['table_cbo']} c
+    """
+
+
+def build_rubrica_query(cfg: dict[str, str] | None = None) -> str:
+    cfg = cfg or build_cadastro_config()
+    return f"""
+        SELECT
+            r.{cfg['col_rubrica_codigo']} AS codigo_rubrica,
+            r.{cfg['col_rubrica_desc']} AS descricao
+        FROM {cfg['table_rubrica']} r
     """
 
 
@@ -360,6 +386,24 @@ def normalize_cbo_row(
     }
 
 
+def normalize_rubrica_row(
+    row: dict[str, Any],
+    sync_ts: datetime | None = None,
+) -> dict[str, Any]:
+    sync_ts = sync_ts or datetime.now(timezone.utc)
+    codigo_raw = _clean_str(row.get("codigo_rubrica"), max_len=8)
+    descricao = _clean_str(row.get("descricao"), max_len=160)
+    if not codigo_raw or not descricao:
+        raise ValueError("rubrica row missing codigo_rubrica or descricao")
+
+    return {
+        "codigo_rubrica": _canonical_code(codigo_raw, 4),
+        "descricao": descricao,
+        "status": "ativo",
+        "sincronizado_em": sync_ts,
+    }
+
+
 def normalize_procedimento_row(
     row: dict[str, Any],
     sync_ts: datetime | None = None,
@@ -388,28 +432,40 @@ def normalize_procedimento_row(
     }
 
 
+def _read_sql_records(query: str, conn_mysql) -> list[dict[str, Any]]:
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="pandas only supports SQLAlchemy connectable.*",
+            category=UserWarning,
+        )
+        df = pd.read_sql(query, conn_mysql)
+    return df.replace({pd.NA: None}).to_dict(orient="records")
+
+
 def extrair_prestadores(conn_mysql, cfg: dict[str, str] | None = None) -> list[dict[str, Any]]:
     query = build_prestador_query(cfg)
-    df = pd.read_sql(query, conn_mysql)
-    return df.replace({pd.NA: None}).to_dict(orient="records")
+    return _read_sql_records(query, conn_mysql)
 
 
 def extrair_procedimentos(conn_mysql, cfg: dict[str, str] | None = None) -> list[dict[str, Any]]:
     query = build_procedimento_query(cfg)
-    df = pd.read_sql(query, conn_mysql)
-    return df.replace({pd.NA: None}).to_dict(orient="records")
+    return _read_sql_records(query, conn_mysql)
 
 
 def extrair_formas(conn_mysql, cfg: dict[str, str] | None = None) -> list[dict[str, Any]]:
     query = build_forma_query(cfg)
-    df = pd.read_sql(query, conn_mysql)
-    return df.replace({pd.NA: None}).to_dict(orient="records")
+    return _read_sql_records(query, conn_mysql)
 
 
 def extrair_cbos(conn_mysql, cfg: dict[str, str] | None = None) -> list[dict[str, Any]]:
     query = build_cbo_query(cfg)
-    df = pd.read_sql(query, conn_mysql)
-    return df.replace({pd.NA: None}).to_dict(orient="records")
+    return _read_sql_records(query, conn_mysql)
+
+
+def extrair_rubricas(conn_mysql, cfg: dict[str, str] | None = None) -> list[dict[str, Any]]:
+    query = build_rubrica_query(cfg)
+    return _read_sql_records(query, conn_mysql)
 
 
 def _fetch_key_set(cur, table: str, key_col: str, where: str = "") -> set[str]:
@@ -527,6 +583,40 @@ def _inactivate_cbos(cur, snapshot_keys: set[str], pg_write: bool) -> int:
             UPDATE cbos_sia
             SET status = 'inativo'
             WHERE codigo_cbo = ANY(%s)
+            """,
+            (to_inactivate,),
+        )
+    return len(to_inactivate)
+
+
+def _inactivate_rubricas(cur, snapshot_keys: set[str], pg_write: bool) -> int:
+    if not snapshot_keys:
+        return 0
+
+    existing_active = _count_active_rows(cur, "rubricas_sia")
+    if not snapshot_allows_inactivation(len(snapshot_keys), existing_active):
+        logger.warning(
+            "Skipping rubrica inactivation: snapshot=%s active=%s min_ratio=%s",
+            len(snapshot_keys),
+            existing_active,
+            load_snapshot_min_ratio(),
+        )
+        return 0
+
+    cur.execute(
+        """
+        SELECT codigo_rubrica FROM rubricas_sia
+        WHERE status = 'ativo' AND codigo_rubrica NOT IN %s
+        """,
+        (tuple(snapshot_keys),),
+    )
+    to_inactivate = [row[0] for row in cur.fetchall()]
+    if pg_write and to_inactivate:
+        cur.execute(
+            """
+            UPDATE rubricas_sia
+            SET status = 'inativo'
+            WHERE codigo_rubrica = ANY(%s)
             """,
             (to_inactivate,),
         )
@@ -669,6 +759,38 @@ def sync_cbos(
     return counts
 
 
+def sync_rubricas(
+    conn_pg,
+    rows: list[dict[str, Any]],
+    *,
+    pg_write: bool,
+    skipped_rows: int = 0,
+) -> dict[str, int]:
+    counts = dict(COUNT_TEMPLATE)
+    snapshot_keys = {row["codigo_rubrica"] for row in rows}
+
+    with conn_pg.cursor() as cur:
+        existing = _fetch_key_set(cur, "rubricas_sia", "codigo_rubrica")
+        inserted, updated = _count_upserts(rows, existing, "codigo_rubrica")
+        counts["inserted"] = inserted
+        counts["updated"] = updated
+
+        if pg_write:
+            for row in rows:
+                cur.execute(UPSERT_RUBRICA_SQL, row)
+
+        if skipped_rows > 0:
+            logger.warning(
+                "Skipping rubrica inactivation because %s row(s) were ignored during normalization",
+                skipped_rows,
+            )
+            counts["inactivated"] = 0
+        else:
+            counts["inactivated"] = _inactivate_rubricas(cur, snapshot_keys, pg_write)
+
+    return counts
+
+
 def sync_procedimentos(
     conn_pg,
     rows: list[dict[str, Any]],
@@ -698,6 +820,7 @@ def insert_sync_audit(conn_pg, result: dict[str, Any]) -> None:
     proc = result.get("procedimentos", COUNT_TEMPLATE)
     formas = result.get("formas", COUNT_TEMPLATE)
     cbos = result.get("cbos", COUNT_TEMPLATE)
+    rubricas = result.get("rubricas", COUNT_TEMPLATE)
     with conn_pg.cursor() as cur:
         cur.execute(
             """
@@ -705,8 +828,9 @@ def insert_sync_audit(conn_pg, result: dict[str, Any]) -> None:
                 status, estab_inseridos, estab_atualizados, estab_inativados,
                 proc_inseridos, proc_atualizados, proc_inativados,
                 forma_inseridos, forma_atualizados, forma_inativados,
-                cbo_inseridos, cbo_atualizados, cbo_inativados, erro
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                cbo_inseridos, cbo_atualizados, cbo_inativados,
+                rubrica_inseridos, rubrica_atualizados, rubrica_inativados, erro
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 result.get("status", "ok"),
@@ -722,6 +846,9 @@ def insert_sync_audit(conn_pg, result: dict[str, Any]) -> None:
                 cbos.get("inserted", 0),
                 cbos.get("updated", 0),
                 cbos.get("inactivated", 0),
+                rubricas.get("inserted", 0),
+                rubricas.get("updated", 0),
+                rubricas.get("inactivated", 0),
                 result.get("error"),
             ),
         )
@@ -735,6 +862,7 @@ def _error_result(error: str) -> dict[str, Any]:
         "procedimentos": dict(COUNT_TEMPLATE),
         "formas": dict(COUNT_TEMPLATE),
         "cbos": dict(COUNT_TEMPLATE),
+        "rubricas": dict(COUNT_TEMPLATE),
     }
 
 
@@ -747,6 +875,68 @@ def _persist_audit_if_writing(pg_write: bool, result: dict[str, Any]) -> None:
         conn_pg.commit()
     finally:
         conn_pg.close()
+
+
+def _build_dry_run_snapshot_counts(
+    prestadores: list[dict[str, Any]],
+    procedimentos: list[dict[str, Any]],
+    formas: list[dict[str, Any]],
+    cbos: list[dict[str, Any]],
+    rubricas: list[dict[str, Any]],
+) -> dict[str, dict[str, int]]:
+    return {
+        "estabelecimentos": {
+            "inserted": len({row["codigo_externo"] for row in prestadores}),
+            "updated": 0,
+            "inactivated": 0,
+        },
+        "procedimentos": {
+            "inserted": len({row["codigo_sigtap"] for row in procedimentos}),
+            "updated": 0,
+            "inactivated": 0,
+        },
+        "formas": {
+            "inserted": len({row["codigo_forma"] for row in formas}),
+            "updated": 0,
+            "inactivated": 0,
+        },
+        "cbos": {
+            "inserted": len({row["codigo_cbo"] for row in cbos}),
+            "updated": 0,
+            "inactivated": 0,
+        },
+        "rubricas": {
+            "inserted": len({row["codigo_rubrica"] for row in rubricas}),
+            "updated": 0,
+            "inactivated": 0,
+        },
+    }
+
+
+def _attach_skipped_metadata(
+    result: dict[str, Any],
+    *,
+    skipped_estab: int,
+    skipped_proc: int,
+    skipped_formas: int,
+    skipped_cbos: int,
+    skipped_rubricas: int,
+) -> None:
+    skipped_total = (
+        skipped_estab + skipped_proc + skipped_formas + skipped_cbos + skipped_rubricas
+    )
+    if skipped_total <= 0:
+        return
+
+    result["status"] = "parcial"
+    result["skipped"] = {
+        "estabelecimentos": skipped_estab,
+        "procedimentos": skipped_proc,
+        "formas": skipped_formas,
+        "cbos": skipped_cbos,
+        "rubricas": skipped_rubricas,
+    }
+    result["error"] = f"{skipped_total} registro(s) ignorado(s) por dados inválidos no MySQL"
 
 
 def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, Any]:
@@ -768,6 +958,7 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
         raw_proc = extrair_procedimentos(conn_mysql, cfg)
         raw_formas = extrair_formas(conn_mysql, cfg)
         raw_cbos = extrair_cbos(conn_mysql, cfg)
+        raw_rubricas = extrair_rubricas(conn_mysql, cfg)
     except Exception as exc:
         result = _error_result(str(exc))
         _persist_audit_if_writing(pg_write, result)
@@ -815,7 +1006,40 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
             logger.warning("Skipping invalid cbo row: %s", exc)
             continue
 
-    conn_pg = pg_connect()
+    rubricas: list[dict[str, Any]] = []
+    skipped_rubricas = 0
+    for row in raw_rubricas:
+        try:
+            rubricas.append(normalize_rubrica_row(row, sync_ts))
+        except ValueError as exc:
+            skipped_rubricas += 1
+            logger.warning("Skipping invalid rubrica row: %s", exc)
+            continue
+
+    try:
+        conn_pg = pg_connect()
+    except Exception as exc:
+        if not pg_write and dry_run:
+            snapshot_counts = _build_dry_run_snapshot_counts(
+                prestadores, procedimentos, formas, cbos, rubricas
+            )
+            fallback_result: dict[str, Any] = {
+                "status": "ok",
+                **snapshot_counts,
+                "sincronizado_em": sync_ts.isoformat(),
+                "warning": f"PG_UNAVAILABLE_DRY_RUN: {exc}",
+            }
+            _attach_skipped_metadata(
+                fallback_result,
+                skipped_estab=skipped_estab,
+                skipped_proc=skipped_proc,
+                skipped_formas=skipped_formas,
+                skipped_cbos=skipped_cbos,
+                skipped_rubricas=skipped_rubricas,
+            )
+            return fallback_result
+        raise
+
     try:
         estab_counts = sync_estabelecimentos(conn_pg, prestadores, pg_write=pg_write)
         proc_counts = sync_procedimentos(conn_pg, procedimentos, pg_write=pg_write)
@@ -823,27 +1047,30 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
             conn_pg, formas, pg_write=pg_write, skipped_rows=skipped_formas
         )
         cbo_counts = sync_cbos(conn_pg, cbos, pg_write=pg_write, skipped_rows=skipped_cbos)
+        rubrica_counts = sync_rubricas(
+            conn_pg,
+            rubricas,
+            pg_write=pg_write,
+            skipped_rows=skipped_rubricas,
+        )
 
-        skipped_total = skipped_estab + skipped_proc + skipped_formas + skipped_cbos
-        status = "parcial" if skipped_total else "ok"
         result: dict[str, Any] = {
-            "status": status,
+            "status": "ok",
             "estabelecimentos": estab_counts,
             "procedimentos": proc_counts,
             "formas": forma_counts,
             "cbos": cbo_counts,
+            "rubricas": rubrica_counts,
             "sincronizado_em": sync_ts.isoformat(),
         }
-        if skipped_total:
-            result["skipped"] = {
-                "estabelecimentos": skipped_estab,
-                "procedimentos": skipped_proc,
-                "formas": skipped_formas,
-                "cbos": skipped_cbos,
-            }
-            result["error"] = (
-                f"{skipped_total} registro(s) ignorado(s) por dados inválidos no MySQL"
-            )
+        _attach_skipped_metadata(
+            result,
+            skipped_estab=skipped_estab,
+            skipped_proc=skipped_proc,
+            skipped_formas=skipped_formas,
+            skipped_cbos=skipped_cbos,
+            skipped_rubricas=skipped_rubricas,
+        )
 
         if pg_write:
             insert_sync_audit(conn_pg, result)
@@ -864,7 +1091,7 @@ def main() -> None:
     parser.add_argument(
         "--pg-write",
         action="store_true",
-        help="Grava cadastros (estab/proc/forma/cbo) + cadastros_sincronizacoes",
+        help="Grava cadastros (estab/proc/forma/cbo/rubrica) + cadastros_sincronizacoes",
     )
     parser.add_argument(
         "--dry-run",

@@ -160,15 +160,21 @@ CREATE TABLE IF NOT EXISTS sia_producao (
     sincronizacao_id  BIGINT NOT NULL REFERENCES sia_sincronizacoes(id) ON DELETE CASCADE,
     competencia       DATE NOT NULL,
     unidade           VARCHAR(200),
+    cnes              VARCHAR(7),
+    estabelecimento_id BIGINT REFERENCES estabelecimentos(id),
     codigo_sigtap     VARCHAR(20) NOT NULL,
     descricao         VARCHAR(300),
     quantidade        INT NOT NULL DEFAULT 0,
+    quantidade_apresentada INT NOT NULL DEFAULT 0,
     valor_aprovado    NUMERIC(12,2),
+    valor_apresentado NUMERIC(15,2),
     faixa_etaria      VARCHAR(20),
     sexo              CHAR(1) CHECK (sexo IN ('M','F','I')),
     cbo               VARCHAR(10),
+    rubrica           VARCHAR(4),
     dados_extras      JSONB,
-    UNIQUE (sincronizacao_id, unidade, codigo_sigtap, faixa_etaria, sexo, cbo)
+    CONSTRAINT uq_sia_producao_grupo_cnes
+        UNIQUE NULLS NOT DISTINCT (sincronizacao_id, cnes, codigo_sigtap, faixa_etaria, sexo, cbo, rubrica)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sia_producao_grupo
@@ -177,6 +183,8 @@ CREATE INDEX IF NOT EXISTS idx_sia_producao_demografico
     ON sia_producao (competencia, faixa_etaria, sexo);
 CREATE INDEX IF NOT EXISTS idx_sia_producao_cbo
     ON sia_producao (competencia, cbo);
+CREATE INDEX IF NOT EXISTS idx_sia_producao_estab
+    ON sia_producao (competencia, estabelecimento_id);
 CREATE INDEX IF NOT EXISTS idx_sia_producao_gin
     ON sia_producao USING GIN (dados_extras);
 
@@ -186,3 +194,19 @@ COMMENT ON COLUMN sia_producao.faixa_etaria IS
     'Faixas: 0-4, 5-9, 10-14, 15-19, 20-29, 30-39, 40-49, 50-59, 60-69, 70-79, 80+';
 COMMENT ON COLUMN sia_producao.dados_extras IS
     'Colunas adicionais do MySQL ainda não mapeadas — sem exigir migração de schema.';
+
+-- ----------------------------------------------------------------------------
+-- 8. rubricas_sia (s_rub MySQL espelho)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS rubricas_sia (
+    codigo_rubrica  VARCHAR(4) PRIMARY KEY,
+    descricao       VARCHAR(160) NOT NULL,
+    status          VARCHAR(20) NOT NULL DEFAULT 'ativo',
+    sincronizado_em TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_rubricas_sia_status_descricao
+    ON rubricas_sia (status, descricao);
+
+COMMENT ON TABLE rubricas_sia IS
+    'Espelho read-only de s_rub (MySQL/XAMPP). codigo_rubrica = RUB_ID canônico 4 chars.';

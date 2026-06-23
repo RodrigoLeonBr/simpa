@@ -50,7 +50,7 @@ describeIfPg('sia integration', () => {
     }
   });
 
-  itIfPg('POST sincronizar records row in sia_sincronizacoes', async () => {
+  itIfPg('POST sincronizar mock path populates history and GET producao', async () => {
     sincronizar.mockImplementationOnce(async () => {
       const insert = await query(
         `INSERT INTO sia_sincronizacoes (competencia, status, registros, erros)
@@ -64,10 +64,21 @@ describeIfPg('sia integration', () => {
         []
       );
       syncId = insert.rows[0].id;
+      await query(
+        `INSERT INTO sia_producao (
+           sincronizacao_id, competencia, unidade, codigo_sigtap, descricao,
+           quantidade, valor_aprovado, faixa_etaria, sexo, cbo
+         ) VALUES (
+           $1, '2026-05-01', 'INTEGRATION-SIA', '0301010072', 'Consulta',
+           7, 100.00, '20-29', 'F', '225125'
+         )
+         ON CONFLICT DO NOTHING`,
+        [syncId]
+      );
       return {
         sincronizacao_id: syncId,
         competencia: '2026-05-01',
-        registros: 2,
+        registros: 1,
         erros: 0,
         status: 'ok',
       };
@@ -80,6 +91,8 @@ describeIfPg('sia integration', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('ok');
+    expect(res.body.registros).toBe(1);
+    expect(res.body.competencia).toBe('2026-05-01');
 
     const { rows } = await query(
       "SELECT id, status, registros FROM sia_sincronizacoes WHERE competencia = '2026-05-01'"
@@ -87,6 +100,19 @@ describeIfPg('sia integration', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].status).toBe('ok');
     syncId = rows[0].id;
+
+    const producaoRes = await request(app)
+      .get('/api/sia/producao')
+      .query({ competencia: '2026-05', unidade: 'INTEGRATION-SIA' })
+      .set('Authorization', authHeader());
+
+    expect(producaoRes.status).toBe(200);
+    expect(producaoRes.body.length).toBeGreaterThan(0);
+    expect(producaoRes.body[0]).toMatchObject({
+      codigo_sigtap: '0301010072',
+      quantidade: '7',
+      valor_aprovado: '100.00',
+    });
   });
 
   itIfPg('GET producao returns filtered rows from seed', async () => {
@@ -116,8 +142,7 @@ describeIfPg('sia integration', () => {
          sincronizacao_id, competencia, unidade, codigo_sigtap, descricao,
          quantidade, valor_aprovado, faixa_etaria, sexo, cbo
        ) VALUES ($1, '2026-05-01', 'INTEGRATION-SIA', '0301010072', 'Consulta', 7, 100.00, '20-29', 'F', '225125')
-       ON CONFLICT (sincronizacao_id, unidade, codigo_sigtap, faixa_etaria, sexo, cbo)
-       DO UPDATE SET quantidade = EXCLUDED.quantidade`,
+       ON CONFLICT DO NOTHING`,
       [syncId]
     );
 
@@ -152,8 +177,7 @@ describeIfPg('sia integration', () => {
          sincronizacao_id, competencia, unidade, codigo_sigtap, descricao,
          quantidade, valor_aprovado, faixa_etaria, sexo, cbo
        ) VALUES ($1, '2026-05-01', 'INTEGRATION-SIA-MISSING', '9999999999', 'Sem cadastro', 3, 50.00, '30-39', 'M', '999999')
-       ON CONFLICT (sincronizacao_id, unidade, codigo_sigtap, faixa_etaria, sexo, cbo)
-       DO UPDATE SET quantidade = EXCLUDED.quantidade`,
+       ON CONFLICT DO NOTHING`,
       [syncId]
     );
 

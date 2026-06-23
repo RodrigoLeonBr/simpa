@@ -20,7 +20,12 @@ function isMysqlUnavailableError(message: string): boolean {
 function formatSyncToast(result: CadastroSyncResult): string {
   const e = result.estabelecimentos;
   const p = result.procedimentos;
-  return `Cadastros atualizados — ${e.inserted + e.updated} estabelecimentos, ${p.inserted + p.updated} procedimentos`;
+  const base = `Cadastros atualizados — ${e.inserted + e.updated} estabelecimentos, ${p.inserted + p.updated} procedimentos`;
+  if (result.rubricas) {
+    const totalRubricas = result.rubricas.inserted + result.rubricas.updated;
+    return `${base}, ${totalRubricas} rubricas`;
+  }
+  return base;
 }
 
 export function CadastroSyncBanner() {

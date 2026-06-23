@@ -326,7 +326,12 @@ def _build_ambulatorial_sia(
         status = "MySQL_XAMPP_UNAVAILABLE"
 
     grouped: dict[tuple[str, str], dict[str, Any]] = defaultdict(
-        lambda: {"quantidade": 0}
+        lambda: {
+            "quantidade": 0,
+            "quantidade_apresentada": 0,
+            "valor_aprovado": 0.0,
+            "valor_apresentado": 0.0,
+        }
     )
     for row in sia_rows:
         codigo = row.get("codigo_sigtap") or ""
@@ -335,6 +340,11 @@ def _build_ambulatorial_sia(
         grouped[key]["codigo_sigtap"] = codigo
         grouped[key]["descricao"] = descricao
         grouped[key]["quantidade"] += int(row.get("quantidade") or 0)
+        grouped[key]["quantidade_apresentada"] += int(
+            row.get("quantidade_apresentada") or 0
+        )
+        grouped[key]["valor_aprovado"] += float(row.get("valor_aprovado") or 0)
+        grouped[key]["valor_apresentado"] += float(row.get("valor_apresentado") or 0)
 
     procedimentos = sorted(
         grouped.values(), key=lambda item: (-item["quantidade"], item["codigo_sigtap"])

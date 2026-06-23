@@ -63,6 +63,11 @@ function mapSyncRow(row) {
       updated: row.cbo_atualizados ?? 0,
       inactivated: row.cbo_inativados ?? 0,
     },
+    rubricas: {
+      inserted: row.rubrica_inseridos ?? 0,
+      updated: row.rubrica_atualizados ?? 0,
+      inactivated: row.rubrica_inativados ?? 0,
+    },
   };
 }
 
@@ -170,6 +175,7 @@ async function listSyncHistory({ page = 1, limit = 20 } = {}) {
             proc_inseridos, proc_atualizados, proc_inativados,
             forma_inseridos, forma_atualizados, forma_inativados,
             cbo_inseridos, cbo_atualizados, cbo_inativados,
+            rubrica_inseridos, rubrica_atualizados, rubrica_inativados,
             erro, sincronizado_em
      FROM cadastros_sincronizacoes
      ORDER BY sincronizado_em DESC
@@ -195,6 +201,7 @@ async function getLatestSync() {
             proc_inseridos, proc_atualizados, proc_inativados,
             forma_inseridos, forma_atualizados, forma_inativados,
             cbo_inseridos, cbo_atualizados, cbo_inativados,
+            rubrica_inseridos, rubrica_atualizados, rubrica_inativados,
             erro, sincronizado_em
      FROM cadastros_sincronizacoes
      WHERE status = 'ok'

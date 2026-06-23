@@ -25,12 +25,17 @@ function parseSyncOutput(stdout) {
   return parsed;
 }
 
-function sincronizar(competencia) {
+function sincronizar(competencia, options = {}) {
+  const { reimportar = false } = options;
   return new Promise((resolve, reject) => {
     const script = scriptPath();
+    const args = [script, '--competencia', competencia, '--pg-write'];
+    if (reimportar) {
+      args.push('--reimportar');
+    }
     const proc = spawn(
       pythonBin(),
-      [script, '--competencia', competencia, '--pg-write'],
+      args,
       {
         cwd: path.dirname(script),
         env: { ...process.env },

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Batch insert e resolução estabelecimento_id
 type: backend
 complexity: high
@@ -33,10 +33,10 @@ Refatorar `gravar_pg()` para insert em batch (execute_batch ou COPY), resolver `
 
 ## Subtasks
 
-- [ ] 3.1 Implementar load_estabelecimentos_map(conn_pg)
-- [ ] 3.2 Batch insert com novas colunas
-- [ ] 3.3 Estender resultado JSON com contadores
-- [ ] 3.4 Testes unitários com PG mock/fixture
+- [x] 3.1 Implementar load_estabelecimentos_map(conn_pg)
+- [x] 3.2 Batch insert com novas colunas
+- [x] 3.3 Estender resultado JSON com contadores
+- [x] 3.4 Testes unitários com PG mock/fixture
 
 ## Implementation Details
 
@@ -56,12 +56,12 @@ Padrão de referência: batch patterns em `sync_cadastros_mysql.py`.
 
 ## Tests
 - Unit tests:
-  - [ ] estabelecimento_id resolvido quando cnes existe
-  - [ ] orphan_cnes incrementado quando cnes ausente
-  - [ ] Batch chamado N/chunk vezes
-  - [ ] Empty df → status parcial, 0 registros
+  - [x] estabelecimento_id resolvido quando cnes existe
+  - [x] orphan_cnes incrementado quando cnes ausente
+  - [x] Batch chamado N/chunk vezes
+  - [x] Empty df → status parcial, 0 registros
 - Integration tests:
-  - [ ] gravar_pg contra PG test container ou mock cursor
+  - [x] gravar_pg contra PG test container ou mock cursor
 - Test coverage target: >=80%
 - All tests must pass
 

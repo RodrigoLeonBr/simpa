@@ -25,21 +25,22 @@ Enriquecimento normalizado (migration 005), 1:1 com `estabelecimentos`:
 
 `procedimentos`: código SIGTAP, descrição — sync MySQL.
 
-Tabelas de referência SIA (migration 009):
+Tabelas de referência SIA (migration 009 + 011):
 
 | Tabela | Chave join | Origem MySQL |
 |--------|------------|--------------|
 | `formas_sia` | `codigo_forma` (6 chars) | `forma` — grupo/subgrupo/forma + descrição |
 | `cbos_sia` | `codigo_cbo` (6 chars) | `cbo` — código + descrição |
+| `rubricas_sia` | `codigo_rubrica` (4 chars) | `s_rub` — `RUB_ID` + `RUB_DC` |
 
 Colunas comuns: `descricao`, `status` (`ativo`|`inativo`), `sincronizado_em`. CBO de produção pode vir com até 8 chars (`prd_cbo`); join usa os 6 primeiros (equivale a `left(prd_cbo, 6)`). Forma deriva de `left(prd_pa, 6)` ou `left(codigo_sigtap, 6)`.
 
-Auditoria em `cadastros_sincronizacoes`: colunas `forma_inseridos/atualizados/inativados` e `cbo_inseridos/atualizados/inativados`.
+Auditoria em `cadastros_sincronizacoes`: colunas de contagem para `forma_*`, `cbo_*` e `rubrica_*`.
 
 ## Fonte de verdade
 
 - **Identidade** (código, nome, tipouni, status): MySQL via `sync_cadastros_mysql.py`.
-- **Forma/CBO:** MySQL tabelas `forma` e `cbo` — espelho read-only em `formas_sia`/`cbos_sia`; sem CRUD manual na API.
+- **Forma/CBO/Rubrica:** MySQL tabelas `forma`, `cbo` e `s_rub` — espelho read-only em `formas_sia`/`cbos_sia`/`rubricas_sia`; sem CRUD manual na API.
 - **Perfil:** derivado no sync (`derive_perfil`); editável na UI → `perfil_editado = true`.
 - **Enriquecimento manual:** `PUT /enriquecimento/:slug` → tabela do perfil ativo.
 
@@ -88,11 +89,11 @@ POST/PUT/DELETE em `/formas` e `/cbos` retornam **405** (`createReadOnlyWriteHan
 
 ### Sync (`sync_cadastros_mysql.py`)
 
-- UPSERT estabelecimentos/procedimentos/**formas**/**cbos**; inativa ausentes no snapshot MySQL.
-- **Snapshot vazio:** não inativa em massa (guarda contra falha MySQL) — inclui forma/cbo.
-- **Ratio mínimo:** `CADASTRO_SNAPSHOT_MIN_RATIO` (default 0.25) — snapshot pequeno demais não inativa forma/cbo.
-- Normalização: forma com códigos 2/4/6 chars; CBO canônico 6 chars (`_canonical_code`).
-- Payload JSON do sync e histórico API incluem blocos `{ formas: {inserted, updated, inactivated}, cbos: {...} }`.
+- UPSERT estabelecimentos/procedimentos/**formas**/**cbos**/**rubricas**; inativa ausentes no snapshot MySQL.
+- **Snapshot vazio:** não inativa em massa (guarda contra falha MySQL) — inclui forma/cbo/rubrica.
+- **Ratio mínimo:** `CADASTRO_SNAPSHOT_MIN_RATIO` (default 0.25) — snapshot pequeno demais não inativa forma/cbo/rubrica.
+- Normalização: forma (2/4/6 chars), CBO canônico 6 chars e rubrica canônica 4 chars (`_canonical_code`).
+- Payload JSON do sync e histórico API incluem blocos `{ formas: {...}, cbos: {...}, rubricas: {...} }`.
 - `perfil`: `CASE WHEN perfil_editado THEN atual ELSE derivado END`.
 - Linhas de enriquecimento antigas **permanecem** ao trocar perfil (TechSpec).
 
@@ -188,6 +189,15 @@ MySQL (forma, cbo)
 - `cbos_sia` ON `codigo_cbo` canônico 6 chars a partir de `sp.cbo`
 
 Campos extras na resposta: `descricao_forma`, `descricao_cbo` (null quando código ausente ou sem match).
+Também retorna `quantidade_apresentada` e `valor_apresentado` quando disponíveis na competência importada.
+
+### Operação de sync produção SIA (UI Cadastros)
+
+- `SiaProducaoSyncBanner` (na grade de Cadastros, abaixo do banner de cadastros referência) dispara:
+  - `POST /api/sia/sincronizar`
+  - `GET /api/sia/sincronizacoes`
+  - `GET /api/sia/sincronizacoes/existe`
+- Gate de reimportação: se API retorna 409 (`SIA_COMPETENCIA_JA_IMPORTADA`), UI exige confirmação explícita para retry com `reimportar: true`.
 
 ### Contrato de extensão SIH (preparação)
 

@@ -25,6 +25,8 @@ from dotenv import load_dotenv
 from etl_contract import build_payload, competencia_label
 from etl_db import pg_connect
 
+_SIA_PRODUCAO_COLUMNS_CACHE: set[str] | None = None
+
 
 class ConsolidationGroup(NamedTuple):
     competencia: date
@@ -186,25 +188,93 @@ def fetch_raw_rows(
         return [dict(zip(columns, row)) for row in cur.fetchall()]
 
 
-def fetch_sia_rows(conn, competencia: date, unidade: str) -> list[dict]:
-    sql = """
+def fetch_sia_rows(
+    conn,
+    competencia: date,
+    unidade: str,
+    estabelecimento_id: int | None = None,
+) -> list[dict]:
+    columns = _get_sia_producao_columns(conn)
+    has_estabelecimento_id = "estabelecimento_id" in columns
+    quantidade_apresentada_select = (
+        "quantidade_apresentada"
+        if "quantidade_apresentada" in columns
+        else "0::bigint AS quantidade_apresentada"
+    )
+    valor_apresentado_select = (
+        "valor_apresentado"
+        if "valor_apresentado" in columns
+        else "0::numeric AS valor_apresentado"
+    )
+
+    sql = f"""
         SELECT
             codigo_sigtap,
             descricao,
             quantidade,
+            {quantidade_apresentada_select},
             valor_aprovado,
+            {valor_apresentado_select},
             faixa_etaria,
             sexo,
             cbo
         FROM sia_producao
         WHERE competencia = %s
-          AND (unidade = %s OR unidade IS NULL OR unidade = '')
+    """
+    params: tuple[object, ...]
+    if has_estabelecimento_id:
+        sql += """
+          AND (
+                (
+                    %s IS NOT NULL
+                    AND (
+                        estabelecimento_id = %s
+                        OR (estabelecimento_id IS NULL AND unidade = %s)
+                    )
+                )
+                OR (
+                    %s IS NULL
+                    AND (unidade = %s OR unidade IS NULL OR unidade = '')
+                )
+          )
+        """
+        params = (
+            competencia,
+            estabelecimento_id,
+            estabelecimento_id,
+            unidade,
+            estabelecimento_id,
+            unidade,
+        )
+    else:
+        sql += " AND (unidade = %s OR unidade IS NULL OR unidade = '')"
+        params = (competencia, unidade)
+    sql += """
         ORDER BY quantidade DESC, codigo_sigtap
     """
     with conn.cursor() as cur:
-        cur.execute(sql, (competencia, unidade))
+        cur.execute(sql, params)
         columns = [desc[0] for desc in cur.description]
         return [dict(zip(columns, row)) for row in cur.fetchall()]
+
+
+def _get_sia_producao_columns(conn) -> set[str]:
+    global _SIA_PRODUCAO_COLUMNS_CACHE
+    if _SIA_PRODUCAO_COLUMNS_CACHE is not None:
+        return _SIA_PRODUCAO_COLUMNS_CACHE
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'sia_producao'
+              AND column_name IN ('estabelecimento_id', 'quantidade_apresentada', 'valor_apresentado')
+            """
+        )
+        _SIA_PRODUCAO_COLUMNS_CACHE = {row[0] for row in cur.fetchall()}
+    return _SIA_PRODUCAO_COLUMNS_CACHE
 
 
 def sia_sync_exists(conn, competencia: date) -> bool:
@@ -324,7 +394,12 @@ def consolidate_group(
             conn, competencia, unidade=unidade, equipe=equipe
         )
 
-    sia_rows = fetch_sia_rows(conn, competencia, unidade)
+    sia_rows = fetch_sia_rows(
+        conn,
+        competencia,
+        unidade,
+        estabelecimento_id=estabelecimento_id,
+    )
     payload = build_payload(
         competencia=competencia,
         municipio=municipio,

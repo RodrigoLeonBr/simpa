@@ -54,6 +54,7 @@ describe('CadastroSyncBanner', () => {
       status: 'ok',
       estabelecimentos: { inserted: 2, updated: 5, inactivated: 0 },
       procedimentos: { inserted: 10, updated: 20, inactivated: 1 },
+      rubricas: { inserted: 3, updated: 4, inactivated: 0 },
       sincronizado_em: '2026-06-20T15:30:00Z',
     });
     vi.mocked(fetchUltimaCadastroSync)
@@ -89,6 +90,7 @@ describe('CadastroSyncBanner', () => {
       expect(fetchUltimaCadastroSync).toHaveBeenCalledTimes(2);
       expect(screen.getByTestId('cadastro-sync-ultima')).toHaveTextContent(/7 estab/i);
       expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Cadastros atualizados/i);
+      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/7 rubricas/i);
     });
   });
 

@@ -53,6 +53,7 @@ Documentação de produto legada: `prd-simpa.md`, `estrutura_simpa.md`, `readme.
 | Indicadores do Painel | `/cadastros/indicadores-painel` | `/api/cadastros/painel-*` | [cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos) |
 | Cadastros | `/cadastros/*` | `/api/cadastros/*` | [cadastros.md](docs/agent/cadastros.md) |
 | Importação | `/importacao` | `/api/importacao/*` | [backend-api.md](docs/agent/backend-api.md#importação) |
+| Sync produção SIA | `/cadastros` (banner) | `/api/sia/sincronizar`, `/api/sia/sincronizacoes*`, `/api/sia/producao` | [backend-api.md](docs/agent/backend-api.md#sia) |
 | Metas | `/metas` | dashboard + `metas_financiamento` | [frontend.md](docs/agent/frontend.md) |
 | Indicadores | `/indicadores` | contrato `indicadores_qualidade` | [frontend.md](docs/agent/frontend.md) |
 | Relatórios | `/relatorios` | (placeholder UI) | [frontend.md](docs/agent/frontend.md) |

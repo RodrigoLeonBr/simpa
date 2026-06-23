@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Migration 010 sia_producao CNES e métricas apresentado
 type: backend
 complexity: low
@@ -29,9 +29,9 @@ Adicionar colunas `cnes`, `estabelecimento_id`, `quantidade_apresentada` e `valo
 
 ## Subtasks
 
-- [ ] 1.1 Definir ALTER TABLE e recriar UNIQUE com cnes no grão agregado
-- [ ] 1.2 Registrar migration no compose e schema_full
-- [ ] 1.3 Teste pytest validando colunas
+- [x] 1.1 Definir ALTER TABLE e recriar UNIQUE com cnes no grão agregado
+- [x] 1.2 Registrar migration no compose e schema_full
+- [x] 1.3 Teste pytest validando colunas
 
 ## Implementation Details
 
@@ -54,10 +54,10 @@ Ver TechSpec § Migration 010.
 
 ## Tests
 - Unit tests:
-  - [ ] Migration aplica colunas cnes, estabelecimento_id, quantidade_apresentada, valor_apresentado
-  - [ ] Migration é idempotente (re-run safe)
+  - [x] Migration aplica colunas cnes, estabelecimento_id, quantidade_apresentada, valor_apresentado
+  - [x] Migration é idempotente (re-run safe)
 - Integration tests:
-  - [ ] Docker init inclui migration_010
+  - [x] Docker init inclui migration_010
 - Test coverage target: >=80%
 - All tests must pass
 

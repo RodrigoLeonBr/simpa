@@ -146,6 +146,9 @@ def test_sia_merge_updates_ambulatorial_module():
                 "codigo_sigtap": "0205020046",
                 "descricao": "ULTRASSONOGRAFIA DE ABDOMEN TOTAL",
                 "quantidade": 11,
+                "quantidade_apresentada": 13,
+                "valor_aprovado": 95.5,
+                "valor_apresentado": 100.0,
             }
         ],
         mysql_available=True,
@@ -154,6 +157,9 @@ def test_sia_merge_updates_ambulatorial_module():
     amb = payload["modulos"]["ambulatorial_sia"]
     assert amb["status_conexao"] == "MySQL_XAMPP_CONNECTED"
     assert amb["procedimentos_especializados"][0]["quantidade"] == 11
+    assert amb["procedimentos_especializados"][0]["quantidade_apresentada"] == 13
+    assert amb["procedimentos_especializados"][0]["valor_aprovado"] == 95.5
+    assert amb["procedimentos_especializados"][0]["valor_apresentado"] == 100.0
     assert payload["kpis_gerais"]["total_procedimentos_ambulatoriais"] == 11
 
 
@@ -380,21 +386,65 @@ def test_sia_helpers_query_database():
         def cursor(self):
             return Cursor(executed)
 
-    rows = consolidator.fetch_sia_rows(Conn(), date(2026, 5, 1), "UBS")
+    consolidator._SIA_PRODUCAO_COLUMNS_CACHE = {
+        "estabelecimento_id",
+        "quantidade_apresentada",
+        "valor_apresentado",
+    }
+    rows = consolidator.fetch_sia_rows(Conn(), date(2026, 5, 1), "UBS", estabelecimento_id=42)
     assert rows == []
     assert "FROM sia_producao" in executed[0][0]
+    assert "estabelecimento_id = %s" in executed[0][0]
+    assert "estabelecimento_id IS NULL AND unidade = %s" in executed[0][0]
+    assert "estabelecimento_id IS NULL AND (unidade = %s OR unidade IS NULL OR unidade = '')" not in executed[0][0]
+    assert executed[0][1] == (
+        date(2026, 5, 1),
+        42,
+        42,
+        "UBS",
+        42,
+        "UBS",
+    )
 
     assert consolidator.sia_sync_exists(Conn(), date(2026, 5, 1)) is True
 
 
+def test_fetch_sia_rows_fallback_when_new_columns_missing():
+    executed = []
+
+    class Cursor(_FakeCursor):
+        @property
+        def description(self):
+            return [("codigo_sigtap",), ("quantidade_apresentada",), ("valor_apresentado",)]
+
+    class Conn:
+        def cursor(self):
+            return Cursor(executed)
+
+    consolidator._SIA_PRODUCAO_COLUMNS_CACHE = set()
+    consolidator.fetch_sia_rows(Conn(), date(2026, 5, 1), "UBS", estabelecimento_id=42)
+
+    sql, params = executed[0]
+    assert "estabelecimento_id = %s" not in sql
+    assert "0::bigint AS quantidade_apresentada" in sql
+    assert "0::numeric AS valor_apresentado" in sql
+    assert params == (date(2026, 5, 1), "UBS")
+
+
 def test_consolidate_group_id_path_uses_cadastro_labels(monkeypatch):
+    captured = {}
+
     monkeypatch.setattr(
         consolidator,
         "fetch_cadastro_labels",
         lambda *_a, **_k: {"unidade": "UBS ID", "equipe": "EQ ID"},
     )
     monkeypatch.setattr(consolidator, "fetch_raw_rows", lambda *_a, **_k: _sample_raw_rows())
-    monkeypatch.setattr(consolidator, "fetch_sia_rows", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        consolidator,
+        "fetch_sia_rows",
+        lambda *_a, **kwargs: captured.update(kwargs) or [],
+    )
     monkeypatch.setattr(consolidator, "sia_sync_exists", lambda *_a, **_k: False)
 
     payload = consolidator.consolidate_group(
@@ -410,6 +460,7 @@ def test_consolidate_group_id_path_uses_cadastro_labels(monkeypatch):
 
     assert payload["filtros_ativos"]["unidade"] == "UBS ID"
     assert payload["filtros_ativos"]["equipe"] == "EQ ID"
+    assert captured["estabelecimento_id"] == 42
 
 
 def test_consolidate_group_legacy_path_without_ids(monkeypatch):

@@ -162,6 +162,42 @@
   color: var(--muted);
 }
 
+.sia-sync-actions {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sia-sync-month-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.sia-sync-month-field input[type='month'] {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.45rem 0.55rem;
+  background: var(--bg-card);
+  color: inherit;
+}
+
+.sia-sync-badge {
+  margin-top: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.52rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(11, 95, 173, 0.08);
+  color: var(--brand);
+  font-size: 0.72rem;
+}
+
 .cadastro-card {
   text-align: left;
   background: var(--bg-card);

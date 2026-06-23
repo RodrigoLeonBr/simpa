@@ -61,6 +61,7 @@ React 19 + Vite 8 + Tailwind 4. Raiz: `simpa-frontend/src/`.
 | `auth.ts` | `login`, `getMe` |
 | `dashboard.ts` | `fetchDashboard(competencia, { estabelecimentoId?, equipeId? })` |
 | `cadastros.ts` | `fetchEstabelecimentos`, `fetchFormas`, `fetchCbos`, `updatePerfil`, `updateEnrichmentBySlug`, … |
+| `sia.ts` | `sincronizarSiaProducao`, `fetchSiaSincronizacoes`, `fetchSiaSincronizacaoExiste` |
 | `importacao.ts` | `previewUpload`, `uploadCargas(files, resolucoes)`, mapeamentos CRUD, cargas |
 | `admin.ts` | usuários, audit log |
 | `config.ts` | feature flags |
@@ -150,6 +151,7 @@ components/cadastros/
 ```
 
 - **Grid:** `/cadastros` → `CADASTRO_GRID_ITEMS` (8 cards); cada item tem `mode` e `route`.
+- **Banner SIA produção:** `SiaProducaoSyncBanner` abaixo de `CadastroSyncBanner` (somente perfis planning staff); seletor `input type="month"`, histórico por competência, badge “Já importada” e fluxo 409 com `ConfirmDialog` + retry `reimportar:true`.
 - **Read-only:** Formas, CBOs, Procedimentos — `ReadOnlyCatalogPage` + `usePaginatedCatalog`.
 - **CRUD:** Equipes, Emendas — `CadastroCrudPage` + `CADASTRO_ENTITIES`.
 - **Custom:** Estabelecimentos (drawer SIA/perfil/enriquecimento), Indicadores do Painel (`useEntityCrud` estendido).

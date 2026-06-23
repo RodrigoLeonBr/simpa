@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Query MySQL schema-compliant em sync_sia_mysql
 type: backend
 complexity: medium
@@ -32,10 +32,10 @@ Reescrever `build_sia_query()` e `transformar()` para agregação gerencial: GRO
 
 ## Subtasks
 
-- [ ] 2.1 build_sia_query com GROUP BY + SUM + joins s_rub/cbo
-- [ ] 2.2 Garantir query não referencia folha/seq/flags
-- [ ] 2.3 transformar: faixa_etaria, PRD_IDADE > 150 → null/Ignorado
-- [ ] 2.4 Testes query shape + colunas excluídas
+- [x] 2.1 build_sia_query com GROUP BY + SUM + joins s_rub/cbo
+- [x] 2.2 Garantir query não referencia folha/seq/flags
+- [x] 2.3 transformar: faixa_etaria, PRD_IDADE > 150 → null/Ignorado
+- [x] 2.4 Testes query shape + colunas excluídas
 
 ## Implementation Details
 
@@ -57,13 +57,13 @@ Referência externa: `consultasia/docs/sia-schema-for-llm.md` §2–3.
 
 ## Tests
 - Unit tests:
-  - [ ] Query NÃO contém prd_flh, prd_seq, PRD_FLPA, PRD_APANUM, etc.
-  - [ ] Query contém GROUP BY e SUM(CAST(...))
-  - [ ] Params competência YYYYMM
-  - [ ] Colunas cnes, quantidade_apresentada, rubrica_codigo no SELECT
-  - [ ] transformar normaliza faixa etária e sexo
+  - [x] Query NÃO contém prd_flh, prd_seq, PRD_FLPA, PRD_APANUM, etc.
+  - [x] Query contém GROUP BY e SUM(CAST(...))
+  - [x] Params competência YYYYMM
+  - [x] Colunas cnes, quantidade_apresentada, rubrica_codigo no SELECT
+  - [x] transformar normaliza faixa etária e sexo
 - Integration tests:
-  - [ ] (opcional) extrair_sia contra MySQL mock/fixture
+  - [x] (opcional) extrair_sia contra MySQL mock/fixture
 - Test coverage target: >=80%
 - All tests must pass
 

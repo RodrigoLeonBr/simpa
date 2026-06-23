@@ -8,6 +8,9 @@ export interface CadastroSyncResult {
   status: 'ok' | 'parcial' | 'erro';
   estabelecimentos: CadastroSyncCounts;
   procedimentos: CadastroSyncCounts;
+  formas?: CadastroSyncCounts;
+  cbos?: CadastroSyncCounts;
+  rubricas?: CadastroSyncCounts;
   sincronizado_em?: string;
   error?: string;
 }
@@ -21,6 +24,7 @@ export interface CadastroSyncRecord {
   procedimentos: CadastroSyncCounts;
   formas?: CadastroSyncCounts;
   cbos?: CadastroSyncCounts;
+  rubricas?: CadastroSyncCounts;
 }
 
 export type EstabelecimentoPerfil = 'APS' | 'MAC' | 'Hospitalar' | 'Misto' | 'Outro';

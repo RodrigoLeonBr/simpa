@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Consolidador e siaProducaoService por estabelecimento_id
 type: backend
 complexity: medium
@@ -30,10 +30,10 @@ Atualizar `consolidate_dashboard.py` e `siaProducaoService.js` para preferir `es
 
 ## Subtasks
 
-- [ ] 6.1 consolidate_dashboard fetch_sia_rows by estabelecimento_id
-- [ ] 6.2 siaProducaoService filter and SELECT new columns
-- [ ] 6.3 Update dashboard contract builder if needed for glosa fields
-- [ ] 6.4 pytest + Jest coverage
+- [x] 6.1 consolidate_dashboard fetch_sia_rows by estabelecimento_id
+- [x] 6.2 siaProducaoService filter and SELECT new columns
+- [x] 6.3 Update dashboard contract builder if needed for glosa fields
+- [x] 6.4 pytest + Jest coverage
 
 ## Implementation Details
 
@@ -51,13 +51,13 @@ Atualizar `consolidate_dashboard.py` e `siaProducaoService.js` para preferir `es
 
 ## Tests
 - Unit tests:
-  - [ ] fetch_sia_rows prefers estabelecimento_id
-  - [ ] listProducao filters by estabelecimento_id
-  - [ ] Returns apresentado columns when present
+  - [x] fetch_sia_rows prefers estabelecimento_id
+  - [x] listProducao filters by estabelecimento_id
+  - [x] Returns apresentado columns when present
 - Integration tests:
   - [ ] consolidate includes sia rows after sync fixture
 - Test coverage target: >=80%
-- All tests must pass
+- [x] All tests must pass
 
 ## Success Criteria
 - All tests passing

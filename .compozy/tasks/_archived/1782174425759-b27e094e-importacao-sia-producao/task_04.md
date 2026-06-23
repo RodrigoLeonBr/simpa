@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: API SIA auth planning staff e resposta enriquecida
 type: backend
 complexity: medium
@@ -32,9 +32,9 @@ Proteger `POST /api/sia/sincronizar` com `requirePlanningStaff`, propagar campos
 
 ## Subtasks
 
-- [ ] 4.1 Middleware + GET existe endpoint
-- [ ] 4.2 409 gate + reimportar body passthrough to sync_sia_mysql.py
-- [ ] 4.3 Document endpoints in docs/agent/backend-api.md
+- [x] 4.1 Middleware + GET existe endpoint
+- [x] 4.2 409 gate + reimportar body passthrough to sync_sia_mysql.py
+- [x] 4.3 Document endpoints in docs/agent/backend-api.md
 
 ## Implementation Details
 
@@ -52,13 +52,13 @@ Proteger `POST /api/sia/sincronizar` com `requirePlanningStaff`, propagar campos
 
 ## Tests
 - Unit tests:
-  - [ ] POST sincronizar 403 for non-planning role
-  - [ ] POST sincronizar 409 when competencia exists without reimportar
-  - [ ] POST sincronizar 201 with reimportar:true after prior import
-  - [ ] GET existe returns exists:true for imported competencia
-  - [ ] Invalid competencia → 400
+  - [x] POST sincronizar 403 for non-planning role
+  - [x] POST sincronizar 409 when competencia exists without reimportar
+  - [x] POST sincronizar 201 with reimportar:true after prior import
+  - [x] GET existe returns exists:true for imported competencia
+  - [x] Invalid competencia → 400
 - Integration tests:
-  - [ ] sia.integration.test.js still passes
+  - [x] sia.integration.test.js still passes
 - Test coverage target: >=80%
 - All tests must pass
 

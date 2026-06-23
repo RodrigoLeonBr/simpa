@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Testes integração e docs agent
 type: docs
 complexity: medium
@@ -31,10 +31,10 @@ Fechar workflow com testes de integração end-to-end do fluxo sync→consolidar
 
 ## Subtasks
 
-- [ ] 7.1 Integration test sync + producao endpoint
-- [ ] 7.2 Update agent docs (3 files minimum)
-- [ ] 7.3 Run npm test + test:py + build; record in MEMORY
-- [ ] 7.4 Manual smoke checklist in task memory
+- [x] 7.1 Integration test sync + producao endpoint
+- [x] 7.2 Update agent docs (3 files minimum)
+- [x] 7.3 Run npm test + test:py + build; record in MEMORY
+- [x] 7.4 Manual smoke checklist in task memory
 
 ## Implementation Details
 
@@ -52,10 +52,10 @@ Fechar workflow com testes de integração end-to-end do fluxo sync→consolidar
 - Unit tests:
   - [ ] (covered by prior tasks)
 - Integration tests:
-  - [ ] POST sincronizar → GET producao returns rows
-  - [ ] sia_sincronizacoes history populated
+  - [x] POST sincronizar → GET producao returns rows
+  - [x] sia_sincronizacoes history populated
 - Test coverage target: >=80%
-- All tests must pass
+- [x] All tests must pass
 
 ## Success Criteria
 - All tests passing
