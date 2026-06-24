@@ -5,7 +5,7 @@ jest.mock('child_process', () => ({
 }));
 
 const { spawn } = require('child_process');
-const { sincronizar, parseSyncOutput } = require('../src/services/sia');
+const { sincronizar, parseSyncOutput, getSyncProgress } = require('../src/services/sia');
 
 function mockSpawn({ code = 0, stdout = '', stderr = '' } = {}) {
   const proc = new EventEmitter();
@@ -93,6 +93,34 @@ describe('sia service', () => {
       expect.arrayContaining(['--competencia', '2026-05', '--pg-write', '--reimportar']),
       expect.any(Object)
     );
+  });
+
+  it('adds --exec-id and stores progress updates when requested', async () => {
+    const execId = 'sync_2026_05_track1';
+    mockSpawn({
+      stderr: `SIA_PROGRESS {"stage":"extracao_mysql","event":"extract_block","block_rows":1200}\n`,
+      stdout: JSON.stringify([
+        {
+          sincronizacao_id: 2,
+          competencia: '2026-05-01',
+          registros: 11,
+          erros: 0,
+          status: 'ok',
+        },
+      ]),
+    });
+
+    await sincronizar('2026-05', { executionId: execId });
+
+    expect(spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining(['--exec-id', execId]),
+      expect.any(Object)
+    );
+    const progress = getSyncProgress(execId);
+    expect(progress).toBeTruthy();
+    expect(progress.status).toBe('done');
+    expect(progress.events.some((evt) => evt.event === 'extract_block')).toBe(true);
   });
 
   it('handles subprocess failure gracefully', async () => {

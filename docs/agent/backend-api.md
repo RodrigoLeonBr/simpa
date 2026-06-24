@@ -85,11 +85,12 @@ Limite upload: `UPLOAD_MAX_BYTES` (default 50MB).
 | Método | Path | Service | Auth |
 |--------|------|---------|------|
 | POST | `/api/sia/sincronizar` | `sia.sincronizar` + `consolidator.runConsolidation` | JWT + `requirePlanningStaff` |
+| GET | `/api/sia/sincronizar/progresso/:executionId` | `sia.getSyncProgress` | JWT + `requirePlanningStaff` |
 | GET | `/api/sia/sincronizacoes/existe` | gate por competência em `sia_sincronizacoes` | JWT |
 | GET | `/api/sia/sincronizacoes` | histórico em `sia_sincronizacoes` | JWT |
 | GET | `/api/sia/producao` | `siaProducaoService.listProducao` | JWT |
 
-`POST /api/sia/sincronizar` aceita body `{ competencia, reimportar?: boolean }`.
+`POST /api/sia/sincronizar` aceita body `{ competencia, reimportar?: boolean, executionId?: string }`.
 Quando a competência já existe com `status IN ('ok','parcial')` e `reimportar !== true`, retorna `409`:
 
 ```json
@@ -110,10 +111,11 @@ Query GET `producao`:
 | `codigo_sigtap` | não | match exato |
 | `estabelecimento_id` | não | match exato por FK em `sia_producao.estabelecimento_id` |
 
-Resposta agregada por procedimento/faixa/sexo/cbo, com campos enriquecidos `descricao_forma` e `descricao_cbo` (join em `formas_sia` / `cbos_sia` via `cadastroReferenciaService`), além de métricas de glosa/apresentado:
+Resposta agregada por procedimento/grupo-etário/sexo/cbo, com campos enriquecidos `descricao_forma` e `descricao_cbo` (join em `formas_sia` / `cbos_sia` via `cadastroReferenciaService`), além de métricas de glosa/apresentado:
 
 - `quantidade_apresentada`
 - `valor_apresentado`
+- `grupo_idade_sia` (alias explícito para `faixa_etaria` no contrato SIA; `faixa_etaria` permanece por compatibilidade)
 
 `POST /api/sia/sincronizar` retorna payload do sync Python (`registros`, `linhas_mysql_raw`, `orphan_cnes`, `estabelecimentos_resolvidos`) com `consolidacao` anexada (`runConsolidation`).
 

@@ -52,6 +52,15 @@ export interface ConditionBar {
   count: number;
 }
 
+export interface FaixaComparisonRow {
+  faixa: string;
+  unidadeTotal: number;
+  municipioTotal: number;
+  unidadeShare: number;
+  municipioShare: number;
+  deltaSharePp: number;
+}
+
 export function buildConditionsData(
   condicoes: CondicoesSaude,
   _cidadaosAtivos: number,
@@ -64,6 +73,77 @@ export function buildConditionsData(
     }))
     .filter((c) => c.count > 0)
     .sort((a, b) => b.count - a.count);
+}
+
+function faixaTotal(faixa: FaixaEtaria): number {
+  return (faixa.masculino ?? 0) + (faixa.feminino ?? 0) + (faixa.indeterminado ?? 0);
+}
+
+export function buildFaixaComparisonRows(
+  unidadeFaixas: FaixaEtaria[],
+  municipioFaixas: FaixaEtaria[],
+): FaixaComparisonRow[] {
+  const unidadeMap = new Map(unidadeFaixas.map((f) => [f.faixa, faixaTotal(f)]));
+  const totalUnidade = unidadeFaixas.reduce((acc, faixa) => acc + faixaTotal(faixa), 0);
+  const totalMunicipio = municipioFaixas.reduce((acc, faixa) => acc + faixaTotal(faixa), 0);
+
+  return municipioFaixas.map((faixaMunicipio) => ({
+    faixa: faixaMunicipio.faixa,
+    unidadeTotal: unidadeMap.get(faixaMunicipio.faixa) ?? 0,
+    municipioTotal: faixaTotal(faixaMunicipio),
+    unidadeShare:
+      totalUnidade > 0 ? ((unidadeMap.get(faixaMunicipio.faixa) ?? 0) / totalUnidade) * 100 : 0,
+    municipioShare: totalMunicipio > 0 ? (faixaTotal(faixaMunicipio) / totalMunicipio) * 100 : 0,
+    deltaSharePp:
+      (totalUnidade > 0 ? ((unidadeMap.get(faixaMunicipio.faixa) ?? 0) / totalUnidade) * 100 : 0) -
+      (totalMunicipio > 0 ? (faixaTotal(faixaMunicipio) / totalMunicipio) * 100 : 0),
+  }));
+}
+
+function faixaProfileOption(rows: FaixaComparisonRow[]) {
+  const ordered = [...rows].reverse();
+  return {
+    grid: { left: 80, right: 20, top: 10, bottom: 30 },
+    xAxis: {
+      type: 'value',
+      axisLabel: { formatter: (v: number) => `${v.toFixed(0)}%` },
+    },
+    yAxis: {
+      type: 'category',
+      data: ordered.map((row) => row.faixa),
+    },
+    series: [
+      {
+        name: 'Unidade',
+        type: 'bar',
+        data: ordered.map((row) => Number(row.unidadeShare.toFixed(2))),
+        itemStyle: { color: '#3b82f6' },
+      },
+      {
+        name: 'Município',
+        type: 'bar',
+        data: ordered.map((row) => Number(row.municipioShare.toFixed(2))),
+        itemStyle: { color: '#9ca3af' },
+      },
+    ],
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: Array<{ seriesName: string; value: number }>) =>
+        params.map((p) => `${p.seriesName}: ${p.value.toFixed(2)}%`).join('<br/>'),
+    },
+    legend: { bottom: 0 },
+  };
+}
+
+function renderDeltaLabel(deltaSharePp: number): string {
+  if (Math.abs(deltaSharePp) < 0.05) {
+    return 'Alinhado com a média municipal';
+  }
+  if (deltaSharePp > 0) {
+    return `Acima da média (+${deltaSharePp.toFixed(1)} pp)`;
+  }
+  return `Abaixo da média (${deltaSharePp.toFixed(1)} pp)`;
 }
 
 // ── ECharts option builders ───────────────────────────────────────────────────
@@ -119,9 +199,10 @@ function conditionsOption(bars: ConditionBar[]) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PopulacaoPage() {
-  const { competencia } = useFilters();
+  const { competencia, unidadeId } = useFilters();
   const [competencias, setCompetencias] = useState<CompetenciaEntry[]>([]);
   const [data, setData] = useState<PopulacaoResponse | null | undefined>(undefined);
+  const [municipioData, setMunicipioData] = useState<PopulacaoResponse | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,20 +216,33 @@ export default function PopulacaoPage() {
     setLoading(true);
     setError(null);
     fetchPopulacao(competencia)
-      .then((result) => {
-        setData(result);
+      .then(async (municipio) => {
+        if (unidadeId == null) {
+          setMunicipioData(municipio);
+          setData(municipio);
+          setLoading(false);
+          return;
+        }
+
+        const unidade = await fetchPopulacao(competencia, unidadeId);
+        setMunicipioData(municipio);
+        setData(unidade);
         setLoading(false);
       })
       .catch(() => {
         setError('Erro ao carregar dados de população');
         setLoading(false);
       });
-  }, [competencia]);
+  }, [competencia, unidadeId]);
 
   const pyramid = data ? buildPyramidSeries(data.faixa_etaria) : null;
   const conditions = data
     ? buildConditionsData(data.condicoes_saude, data.total_cidadaos_ativos)
     : [];
+  const faixaComparison =
+    unidadeId != null && data && municipioData
+      ? buildFaixaComparisonRows(data.faixa_etaria, municipioData.faixa_etaria)
+      : [];
 
   return (
     <DashboardPageShell
@@ -166,6 +260,9 @@ export default function PopulacaoPage() {
                 Relatório de cadastro individual · {competencia}
                 {competencias.length > 0 &&
                   ` · ${competencias.find((c) => c.competencia.startsWith(competencia))?.unidades_count ?? 0} unidades`}
+                {unidadeId != null && data?.por_unidade?.[0]?.estabelecimento_nome
+                  ? ` · Unidade selecionada: ${data.por_unidade[0].estabelecimento_nome}`
+                  : ''}
               </p>
             </div>
           </div>
@@ -212,6 +309,44 @@ export default function PopulacaoPage() {
                     height={360}
                     testId="pyramid-chart"
                   />
+                  {faixaComparison.length > 0 && (
+                    <div className="populacao-faixa-comparison" data-testid="populacao-faixa-comparison">
+                      <p className="populacao-faixa-comparison-note">
+                        Referência demográfica da unidade versus total do município.
+                      </p>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Faixa etária</th>
+                            <th>Unidade</th>
+                            <th className="populacao-col-municipio">Município (cinza)</th>
+                            <th>Diferença %</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {faixaComparison.map((row) => {
+                            return (
+                              <tr key={row.faixa}>
+                                <td>{row.faixa}</td>
+                                <td>{row.unidadeTotal.toLocaleString('pt-BR')}</td>
+                                <td className="populacao-col-municipio">
+                                  {row.municipioTotal.toLocaleString('pt-BR')}
+                                </td>
+                                <td>{renderDeltaLabel(row.deltaSharePp)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                      <div className="populacao-faixa-profile-chart">
+                        <EChart
+                          option={faixaProfileOption(faixaComparison)}
+                          height={Math.max(240, faixaComparison.length * 26)}
+                          testId="populacao-faixa-profile-chart"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </section>
               )}
 

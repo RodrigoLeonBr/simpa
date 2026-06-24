@@ -1,6 +1,6 @@
 const express = require('express');
 const { query } = require('../services/db');
-const { sincronizar } = require('../services/sia');
+const { sincronizar, getSyncProgress } = require('../services/sia');
 const { runConsolidation } = require('../services/consolidator');
 const { listProducao } = require('../services/siaProducaoService');
 const requirePlanningStaff = require('../middleware/requirePlanningStaff');
@@ -49,9 +49,12 @@ async function getCompetenciaImportada(competencia) {
 
 router.post('/sincronizar', requirePlanningStaff, async (req, res, next) => {
   try {
-    const { competencia, reimportar } = req.body || {};
+    const { competencia, reimportar, executionId } = req.body || {};
     if (!normalizeCompetencia(competencia)) {
       return res.status(400).json({ error: 'competencia deve ser YYYY-MM' });
+    }
+    if (executionId && !/^[a-zA-Z0-9_-]{8,80}$/.test(executionId)) {
+      return res.status(400).json({ error: 'executionId inválido' });
     }
 
     const existe = await getCompetenciaImportada(competencia);
@@ -64,7 +67,10 @@ router.post('/sincronizar', requirePlanningStaff, async (req, res, next) => {
       });
     }
 
-    const resultado = await sincronizar(competencia, { reimportar: reimportar === true });
+    const resultado = await sincronizar(competencia, {
+      reimportar: reimportar === true,
+      executionId: executionId || null,
+    });
     let consolidacao = null;
 
     if (resultado.status === 'ok' || resultado.status === 'parcial') {
@@ -79,6 +85,15 @@ router.post('/sincronizar', requirePlanningStaff, async (req, res, next) => {
   } catch (err) {
     return next(err);
   }
+});
+
+router.get('/sincronizar/progresso/:executionId', requirePlanningStaff, async (req, res) => {
+  const { executionId } = req.params;
+  const progress = getSyncProgress(executionId);
+  if (!progress) {
+    return res.status(404).json({ error: 'Execução não encontrada' });
+  }
+  return res.json(progress);
 });
 
 router.get('/sincronizacoes/existe', async (req, res, next) => {

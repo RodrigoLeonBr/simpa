@@ -189,6 +189,7 @@ MySQL (forma, cbo)
 - `cbos_sia` ON `codigo_cbo` canônico 6 chars a partir de `sp.cbo`
 
 Campos extras na resposta: `descricao_forma`, `descricao_cbo` (null quando código ausente ou sem match).
+Para reduzir ambiguidade sem quebrar clientes legados, o contrato de `GET /api/sia/producao` expõe também `grupo_idade_sia` como alias explícito de `faixa_etaria`.
 Também retorna `quantidade_apresentada` e `valor_apresentado` quando disponíveis na competência importada.
 
 ### Operação de sync produção SIA (UI Cadastros)

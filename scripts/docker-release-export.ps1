@@ -42,19 +42,14 @@ if (Test-Path $bundleRoot) {
 New-Item -ItemType Directory -Path (Join-Path $bundleRoot "images") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $bundleRoot "scripts") -Force | Out-Null
 
+$migrationFiles = Get-ChildItem -Path $Root -Filter "migration_*.sql" | Sort-Object Name | Select-Object -ExpandProperty Name
+
 $copyFiles = @(
     "docker-compose.yml",
     "docker-compose.deploy.yml",
     ".env.docker.example",
-    "schema_full.sql",
-    "migration_002_auth.sql",
-    "migration_003_cadastros_fase2.sql",
-    "migration_004_cadastros_sync.sql",
-    "migration_005_estabelecimentos_perfil_enrichment.sql",
-    "migration_006_import_depara.sql",
-    "migration_007_atendimento_domiciliar.sql",
-    "migration_008_painel_widgets.sql",
-    "migration_009_cadastros_forma_cbo.sql",
+    "schema_full.sql"
+) + $migrationFiles + @(
     "parse_esus_csv.py",
     "consolidate_dashboard.py",
     "sync_sia_mysql.py",

@@ -21,6 +21,13 @@
 | [auth-roles.md](auth-roles.md) | Login, JWT, perfis, admin |
 | [testing-ci.md](testing-ci.md) | Jest, Vitest, pytest, Playwright, CI |
 | [compozy.md](compozy.md) | Workflows PRD/TechSpec/tasks |
+| [indicadores-qualidade.md](indicadores-qualidade.md) | Catálogo `/indicadores`, fontes, queries e avaliação no banco |
+| [importacao-esus-regras.md](importacao-esus-regras.md) | Fluxo importação e-SUS, preview, de-para, status |
+| [importacao-esus-dicionario-dados.md](importacao-esus-dicionario-dados.md) | Tabelas e-SUS, raw JSONB, populacao_cadastrada |
+| [sia-atualizacao-cadastro-regras.md](sia-atualizacao-cadastro-regras.md) | Sync cadastros MySQL → PG |
+| [sia-atualizacao-cadastro-dicionario-dados.md](sia-atualizacao-cadastro-dicionario-dados.md) | Tabelas estabelecimentos, procedimentos, formas/cbo |
+| [sia-importacao-producao-regras.md](sia-importacao-producao-regras.md) | Sync produção SIA, gate 409, status |
+| [sia-importacao-producao-dicionario-dados.md](sia-importacao-producao-dicionario-dados.md) | `sia_producao`, sincronizações, enriquecimento |
 
 ## Manutenção
 

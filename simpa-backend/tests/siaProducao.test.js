@@ -23,6 +23,7 @@ describe('siaProducaoService', () => {
           codigo_sigtap: '0301010072',
           descricao: 'Consulta',
           faixa_etaria: '20-29',
+          grupo_idade_sia: '20-29',
           sexo: 'F',
           cbo: '225125',
           quantidade: '7',
@@ -45,6 +46,7 @@ describe('siaProducaoService', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].descricao_forma).toBe('CONSULTA MEDICA');
     expect(rows[0].descricao_cbo).toBe('MEDICO CLINICO');
+    expect(rows[0].grupo_idade_sia).toBe('20-29');
 
     const [sql, params] = query.mock.calls[1];
     expect(sql).toMatch(/FROM sia_producao sp/);
@@ -69,6 +71,7 @@ describe('siaProducaoService', () => {
           codigo_sigtap: '0301010072',
           descricao: 'Consulta',
           faixa_etaria: '20-29',
+          grupo_idade_sia: '20-29',
           sexo: 'F',
           cbo: '225125',
           quantidade: '7',
@@ -87,6 +90,7 @@ describe('siaProducaoService', () => {
       codigo_sigtap: '0301010072',
       descricao: 'Consulta',
       faixa_etaria: '20-29',
+      grupo_idade_sia: '20-29',
       sexo: 'F',
       cbo: '225125',
       quantidade: '7',

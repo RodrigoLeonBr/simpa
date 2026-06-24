@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  fetchSiaSyncProgress,
   fetchSiaSincronizacaoExiste,
   fetchSiaSincronizacoes,
   sincronizarSiaProducao,
@@ -14,6 +15,7 @@ vi.mock('../../api/sia', async () => {
     ...actual,
     fetchSiaSincronizacoes: vi.fn(),
     fetchSiaSincronizacaoExiste: vi.fn(),
+    fetchSiaSyncProgress: vi.fn(),
     sincronizarSiaProducao: vi.fn(),
   };
 });
@@ -38,6 +40,15 @@ describe('SiaProducaoSyncBanner', () => {
       status: null,
       registros: 0,
       sincronizado_em: null,
+    });
+    vi.mocked(fetchSiaSyncProgress).mockResolvedValue({
+      executionId: 'test_exec',
+      competencia: '2026-05',
+      startedAt: '2026-06-24T12:00:00.000Z',
+      lastUpdatedAt: '2026-06-24T12:00:00.000Z',
+      status: 'running',
+      stage: 'extracao_mysql',
+      events: [],
     });
   });
 
@@ -91,7 +102,10 @@ describe('SiaProducaoSyncBanner', () => {
     await user.click(screen.getByTestId('sia-sync-button'));
 
     await waitFor(() => {
-      expect(sincronizarSiaProducao).toHaveBeenCalledWith('2026-05', { reimportar: false });
+      expect(sincronizarSiaProducao).toHaveBeenCalledWith(
+        '2026-05',
+        expect.objectContaining({ reimportar: false, executionId: expect.any(String) }),
+      );
       expect(screen.getByTestId('toast-banner')).toHaveTextContent(/321 linhas agregadas/i);
     });
   });
@@ -118,9 +132,11 @@ describe('SiaProducaoSyncBanner', () => {
     await waitFor(() => {
       expect(sincronizarSiaProducao).toHaveBeenNthCalledWith(1, '2026-05', {
         reimportar: false,
+        executionId: expect.any(String),
       });
       expect(sincronizarSiaProducao).toHaveBeenNthCalledWith(2, '2026-05', {
         reimportar: true,
+        executionId: expect.any(String),
       });
     });
   });
@@ -157,7 +173,13 @@ describe('SiaProducaoSyncBanner', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(/MySQL\/XAMPP indisponível/i);
-      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/MySQL\/XAMPP indisponível/i);
+      expect(screen.getByTestId('confirm-dialog')).toHaveTextContent(/Erro na importação SIA/i);
+      expect(screen.getByTestId('confirm-dialog')).toHaveTextContent(/MySQL\/XAMPP indisponível/i);
+    });
+
+    await user.click(screen.getByTestId('confirm-dialog-action'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument();
     });
   });
 
@@ -178,7 +200,7 @@ describe('SiaProducaoSyncBanner', () => {
 
     await user.click(screen.getByTestId('sia-sync-button'));
     await waitFor(() => {
-      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Timeout serviço SIA/i);
+      expect(screen.getByTestId('confirm-dialog')).toHaveTextContent(/Timeout serviço SIA/i);
     });
   });
 
@@ -190,6 +212,41 @@ describe('SiaProducaoSyncBanner', () => {
       expect(screen.getByTestId('sia-sync-history')).toHaveTextContent(
         /Nenhuma sincronização SIA registrada ainda/i,
       );
+    });
+  });
+
+  it('renders progress panel with events while syncing', async () => {
+    vi.mocked(fetchSiaSyncProgress).mockResolvedValue({
+      executionId: 'test_exec',
+      competencia: '2026-05',
+      startedAt: '2026-06-24T12:00:00.000Z',
+      lastUpdatedAt: '2026-06-24T12:00:02.000Z',
+      status: 'running',
+      stage: 'gravar_postgres',
+      events: [
+        {
+          at: '2026-06-24T12:00:01.000Z',
+          stage: 'extracao_mysql',
+          event: 'extract_block',
+          message: 'Bloco 1 extraído do MySQL',
+          block_rows: 1000,
+        },
+      ],
+    });
+    vi.mocked(sincronizarSiaProducao).mockResolvedValue({
+      competencia: '2026-05',
+      status: 'ok',
+      registros: 1000,
+      erros: 0,
+    });
+
+    const user = userEvent.setup();
+    render(<SiaProducaoSyncBanner />);
+    await user.click(screen.getByTestId('sia-sync-button'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sia-sync-progress-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('sia-sync-progress-events')).toHaveTextContent(/Bloco 1 extraído/i);
     });
   });
 });

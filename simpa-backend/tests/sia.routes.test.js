@@ -5,7 +5,7 @@ jest.mock('../src/services/siaProducaoService');
 
 const request = require('supertest');
 const { query } = require('../src/services/db');
-const { sincronizar } = require('../src/services/sia');
+const { sincronizar, getSyncProgress } = require('../src/services/sia');
 const { runConsolidation } = require('../src/services/consolidator');
 const { listProducao } = require('../src/services/siaProducaoService');
 const { authHeader, unidadeHeader } = require('./helpers/auth');
@@ -75,7 +75,10 @@ describe('sia routes', () => {
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('ok');
     expect(res.body.consolidacao.ok).toBe(true);
-    expect(sincronizar).toHaveBeenCalledWith('2026-05', { reimportar: false });
+    expect(sincronizar).toHaveBeenCalledWith('2026-05', {
+      reimportar: false,
+      executionId: null,
+    });
     expect(runConsolidation).toHaveBeenCalledWith({ all: true });
   });
 
@@ -90,7 +93,34 @@ describe('sia routes', () => {
       .send({ competencia: '2026-05', reimportar: true });
 
     expect(res.status).toBe(201);
-    expect(sincronizar).toHaveBeenCalledWith('2026-05', { reimportar: true });
+    expect(sincronizar).toHaveBeenCalledWith('2026-05', {
+      reimportar: true,
+      executionId: null,
+    });
+  });
+
+  it('POST /sincronizar accepts executionId and forwards to service', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app)
+      .post('/api/sia/sincronizar')
+      .set('Authorization', authHeader())
+      .send({ competencia: '2026-05', executionId: 'sync_2026_05_a1b2c3d4' });
+
+    expect(res.status).toBe(201);
+    expect(sincronizar).toHaveBeenCalledWith('2026-05', {
+      reimportar: false,
+      executionId: 'sync_2026_05_a1b2c3d4',
+    });
+  });
+
+  it('POST /sincronizar validates executionId format', async () => {
+    const res = await request(app)
+      .post('/api/sia/sincronizar')
+      .set('Authorization', authHeader())
+      .send({ competencia: '2026-05', executionId: 'x' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/executionId/i);
   });
 
   it('POST /sincronizar skips consolidation on erro status', async () => {
@@ -196,6 +226,8 @@ describe('sia routes', () => {
     listProducao.mockResolvedValueOnce([
       {
         codigo_sigtap: '0301010072',
+        faixa_etaria: '60',
+        grupo_idade_sia: '60',
         quantidade: '12',
         quantidade_apresentada: '14',
         valor_apresentado: '150.00',
@@ -218,6 +250,7 @@ describe('sia routes', () => {
     expect(res.body[0].codigo_sigtap).toBe('0301010072');
     expect(res.body[0].descricao_forma).toBe('CONSULTA MEDICA');
     expect(res.body[0].descricao_cbo).toBe('MEDICO CLINICO');
+    expect(res.body[0].grupo_idade_sia).toBe('60');
     expect(res.body[0].quantidade_apresentada).toBe('14');
     expect(res.body[0].valor_apresentado).toBe('150.00');
     expect(listProducao).toHaveBeenCalledWith({
@@ -226,6 +259,32 @@ describe('sia routes', () => {
       codigo_sigtap: '0301010072',
       estabelecimento_id: '42',
     });
+  });
+
+  it('GET /sincronizar/progresso/:executionId returns telemetry payload', async () => {
+    getSyncProgress.mockReturnValueOnce({
+      executionId: 'sync_2026_05_a1b2c3d4',
+      status: 'running',
+      stage: 'extracao_mysql',
+      events: [{ event: 'extract_block', block_rows: 1000 }],
+    });
+
+    const res = await request(app)
+      .get('/api/sia/sincronizar/progresso/sync_2026_05_a1b2c3d4')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('running');
+    expect(res.body.stage).toBe('extracao_mysql');
+  });
+
+  it('GET /sincronizar/progresso/:executionId returns 404 when unknown', async () => {
+    getSyncProgress.mockReturnValueOnce(null);
+    const res = await request(app)
+      .get('/api/sia/sincronizar/progresso/sync_not_found')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(404);
   });
 
   it('requires JWT', async () => {

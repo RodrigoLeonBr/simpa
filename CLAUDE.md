@@ -168,8 +168,6 @@ Detalhes: **[docs/agent/testing-ci.md](docs/agent/testing-ci.md)**.
 
 ## Compozy (spec-driven)
 
-Workflow concluído (aguardando archive): `frontend-manutenibilidade` — ver **[docs/agent/compozy.md](docs/agent/compozy.md)**.
-
 Arquivados em `.compozy/tasks/_archived/`:
 
 | Slug | Estado | Conteúdo |
@@ -178,6 +176,7 @@ Arquivados em `.compozy/tasks/_archived/`:
 | `estabelecimentos-perfil-painel` | **arquivado ✅** | Perfil editável, enriquecimento por perfil, Painel multi-perfil |
 | `cadastros-forma-cbo-sia-sih` | **arquivado ✅** | Forma/CBO MySQL → PG, Cadastros read-only, enriquecimento SIA |
 | `painel-widgets-dinamicos` | **arquivado ✅** | Widgets/métricas governadas, Layout A dinâmico, cadastro Indicadores do Painel |
+| `importacao-cadastro-individual` | **arquivado ✅** | Cadastro individual CSV, `populacao_cadastrada`, denominadores, `/painel/populacao` |
 
 Guia: **[docs/agent/compozy.md](docs/agent/compozy.md)**.
 
@@ -224,6 +223,14 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 **Entregue:** migration 008 runtime; `painelMetricsService` + `painelWidgetsService`; `GET /painel-layout`; CRUD/preview/discovery cadastro; `IndicadoresPainelPage`; Layout A dinâmico com fallback; E2E `painel-widgets.spec.ts`.
 
 **Commits:** `fedd158`, `73ff413` · Spec arquivada: `.compozy/tasks/_archived/*-painel-widgets-dinamicos/` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos)** · Design: **[superpowers spec](docs/superpowers/specs/2026-06-20-painel-widgets-dinamicos-design.md)**.
+
+---
+
+## Feature concluída: importacao-cadastro-individual
+
+**Entregue:** `migration_012_populacao_cadastrada.sql`; parser `cadastro_individual` em `parse_esus_csv.py`; ETL contract `pop_row` + denominadores C1/IGM-APS/IGM-ICSAP; `populacaoService.js` + `GET /api/populacao`; `PopulacaoPage.tsx` em `/painel/populacao`; badge `cidadaos_ativos` no preview de importação; 526 JS + 171 Python testes passando.
+
+**Commit:** `f204714` · Spec arquivada: `.compozy/tasks/_archived/*-importacao-cadastro-individual/`
 
 ---
 

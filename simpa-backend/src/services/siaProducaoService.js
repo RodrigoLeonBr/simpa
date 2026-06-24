@@ -53,7 +53,7 @@ async function listProducao(queryParams = {}) {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const { rows } = await query(
-    `SELECT sp.codigo_sigtap, sp.descricao, sp.faixa_etaria, sp.sexo, sp.cbo,
+    `SELECT sp.codigo_sigtap, sp.descricao, sp.faixa_etaria, sp.faixa_etaria AS grupo_idade_sia, sp.sexo, sp.cbo,
             SUM(sp.quantidade) AS quantidade, SUM(sp.valor_aprovado) AS valor_aprovado,
             ${quantidadeApresentadaSelect},
             ${valorApresentadoSelect},

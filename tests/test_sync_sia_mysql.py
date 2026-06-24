@@ -37,6 +37,7 @@ def test_build_sia_query_defaults_match_producao_schema():
     assert cfg["col_valor_aprovado"] == "PRD_VL_A"
     assert cfg["col_valor_apresentado"] == "PRD_VL_P"
     assert cfg["col_rubrica"] == "PRD_RUB"
+    assert cfg["join_charset"] == "utf8mb4"
 
     assert "prd.prd_uidAScnes" in normalized
     assert "LEFT(prd.PRD_RUB,4)ASrubrica_codigo" in normalized
@@ -50,7 +51,7 @@ def test_build_sia_query_defaults_match_producao_schema():
     assert "sr.RUB_DC" in query
     assert "LEFT JOIN cbo cb" in query
     assert "LEFT JOIN s_rub sr" in query
-    assert "COLLATE utf8mb4_general_ci" in query
+    assert "CONVERT(prd.prd_uid USING utf8mb4) COLLATE utf8mb4_general_ci" in query
     assert "'I' AS sexo" in query
 
 
@@ -62,18 +63,26 @@ def test_build_sia_query_excludes_admin_columns():
 
 def test_build_sia_query_custom_sexo_and_overrides(monkeypatch):
     monkeypatch.setenv("SIA_COL_SEXO", "BPI_SEXO")
+    monkeypatch.setenv("SIA_JOIN_CHARSET", "latin1")
     monkeypatch.setenv("SIA_JOIN_COLLATION", "utf8mb4_unicode_ci")
     monkeypatch.setenv("SIA_COL_RUBRICA_DESC", "DESC_RUB")
 
     query, cfg = sync_sia_mysql.build_sia_query()
 
     assert cfg["col_sexo"] == "BPI_SEXO"
+    assert cfg["join_charset"] == "latin1"
     assert cfg["join_collation"] == "utf8mb4_unicode_ci"
     assert cfg["col_rub_desc"] == "DESC_RUB"
     assert "prd.BPI_SEXO AS sexo" in query
     assert "'I' AS sexo" not in query
-    assert "COLLATE utf8mb4_unicode_ci" in query
+    assert "CONVERT(prd.prd_uid USING latin1) COLLATE utf8mb4_unicode_ci" in query
     assert "sr.DESC_RUB AS rubrica_descricao" in query
+
+
+def test_build_sia_query_paginated_adds_limit_offset():
+    query, _ = sync_sia_mysql.build_sia_query(paginated=True)
+    assert "LIMIT %(limit)s OFFSET %(offset)s" in query
+    assert "ORDER BY" in query
 
 
 def test_extrair_sia_comp_format(monkeypatch):
@@ -90,6 +99,35 @@ def test_extrair_sia_comp_format(monkeypatch):
 
     assert captured["params"] == {"comp": "202605"}
     assert "prd_cmp" in captured["query"]
+
+
+def test_extrair_sia_em_blocos_paginated(monkeypatch):
+    calls = {"n": 0}
+
+    def fake_read_sql(query, conn, params=None):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            assert params == {"comp": "202605", "limit": 2, "offset": 0}
+            assert "LIMIT %(limit)s OFFSET %(offset)s" in query
+            return pd.DataFrame([{"quantidade": 1}, {"quantidade": 2}])
+        if calls["n"] == 2:
+            assert params == {"comp": "202605", "limit": 2, "offset": 2}
+            return pd.DataFrame([{"quantidade": 3}])
+        return pd.DataFrame()
+
+    monkeypatch.setattr(sync_sia_mysql.pd, "read_sql", fake_read_sql)
+
+    blocos = list(
+        sync_sia_mysql.extrair_sia_em_blocos(
+            conn_mysql=object(),
+            competencia_date=date(2026, 5, 1),
+            block_size=2,
+        )
+    )
+
+    assert len(blocos) == 2
+    assert len(blocos[0]) == 2
+    assert len(blocos[1]) == 1
 
 
 def test_transformar_normaliza_faixa_sexo_e_metricas():
@@ -124,7 +162,7 @@ def test_transformar_normaliza_faixa_sexo_e_metricas():
     assert float(out.loc[0, "valor_apresentado"]) == 120.90
 
 
-def test_transformar_usa_faixa_quando_idade_valida():
+def test_transformar_preserva_grupo_idade_quando_valido():
     raw = pd.DataFrame(
         [
             {
@@ -142,8 +180,54 @@ def test_transformar_usa_faixa_quando_idade_valida():
     out = sync_sia_mysql.transformar(raw)
 
     assert out.loc[0, "idade"] == 34
-    assert out.loc[0, "faixa_etaria"] == "30-39"
+    assert out.loc[0, "faixa_etaria"] == "34"
     assert out.loc[0, "sexo"] == "F"
+
+
+def test_consolidar_para_carga_mergeia_chave_unica_da_sia():
+    raw = pd.DataFrame(
+        [
+            {
+                "cnes": "0751073",
+                "unidade": "UNIDADE A",
+                "codigo_sigtap": "0211060127",
+                "descricao": "PROC A",
+                "cbo": "225265",
+                "rubrica_codigo": "06",
+                "rubrica_descricao": "RUB A",
+                "idade": 60,
+                "quantidade": 1,
+                "quantidade_apresentada": 1,
+                "valor_aprovado": 10.0,
+                "valor_apresentado": 10.0,
+                "sexo": "I",
+            },
+            {
+                "cnes": "0751073",
+                "unidade": "UNIDADE A",
+                "codigo_sigtap": "0211060127",
+                "descricao": "PROC A",
+                "cbo": "225265",
+                "rubrica_codigo": "06",
+                "rubrica_descricao": "RUB A",
+                "idade": 60,
+                "quantidade": 2,
+                "quantidade_apresentada": 2,
+                "valor_aprovado": 20.0,
+                "valor_apresentado": 20.0,
+                "sexo": "I",
+            },
+        ]
+    )
+    transformed = sync_sia_mysql.transformar(raw)
+    merged = sync_sia_mysql.consolidar_para_carga(transformed)
+
+    assert len(merged) == 1
+    assert merged.loc[0, "faixa_etaria"] == "60"
+    assert merged.loc[0, "quantidade"] == 3
+    assert merged.loc[0, "quantidade_apresentada"] == 3
+    assert float(merged.loc[0, "valor_aprovado"]) == 30.0
+    assert float(merged.loc[0, "valor_apresentado"]) == 30.0
 
 
 def test_check_competencia_importada_retorna_metadata():
@@ -353,10 +437,11 @@ def test_sincronizar_pg_write_passes_reimportar_and_raw_count(monkeypatch):
     monkeypatch.setattr(sync_sia_mysql, "mysql_connect", lambda: MagicMock(close=lambda: None))
     monkeypatch.setattr(
         sync_sia_mysql,
-        "extrair_sia",
-        lambda *_args, **_kwargs: pd.DataFrame([{"quantidade": 1, "valor_aprovado": 1.0}]),
+        "extrair_sia_em_blocos",
+        lambda *_args, **_kwargs: iter([pd.DataFrame([{"quantidade": 1, "valor_aprovado": 1.0}])]),
     )
     monkeypatch.setattr(sync_sia_mysql, "transformar", lambda df: df)
+    monkeypatch.setattr(sync_sia_mysql, "consolidar_para_carga", lambda df: df)
 
     conn_pg = MagicMock()
     monkeypatch.setattr(sync_sia_mysql, "pg_connect", lambda: conn_pg)

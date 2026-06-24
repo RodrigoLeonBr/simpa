@@ -1,5 +1,10 @@
 import { apiFetch } from './client';
-import type { SiaSyncExistsResponse, SiaSyncRecord, SiaSyncResult } from '../types/sia';
+import type {
+  SiaSyncExistsResponse,
+  SiaSyncProgress,
+  SiaSyncRecord,
+  SiaSyncResult,
+} from '../types/sia';
 
 function buildQuery(params?: Record<string, string | number>): string {
   if (!params || Object.keys(params).length === 0) {
@@ -12,13 +17,14 @@ function buildQuery(params?: Record<string, string | number>): string {
 
 export function sincronizarSiaProducao(
   competencia: string,
-  options?: { reimportar?: boolean },
+  options?: { reimportar?: boolean; executionId?: string },
 ): Promise<SiaSyncResult> {
   return apiFetch<SiaSyncResult>('/api/sia/sincronizar', {
     method: 'POST',
     body: JSON.stringify({
       competencia,
       reimportar: options?.reimportar === true,
+      executionId: options?.executionId,
     }),
   });
 }
@@ -36,4 +42,8 @@ export function fetchSiaSincronizacaoExiste(
   competencia: string,
 ): Promise<SiaSyncExistsResponse> {
   return apiFetch<SiaSyncExistsResponse>(`/api/sia/sincronizacoes/existe${buildQuery({ competencia })}`);
+}
+
+export function fetchSiaSyncProgress(executionId: string): Promise<SiaSyncProgress> {
+  return apiFetch<SiaSyncProgress>(`/api/sia/sincronizar/progresso/${encodeURIComponent(executionId)}`);
 }

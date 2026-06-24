@@ -2,6 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import PopulacaoPage, {
+  buildFaixaComparisonRows,
   buildConditionsData,
   buildPyramidSeries,
 } from './PopulacaoPage';
@@ -62,6 +63,35 @@ const MOCK_DATA = {
   faixa_etaria: FAIXAS_ALVORADA,
   condicoes_saude: CONDICOES_ALVORADA,
   raca_cor: { branca: 2570 },
+};
+
+const MOCK_DATA_MUNICIPIO = {
+  ...MOCK_DATA,
+  total_cidadaos_ativos: 39436,
+  total_saidas: 9178,
+  por_unidade: [
+    {
+      estabelecimento_id: 5,
+      estabelecimento_nome: 'PSF JD Alvorada',
+      cidadaos_ativos: 3337,
+      saidas: 1198,
+      importado_em: '2026-06-22T14:30:00Z',
+    },
+    {
+      estabelecimento_id: 42,
+      estabelecimento_nome: 'P.M. 02 PRAIA AZUL',
+      cidadaos_ativos: 6625,
+      saidas: 631,
+      importado_em: '2026-06-22T14:30:00Z',
+    },
+  ],
+  faixa_etaria: [
+    { faixa: 'Menos de 01 ano', masculino: 274, feminino: 317 },
+    { faixa: '01 ano', masculino: 197, feminino: 208 },
+    { faixa: '05 a 09 anos', masculino: 1241, feminino: 1282 },
+    { faixa: '10 a 14 anos', masculino: 1182, feminino: 1221 },
+    { faixa: '80 anos ou mais', masculino: 643, feminino: 1177 },
+  ],
 };
 
 // ── Unit tests: buildPyramidSeries ────────────────────────────────────────────
@@ -129,6 +159,18 @@ describe('buildConditionsData', () => {
     const condicoes = { hipertensao: { sim: 0, nao: 100, nao_informado: 0 } };
     const result = buildConditionsData(condicoes, 100);
     expect(result).toHaveLength(0);
+  });
+});
+
+describe('buildFaixaComparisonRows', () => {
+  it('keeps municipality faixa order and maps totals', () => {
+    const result = buildFaixaComparisonRows(FAIXAS_ALVORADA, MOCK_DATA_MUNICIPIO.faixa_etaria);
+    expect(result[0]?.faixa).toBe('Menos de 01 ano');
+    expect(result[0]?.unidadeTotal).toBe(57);
+    expect(result[0]?.municipioTotal).toBe(591);
+    expect(result[0]?.unidadeShare).toBeGreaterThan(0);
+    expect(result[0]?.municipioShare).toBeGreaterThan(0);
+    expect(result[result.length - 1]?.faixa).toBe('80 anos ou mais');
   });
 });
 
@@ -211,5 +253,32 @@ describe('PopulacaoPage', () => {
   it('navigate to /painel/populacao renders page without crash', () => {
     vi.mocked(fetchPopulacao).mockResolvedValue(null);
     expect(() => renderPage()).not.toThrow();
+  });
+
+  it('applies selected unit filter and renders comparison table', async () => {
+    vi.mocked(useFilters).mockReturnValue({
+      competencia: '2026-01',
+      unidadeId: 5,
+      equipeId: null,
+      painelPerfil: 'APS',
+      competencias: [],
+      setCompetencia: vi.fn(),
+      setUnidadeId: vi.fn(),
+      setEquipeId: vi.fn(),
+      setPainelPerfil: vi.fn(),
+    });
+    vi.mocked(fetchPopulacao)
+      .mockResolvedValueOnce(MOCK_DATA_MUNICIPIO)
+      .mockResolvedValueOnce(MOCK_DATA);
+
+    renderPage();
+
+    const comparison = await screen.findByTestId('populacao-faixa-comparison');
+    expect(comparison).toHaveTextContent('Município (cinza)');
+    expect(comparison).toHaveTextContent('Menos de 01 ano');
+    expect(comparison).toHaveTextContent(/Acima da média|Abaixo da média|Alinhado com a média/i);
+    expect(await screen.findByTestId('populacao-faixa-profile-chart')).toBeInTheDocument();
+    expect(fetchPopulacao).toHaveBeenNthCalledWith(1, '2026-01');
+    expect(fetchPopulacao).toHaveBeenNthCalledWith(2, '2026-01', 5);
   });
 });
