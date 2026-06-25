@@ -26,10 +26,12 @@ describe('dashboardView', () => {
     expect(getPainelCatalogStatus('Misto', 'C')).toBe('pending');
   });
 
-  it('PAINEL_KPI_CATALOGS marks only APS layouts as ready', () => {
+  it('PAINEL_KPI_CATALOGS marks APS and Hospitalar A as ready', () => {
     expect(PAINEL_KPI_CATALOGS.APS).toEqual({ A: 'ready', B: 'ready', C: 'ready' });
     expect(PAINEL_KPI_CATALOGS.MAC.A).toBe('pending');
-    expect(isPainelCatalogReady('Hospitalar')).toBe(false);
+    expect(PAINEL_KPI_CATALOGS.Hospitalar).toEqual({ A: 'ready', B: 'pending', C: 'pending' });
+    expect(isPainelCatalogReady('Hospitalar')).toBe(true);
+    expect(isPainelCatalogReady('Hospitalar', 'B')).toBe(false);
   });
 
   it('resolvePainelViewContext combines perfil, layout and catalog status', () => {

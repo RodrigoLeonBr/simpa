@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Painel Hospitalar — catalogView Layout A ativo + badge status em Cadastros"
 type: frontend
 complexity: medium
@@ -36,13 +36,13 @@ Ativa o perfil Hospitalar no Painel alterando `catalogView.ts` (Layout A de `pen
 
 ## Subtasks
 
-- [ ] 8.1 Alterar `catalogView.ts`: Hospitalar A → `'ready'`
-- [ ] 8.2 Verificar que LayoutA.tsx renderiza widgets Hospitalar sem código adicional (widgets vêm dos seeds do PG)
-- [ ] 8.3 Criar `SihSyncStatusBadge.tsx` com fetch do último sync SIHD e link para /importacao
-- [ ] 8.4 Inserir `<SihSyncStatusBadge />` em Cadastros junto com SiaProducaoSyncBanner
-- [ ] 8.5 Ajustar `moduleStatusView.ts` se o tipo ModuloSIHD expandido requer mudanças de leitura
-- [ ] 8.6 Escrever testes Vitest para SihSyncStatusBadge e regressão de catalogView
-- [ ] 8.7 Escrever teste Playwright de regressão: Painel Hospitalar Layout A carrega sem erro
+- [x] 8.1 Alterar `catalogView.ts`: Hospitalar A → `'ready'`
+- [x] 8.2 Verificar que LayoutA.tsx renderiza widgets Hospitalar sem código adicional (widgets vêm dos seeds do PG)
+- [x] 8.3 Criar `SihSyncStatusBadge.tsx` com fetch do último sync SIHD e link para /importacao
+- [x] 8.4 Inserir `<SihSyncStatusBadge />` em Cadastros junto com SiaProducaoSyncBanner
+- [x] 8.5 Ajustar `moduleStatusView.ts` se o tipo ModuloSIHD expandido requer mudanças de leitura
+- [x] 8.6 Escrever testes Vitest para SihSyncStatusBadge e regressão de catalogView
+- [x] 8.7 Escrever teste Playwright de regressão: Painel Hospitalar Layout A carrega sem erro
 
 ## Implementation Details
 

@@ -72,15 +72,14 @@ describe('Painel page', () => {
     expect(screen.queryByTestId('painel-profile-placeholder')).not.toBeInTheDocument();
   });
 
-  it('renders placeholder instead of APS KPI grid for Hospitalar perfil', async () => {
+  it('renders Layout A for Hospitalar perfil (catalog ready since task_08)', async () => {
     const user = userEvent.setup();
     renderPainel();
 
     await user.click(screen.getByRole('button', { name: 'Hospitalar' }));
 
-    expect(screen.getByTestId('painel-profile-placeholder')).toBeInTheDocument();
-    expect(screen.queryByTestId('layout-a')).not.toBeInTheDocument();
-    expect(screen.queryByText('Atendimentos individuais')).not.toBeInTheDocument();
+    expect(screen.getByTestId('layout-a')).toBeInTheDocument();
+    expect(screen.queryByTestId('painel-profile-placeholder')).not.toBeInTheDocument();
   });
 
   it('layout switcher changes visible panel under APS', async () => {

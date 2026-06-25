@@ -234,7 +234,7 @@ describe('useDashboard', () => {
     });
   });
 
-  it('clears dashboard data while establishments reload after perfil change', async () => {
+  it('clears dashboard data while establishments reload after perfil change to pending profile', async () => {
     const { result } = renderHook(
       () => ({
         dashboard: useDashboard(),
@@ -256,7 +256,7 @@ describe('useDashboard', () => {
     );
 
     act(() => {
-      result.current.filters.setPainelPerfil('Hospitalar');
+      result.current.filters.setPainelPerfil('MAC');
     });
 
     await waitFor(() => {
@@ -264,7 +264,7 @@ describe('useDashboard', () => {
     });
 
     await act(async () => {
-      resolveEstabelecimentos(mockEstabelecimentosForPerfil('Hospitalar'));
+      resolveEstabelecimentos(mockEstabelecimentosForPerfil('MAC'));
     });
 
     await waitFor(() => {
