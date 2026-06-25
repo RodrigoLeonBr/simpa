@@ -8,3 +8,6 @@ dist/
 .superpowers/
 *.log
 .DS_Store
+
+# Releases (Docker images + zips excedem 100MB — não versionar no git)
+release/
