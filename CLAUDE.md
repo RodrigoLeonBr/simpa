@@ -74,7 +74,7 @@ Montagem em `simpa-backend/src/app.js`:
 | `/api/config` | público | `routes/config.js` |
 | `/api/*` | JWT (`verifyJWT`) | `routes/api.js` |
 
-Sub-rotas em `routes/api.js`: `/v1/dashboard`, `/importacao`, `/sia`, `/cadastros`, `/admin`.
+Sub-rotas em `routes/api.js`: `/v1/dashboard`, `/importacao`, `/sia`, `/sih`, `/cadastros`, `/admin`.
 
 Mapa completo de endpoints: **[docs/agent/backend-api.md](docs/agent/backend-api.md)**.
 
@@ -93,7 +93,7 @@ Detalhes, scripts `.bat` e refresh: **[docs/agent/docker-env.md](docs/agent/dock
 
 ## Banco de dados
 
-- Init Docker: `schema_full.sql` + `migration_002` … `009` em `docker-compose.yml`.
+- Init Docker: `schema_full.sql` + `migration_002` … `013` em `docker-compose.yml`.
 - Tabelas-chave: `estabelecimentos`, `procedimentos`, `formas_sia`, `cbos_sia`, `enriquecimento_*`, `esus_cargas`, `dados_consolidados`, `usuarios`.
 - Contrato dashboard lido de `dados_consolidados.dados_conteudo` (JSONB).
 
@@ -111,6 +111,7 @@ Scripts na raiz, invocados pela API (`parser.js`, `consolidator.js`, `cadastrosS
 | `consolidate_dashboard.py` | raw → `dados_consolidados` |
 | `sync_sia_mysql.py` | SIA MySQL → PG |
 | `sync_cadastros_mysql.py` | prestador/procedimento/forma/cbo → estabelecimentos, procedimentos, formas_sia, cbos_sia |
+| `sync_sih_mysql.py` | `s_aih` + `s_aih_pa` MySQL → `sih_internacoes`, `sih_procedimentos` PG |
 
 Detalhes: **[docs/agent/etl-python.md](docs/agent/etl-python.md)**.
 
@@ -234,6 +235,14 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 
 ---
 
+## Feature concluída: importacao-sihd-hospitalar
+
+**Entregue:** `sync_sih_mysql.py` + `migration_013`; `routes/sih.js` + `sih.js` + `sihProducaoService.js`; `SihImportSection.tsx` em `/importacao`; `SihSyncStatusBadge` em Cadastros; `catalogView` Hospitalar A → `ready`; `ModuloSIHD` expandido no contrato dashboard; 449 Vitest + E2E `sih-painel-hospitalar.spec.ts`.
+
+**Commits:** `3126401`, `c9db700` · Spec: `.compozy/tasks/importacao-sihd-hospitalar/` · API: **[backend-api.md](docs/agent/backend-api.md#sihd)** · DB: **[database.md](docs/agent/database.md)**.
+
+---
+
 ## Convenções para agentes
 
 ### Faça
@@ -287,4 +296,4 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 
 ---
 
-*Última atualização: 2026-06-21 · Manter CLAUDE.md ≤300 linhas; detalhes novos vão em `docs/agent/`.*
+*Última atualização: 2026-06-25 · Manter CLAUDE.md ≤300 linhas; detalhes novos vão em `docs/agent/`.*

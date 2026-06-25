@@ -62,6 +62,7 @@ React 19 + Vite 8 + Tailwind 4. Raiz: `simpa-frontend/src/`.
 | `dashboard.ts` | `fetchDashboard(competencia, { estabelecimentoId?, equipeId? })` |
 | `cadastros.ts` | `fetchEstabelecimentos`, `fetchFormas`, `fetchCbos`, `updatePerfil`, `updateEnrichmentBySlug`, … |
 | `sia.ts` | `sincronizarSiaProducao`, `fetchSiaSincronizacoes`, `fetchSiaSincronizacaoExiste` |
+| `sih.ts` | `sincronizarSih`, `getSihSincronizacoes`, `getSihSincronizacaoExiste`, `getSihSyncProgress`; exporta `SihConflictError` + `isSihConflictError` |
 | `importacao.ts` | `previewUpload`, `uploadCargas(files, resolucoes)`, mapeamentos CRUD, cargas |
 | `admin.ts` | usuários, audit log |
 | `config.ts` | feature flags |
@@ -80,7 +81,7 @@ Dev: Vite proxy `/api` e `/auth` → `http://localhost:3001` (`vite.config.ts`).
 | `useEntityCrud.ts` | state machine CRUD (admin, widgets painel) |
 | `usePainelLayout.ts` | layout dinâmico Painel APS |
 
-`setPainelPerfil` zera `unidadeId` e `equipeId`. Perfis non-APS não chamam `fetchDashboard` (placeholder).
+`setPainelPerfil` zera `unidadeId` e `equipeId`. Perfis MAC/Misto → sem fetch de dashboard (placeholder). **Hospitalar A** → `isPainelCatalogReady('Hospitalar', 'A') = true` desde task_08 (migration_013 seeds); `usePainelLayout` retorna `null` para Hospitalar (early return `perfil !== 'APS'`), então `LayoutA` usa fallback `buildPainelKpis`.
 
 ## Painel {#painel}
 
@@ -115,7 +116,8 @@ pages/Importacao/
 ├── PreviewMappingRow.tsx  # badge status, e-SUS vs cadastro
 ├── TodasConflictModal.tsx
 ├── MapeamentosPanel.tsx   # CRUD de-para persistente
-└── HistoricoCargas.tsx
+├── HistoricoCargas.tsx
+└── SihImportSection.tsx   # sync SIHD: seletor competência, progresso, histórico, 409 ConfirmDialog
 ```
 
 - **Preview:** `POST /api/importacao/preview` → linhas com `mapeamento_status` (`resolved` | `pending` | `blocked`), sugestões de estabelecimento.
@@ -151,7 +153,8 @@ components/cadastros/
 ```
 
 - **Grid:** `/cadastros` → `CADASTRO_GRID_ITEMS` (8 cards); cada item tem `mode` e `route`.
-- **Banner SIA produção:** `SiaProducaoSyncBanner` abaixo de `CadastroSyncBanner` (somente perfis planning staff); seletor `input type="month"`, histórico por competência, badge “Já importada” e fluxo 409 com `ConfirmDialog` + retry `reimportar:true`.
+- **Banner SIA produção:** `SiaProducaoSyncBanner` abaixo de `CadastroSyncBanner` (somente perfis planning staff); seletor `input type=”month”`, histórico por competência, badge “Já importada” e fluxo 409 com `ConfirmDialog` + retry `reimportar:true`.
+- **Badge SIHD:** `SihSyncStatusBadge` (read-only) abaixo do banner SIA; dot status verde/âmbar/vermelho + competência + link para `/importacao`; `data-testid=”sih-sync-badge”`; busca via `getSihSincronizacoes()` (sync mais recente com status 'ok').
 - **Read-only:** Formas, CBOs, Procedimentos — `ReadOnlyCatalogPage` + `usePaginatedCatalog`.
 - **CRUD:** Equipes, Emendas — `CadastroCrudPage` + `CADASTRO_ENTITIES`.
 - **Custom:** Estabelecimentos (drawer SIA/perfil/enriquecimento), Indicadores do Painel (`useEntityCrud` estendido).
@@ -188,11 +191,12 @@ Ver **[cadastros.md](cadastros.md)** e workflow forma/cbo em **[cadastros.md#wor
 
 | Arquivo | Conteúdo |
 |---------|----------|
-| `types/contrato.ts` | Dashboard JSON v3.1.0 |
+| `types/contrato.ts` | Dashboard JSON v3.1.0; `ModuloSIHD` com `status_importacao`, `total_aih`, `pct_diarias_uti`, `taxa_mortalidade`, `internacoes_por_capitulo_cid` |
 | `types/cadastros.ts` | Estabelecimento, `Forma`, `Cbo`, EnrichmentSlug, enrichment unions |
 | `types/painel.ts` | `PainelPerfil`, `PainelCatalogStatus` |
 | `types/painelWidgets.ts` | catálogo, widget config, layout response |
 | `types/importacao.ts` | preview enriquecido, `ResolucaoUpload`, mapeamentos |
+| `types/sih.ts` | `SihSincronizacao`, `SihImportResult`, `SihConflictError`, `SihSyncExistsResponse`, `SihProgress`, `SihInternacao`, `SihProcedimento` |
 
 ## Estilo
 
@@ -203,5 +207,5 @@ Ver **[cadastros.md](cadastros.md)** e workflow forma/cbo em **[cadastros.md#wor
 ## Testes
 
 - Vitest: `simpa-frontend/src/**/*.test.ts(x)`.
-- Playwright: `perfil-painel.spec.ts`, `painel-widgets.spec.ts`, `helpers.ts` (`login`, `openIndicadoresPainel`, …).
+- Playwright: `perfil-painel.spec.ts`, `painel-widgets.spec.ts`, `sih-import.spec.ts`, `sih-painel-hospitalar.spec.ts`, `helpers.ts` (`login`, …).
 - `npm run test:web` na raiz.

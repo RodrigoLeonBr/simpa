@@ -13,8 +13,12 @@
 | `migration_007_atendimento_domiciliar.sql` | CHECK `tipo_relatorio` inclui `atendimento_domiciliar` |
 | `migration_008_painel_widgets.sql` | `painel_metricas_catalogo`, `painel_widgets` (layout dinâmico APS) |
 | `migration_009_cadastros_forma_cbo.sql` | `formas_sia`, `cbos_sia`; contadores forma/cbo em `cadastros_sincronizacoes` |
+| `migration_010_sia_producao.sql` | `sia_producao`, `sia_sincronizacoes` |
+| `migration_011_rubricas_sia.sql` | `rubricas_sia` |
+| `migration_012_populacao_cadastrada.sql` | `populacao_cadastrada` + tabelas denominadores |
+| `migration_013_sih_tabelas.sql` | `sih_sincronizacoes`, `sih_internacoes`, `sih_procedimentos`; seeds widgets Hospitalar Layout A |
 
-Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `009` em `/docker-entrypoint-initdb.d/`.
+Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `013` em `/docker-entrypoint-initdb.d/`.
 
 ## Tabelas por domínio
 
@@ -50,6 +54,18 @@ Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … 
 
 Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atuais). Runtime MVP: `painelWidgetsService.resolvePainelLayout` + cadastro CRUD — ver [cadastros.md#workflow-painel-widgets-dinamicos](cadastros.md#workflow-painel-widgets-dinamicos).
 
+### SIHD (migration 013)
+
+| Tabela | Uso |
+|--------|-----|
+| `sih_sincronizacoes` | Histórico por competência; status `ok/parcial/erro/pendente`; `UNIQUE(competencia)` |
+| `sih_internacoes` | Cabeçalho AIH agregado por `(sincronizacao_id, cnes, proc_principal, diag_principal, complexidade, financiamento, motivo_saida, sexo)` |
+| `sih_procedimentos` | Itens `s_aih_pa` agregados por `(sincronizacao_id, cnes, proc_detalhado, cbo_profissional, financiamento_detalhe)` |
+
+FK: `sih_internacoes.sincronizacao_id` e `sih_procedimentos.sincronizacao_id` → `sih_sincronizacoes(id) ON DELETE CASCADE`.
+
+**FINANCIAMENTO 2-char vs RUB_ID:** `s_aih.FINANCIAMENTO` é 2 chars → mapeia direto para `rubricas_sia.RUB_ID` (2 chars). Diferente do SIA onde `PRD_RUB` tem 4 chars com `LEFT(PRD_RUB, 4)`. Não usar CAST — colunas numéricas `DIARIAS`, `DIARIAS_UTI`, `VALOR_TOTAL_AIH` são nativas `int`/`decimal`.
+
 ### Auth / admin
 
 | Tabela | Uso |
@@ -57,9 +73,9 @@ Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atu
 | `usuarios` | login, perfil role, bcrypt |
 | `audit_log` | ações administrativas |
 
-### SIA (se aplicável)
+### SIA / SIHD (MySQL → PG)
 
-Tabelas populadas por `sync_sia_mysql.py` — ver script e `siaSync.js`.
+Tabelas SIA populadas por `sync_sia_mysql.py`; tabelas SIHD por `sync_sih_mysql.py` — ver `sih.js` e `sihProducaoService.js`.
 
 ## Conexão
 

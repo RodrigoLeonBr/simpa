@@ -18,6 +18,7 @@ Express em `simpa-backend/src/`. Entry: `app.js` → `server.js`.
 | `/v1/dashboard` | `dashboard.js` | — |
 | `/importacao` | `importacao.js` | — |
 | `/sia` | `sia.js` | — |
+| `/sih` | `sih.js` | — |
 | `/cadastros` | `cadastros.js` | — |
 | `/admin` | `admin.js` | `requireAdmin` / `requireAdminOrPlanning` |
 
@@ -119,6 +120,40 @@ Resposta agregada por procedimento/grupo-etário/sexo/cbo, com campos enriquecid
 
 `POST /api/sia/sincronizar` retorna payload do sync Python (`registros`, `linhas_mysql_raw`, `orphan_cnes`, `estabelecimentos_resolvidos`) com `consolidacao` anexada (`runConsolidation`).
 
+### SIHD (`routes/sih.js`)
+
+| Método | Path | Auth | Notas |
+|--------|------|------|-------|
+| POST | `/api/sih/sincronizar` | JWT + `requirePlanningStaff` | Body `{ competencia, reimportar?: boolean, executionId?: string }` |
+| GET | `/api/sih/sincronizar/progresso/:executionId` | JWT | Progresso em cache; 404 se expirado |
+| GET | `/api/sih/sincronizacoes/existe` | JWT | `?competencia=YYYY-MM` → `{ exists, status, sincronizado_em, qtd_internacoes, qtd_procedimentos }` |
+| GET | `/api/sih/sincronizacoes` | JWT | Lista `sih_sincronizacoes` desc |
+| GET | `/api/sih/internacoes` | JWT | `?competencia&cnes&estabelecimento_id` — agrega `sih_internacoes` |
+| GET | `/api/sih/procedimentos` | JWT | `?competencia&cnes&estabelecimento_id` — agrega `sih_procedimentos` |
+
+`POST /api/sih/sincronizar` gate 409 quando a competência já existe com `status IN ('ok','parcial')` e `reimportar !== true`:
+
+```json
+{
+  "code": "SIH_COMPETENCIA_JA_IMPORTADA",
+  "competencia": "2025-01",
+  "sincronizado_em": "2026-06-24T10:00:00Z",
+  "qtd_internacoes": 3420,
+  "qtd_procedimentos": 8710
+}
+```
+
+503 quando MySQL SIHD (XAMPP) está indisponível: `{ "code": "SIH_MYSQL_UNAVAILABLE", "message": "..." }`.
+
+Progresso via stderr do Python: linhas `SIH_PROGRESS <JSON>` com `{ stage, bloco, linhas_mysql_raw, duracao_ms }`. Acessível em `GET /progresso/:executionId`.
+
+Services SIHD:
+
+| Serviço | Responsabilidade |
+|---------|-----------------|
+| `sih.js` | Spawn `sync_sih_mysql.py --pg-write`, cache progresso, gate 409 |
+| `sihProducaoService.js` | Queries `sih_internacoes` / `sih_procedimentos` com filtros opcionais |
+
 ### Cadastros (`routes/cadastros.js`)
 
 | Método | Path | Auth |
@@ -190,6 +225,8 @@ Ver **[auth-roles.md](auth-roles.md#admin)**.
 | `cbosService.js` | `listCbos` — tabela `cbos_sia` (read-only) |
 | `cadastroReferenciaService.js` | `resolveFormaDescricao`, `resolveCboDescricao`; expressões SQL canônicas para join |
 | `siaProducaoService.js` | `listProducao` — agrega `sia_producao` + descrições forma/cbo |
+| `sih.js` | Spawn `sync_sih_mysql.py`, cache progresso, gate 409 |
+| `sihProducaoService.js` | `listInternacoes`, `listProcedimentos` — agrega `sih_internacoes` / `sih_procedimentos` |
 | `estabelecimentosService.js` | listagem, `updatePerfil`, `upsertEnrichment` (transação) |
 | `procedimentosService.js` | CRUD procedimentos |
 | `cadastroRegistry.js` | Registry genérico outros cadastros |

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Docs agent — backend-api.md, frontend.md, database.md"
 type: docs
 complexity: low
@@ -33,11 +33,11 @@ Atualiza os três arquivos de documentação de agente em `docs/agent/` para ref
 
 ## Subtasks
 
-- [ ] 9.1 Atualizar `docs/agent/backend-api.md` com seção SIHD completa (endpoints, serviços, auth, gate 409)
-- [ ] 9.2 Atualizar `docs/agent/frontend.md` com novos componentes, tipos e mudança catalogView
-- [ ] 9.3 Atualizar `docs/agent/database.md` com as três novas tabelas e migration_013
-- [ ] 9.4 Adicionar seção "Feature concluída: importacao-sihd-hospitalar" em `CLAUDE.md`
-- [ ] 9.5 Verificar contagem de linhas de CLAUDE.md (deve ser ≤ 300)
+- [x] 9.1 Atualizar `docs/agent/backend-api.md` com seção SIHD completa (endpoints, serviços, auth, gate 409)
+- [x] 9.2 Atualizar `docs/agent/frontend.md` com novos componentes, tipos e mudança catalogView
+- [x] 9.3 Atualizar `docs/agent/database.md` com as três novas tabelas e migration_013
+- [x] 9.4 Adicionar seção "Feature concluída: importacao-sihd-hospitalar" em `CLAUDE.md`
+- [x] 9.5 Verificar contagem de linhas de CLAUDE.md (deve ser ≤ 300)
 
 ## Implementation Details
 
