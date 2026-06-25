@@ -45,6 +45,9 @@ if ($Recreate) {
 }
 
 & docker @composeArgs
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "docker compose up failed (exit $LASTEXITCODE). Check: docker logs ${env:COMPOSE_PROJECT_NAME}-postgres-1"
+}
 
 Write-Host ""
 Write-Host "PASS: Stack running from pre-built images."

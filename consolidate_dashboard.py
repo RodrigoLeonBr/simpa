@@ -277,6 +277,144 @@ def _get_sia_producao_columns(conn) -> set[str]:
     return _SIA_PRODUCAO_COLUMNS_CACHE
 
 
+_CID_CAPITULOS: dict[str, str] = {
+    "A": "A — Doenças infecciosas e parasitárias",
+    "B": "B — Doenças infecciosas e parasitárias",
+    "C": "C — Neoplasias malignas",
+    "D": "D — Doenças do sangue / Neoplasias in situ",
+    "E": "E — Doenças endócrinas",
+    "F": "F — Transtornos mentais",
+    "G": "G — Doenças do sistema nervoso",
+    "H": "H — Doenças olhos/ouvidos",
+    "I": "I — Doenças circulatórias",
+    "J": "J — Doenças respiratórias",
+    "K": "K — Doenças digestivas",
+    "L": "L — Doenças da pele",
+    "M": "M — Doenças musculoesqueléticas",
+    "N": "N — Doenças geniturinárias",
+    "O": "O — Gravidez, parto e puerpério",
+    "P": "P — Afecções perinatais",
+    "Q": "Q — Malformações congênitas",
+    "R": "R — Sintomas e sinais inespecíficos",
+    "S": "S — Lesões e traumatismos",
+    "T": "T — Intoxicações e causas externas",
+    "V": "V/W/X/Y — Causas externas",
+    "W": "V/W/X/Y — Causas externas",
+    "X": "V/W/X/Y — Causas externas",
+    "Y": "V/W/X/Y — Causas externas",
+    "Z": "Z — Fatores que influenciam a saúde",
+}
+
+
+def fetch_sih_rows(
+    conn,
+    competencia: date,
+    estabelecimento_id: int | None = None,
+) -> dict:
+    """Busca KPIs SIHD de sih_internacoes para o módulo hospitalar_sihd.
+
+    Retorna PENDING_AIH_FILE quando não há sync 'ok'/'parcial' para a competência
+    ou quando não há internações no PG. Branch aditivo: nunca lança exceção.
+    """
+    try:
+        # 1. Verificar status do sync
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT status, sincronizado_em
+                FROM sih_sincronizacoes
+                WHERE competencia = %s
+                  AND status IN ('ok', 'parcial')
+                ORDER BY sincronizado_em DESC
+                LIMIT 1
+                """,
+                (competencia,),
+            )
+            sync_row = cur.fetchone()
+
+        if not sync_row:
+            return {"status_importacao": "PENDING_AIH_FILE", "internacoes_por_capitulo_cid": []}
+
+        # 2. KPIs agregados
+        kpi_params: list[object] = [competencia]
+        estab_filter = ""
+        if estabelecimento_id is not None:
+            estab_filter = " AND si.estabelecimento_id = %s"
+            kpi_params.append(estabelecimento_id)
+
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT
+                    SUM(si.qtd_aih)::bigint AS total_aih,
+                    SUM(si.total_valor)::numeric AS total_valor,
+                    ROUND(
+                        SUM(si.total_diarias_uti)::numeric * 100.0
+                        / NULLIF(SUM(si.total_diarias), 0), 2
+                    ) AS pct_diarias_uti,
+                    ROUND(
+                        SUM(CASE WHEN si.motivo_saida IN ('31','32')
+                                 THEN si.qtd_aih ELSE 0 END)::numeric
+                        * 100.0 / NULLIF(SUM(si.qtd_aih), 0), 2
+                    ) AS taxa_mortalidade
+                FROM sih_internacoes si
+                WHERE si.competencia = %s{estab_filter}
+                """,
+                kpi_params,
+            )
+            kpi = cur.fetchone()
+
+        total_aih = int(kpi[0] or 0) if kpi else 0
+        if total_aih == 0:
+            return {"status_importacao": "PENDING_AIH_FILE", "internacoes_por_capitulo_cid": []}
+
+        # 3. Distribuição por capítulo CID
+        cid_params: list[object] = [competencia]
+        if estabelecimento_id is not None:
+            cid_params.append(estabelecimento_id)
+
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT
+                    LEFT(si.diag_principal, 1)  AS capitulo,
+                    SUM(si.qtd_aih)::bigint      AS qtd_aih,
+                    SUM(si.total_valor)::numeric  AS total_valor
+                FROM sih_internacoes si
+                WHERE si.competencia = %s
+                  AND si.diag_principal IS NOT NULL
+                  AND si.diag_principal != ''{estab_filter}
+                GROUP BY LEFT(si.diag_principal, 1)
+                ORDER BY qtd_aih DESC
+                """,
+                cid_params,
+            )
+            cid_rows = cur.fetchall()
+
+        internacoes_por_capitulo = [
+            {
+                "capitulo": row[0],
+                "descricao": _CID_CAPITULOS.get(row[0], "Outros / Ignorado"),
+                "qtd_aih": int(row[1] or 0),
+                "total_valor": float(row[2] or 0),
+            }
+            for row in cid_rows
+        ]
+
+        return {
+            "status_importacao": "OK",
+            "competencia_sincronizada": competencia_label(competencia),
+            "total_aih": total_aih,
+            "total_valor": float(kpi[1] or 0),
+            "pct_diarias_uti": float(kpi[2] or 0),
+            "taxa_mortalidade": float(kpi[3] or 0),
+            "internacoes_por_capitulo_cid": internacoes_por_capitulo,
+        }
+    except Exception:
+        # Branch aditivo — não bloquear consolidação SIA/e-SUS
+        return {"status_importacao": "PENDING_AIH_FILE", "internacoes_por_capitulo_cid": []}
+
+
 def sia_sync_exists(conn, competencia: date) -> bool:
     with conn.cursor() as cur:
         cur.execute(
@@ -433,6 +571,7 @@ def consolidate_group(
         unidade,
         estabelecimento_id=estabelecimento_id,
     )
+    sih_data = fetch_sih_rows(conn, competencia, estabelecimento_id)
     pop_row = fetch_pop_row(conn, competencia, estabelecimento_id)
     payload = build_payload(
         competencia=competencia,
@@ -443,6 +582,7 @@ def consolidate_group(
         sia_rows=sia_rows,
         mysql_available=sia_sync_exists(conn, competencia),
         pop_row=pop_row,
+        sih_data=sih_data,
     )
 
     if pg_write:

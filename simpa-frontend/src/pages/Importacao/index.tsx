@@ -6,6 +6,7 @@ import type { CargaEsus } from '../../types/contrato';
 import { canEditImportMappings, CARGAS_UPDATED_EVENT } from '../../utils/importacaoView';
 import { HistoricoCargas } from './HistoricoCargas';
 import { MapeamentosPanel } from './MapeamentosPanel';
+import { SihImportSection } from './SihImportSection';
 import { UploadZone } from './UploadZone';
 
 type ImportTab = 'importar' | 'mapeamentos';
@@ -95,6 +96,9 @@ export default function ImportacaoPage() {
           ) : (
             <HistoricoCargas cargas={cargas} onAtualizar={carregar} />
           )}
+
+          <hr className="import-section-divider" />
+          <SihImportSection />
         </>
       ) : (
         <MapeamentosPanel initialQuery={initialMapeamentosQuery} />

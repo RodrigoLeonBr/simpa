@@ -66,9 +66,21 @@ export interface ModuloSIA {
   }[];
 }
 
+export interface InternacaoCapituloCid {
+  capitulo: string;
+  descricao: string;
+  qtd_aih: number;
+  total_valor: number;
+}
+
 export interface ModuloSIHD {
   status_importacao: string;
-  internacoes_por_capitulo_cid: unknown[];
+  competencia_sincronizada?: string;
+  total_aih?: number;
+  total_valor?: number;
+  pct_diarias_uti?: number;
+  taxa_mortalidade?: number;
+  internacoes_por_capitulo_cid: InternacaoCapituloCid[];
 }
 
 export interface KpisGerais {

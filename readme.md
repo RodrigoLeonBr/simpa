@@ -4,19 +4,44 @@ Plataforma de BI governamental para a Secretaria de Saúde de Americana/SP. Unif
 
 ## Documentação
 
+### Referência técnica (desenvolvedores e agentes)
+
+Ponto de entrada: **[`CLAUDE.md`](CLAUDE.md)** · Índice modular: **[`docs/agent/README.md`](docs/agent/README.md)**
+
 | Arquivo | Conteúdo |
-|---|---|
+|---------|----------|
+| [`docs/agent/backend-api.md`](docs/agent/backend-api.md) | Endpoints, services, middleware |
+| [`docs/agent/frontend.md`](docs/agent/frontend.md) | Páginas, hooks, componentes |
+| [`docs/agent/cadastros.md`](docs/agent/cadastros.md) | Estabelecimentos, sync, enriquecimento, workflows |
+| [`docs/agent/database.md`](docs/agent/database.md) | Schema, migrations, queries |
+| [`docs/agent/etl-python.md`](docs/agent/etl-python.md) | Scripts Python e sync MySQL |
+| [`docs/agent/indicadores-qualidade.md`](docs/agent/indicadores-qualidade.md) | Catálogo `/indicadores`, fontes, queries, avaliação no banco |
+| [`docs/agent/importacao-esus-regras.md`](docs/agent/importacao-esus-regras.md) | Fluxo importação e-SUS (`/importacao`) |
+| [`docs/agent/importacao-esus-dicionario-dados.md`](docs/agent/importacao-esus-dicionario-dados.md) | Tabelas e-SUS, raw JSONB, `populacao_cadastrada` |
+| [`docs/agent/sia-atualizacao-cadastro-regras.md`](docs/agent/sia-atualizacao-cadastro-regras.md) | Sync cadastros MySQL → PG |
+| [`docs/agent/sia-atualizacao-cadastro-dicionario-dados.md`](docs/agent/sia-atualizacao-cadastro-dicionario-dados.md) | Tabelas estabelecimentos, procedimentos, formas/cbo |
+| [`docs/agent/sia-importacao-producao-regras.md`](docs/agent/sia-importacao-producao-regras.md) | Sync produção SIA |
+| [`docs/agent/sia-importacao-producao-dicionario-dados.md`](docs/agent/sia-importacao-producao-dicionario-dados.md) | `sia_producao`, sincronizações |
+
+### Produto e histórico
+
+| Arquivo | Conteúdo |
+|---------|----------|
 | [`prd-simpa.md`](prd-simpa.md) | PRD completo — visão, módulos, contrato API, roadmap |
 | [`estrutura_simpa.md`](estrutura_simpa.md) | Estrutura de menus (7 módulos CRM-like) |
-| [`docs/superpowers/specs/`](docs/superpowers/specs/) | Design spec do frontend MVP |
-| [`docs/superpowers/plans/`](docs/superpowers/plans/) | Planos de implementação (A: ETL, B: Backend, C: Frontend) |
+| [`docs/superpowers/specs/`](docs/superpowers/specs/) | Design specs (ex.: painel widgets dinâmicos) |
+| [`docs/superpowers/plans/`](docs/superpowers/plans/) | Planos de implementação (ETL, backend, frontend) |
 
-## Stack prevista
+## Stack
 
-- **PostgreSQL 15+** — staging + JSONB (`schema_full.sql`)
-- **Python** — ETL e-SUS, consolidação dashboard e conector SIA (`parse_esus_csv.py`, `consolidate_dashboard.py`)
-- **Node.js / Express** — API REST (Plano B)
-- **React + Vite + ECharts** — dashboards (Plano C)
+| Camada | Tecnologia |
+|--------|------------|
+| **PostgreSQL 15** | Staging + JSONB (`schema_full.sql`, `migration_002` … `012`) |
+| **Python 3** | ETL e-SUS, consolidação, sync SIA/cadastros |
+| **Node 18 / Express** | API REST + JWT (`simpa-backend/`) |
+| **React 19 / Vite 8** | SPA + ECharts + Tailwind 4 (`simpa-frontend/`) |
+| **MySQL/XAMPP** | Leitura SIA (produção e cadastros) |
+| **Docker Compose** | Deploy PG + API + nginx |
 
 ## Setup local
 
@@ -197,23 +222,25 @@ npm run build
 | `npm run ci` | Pipeline completo (`scripts/ci.sh` — Linux/CI) |
 | `npm run docker:test` | Sobe stack CI/E2E (porta 8080) |
 
-## Agentes Claude Code
+## Agentes (Claude Code / Cursor)
 
-Os arquivos `simpa_*.md` na raiz descrevem personas especializadas (ETL, DBA, backend, frontend, financiamento, LGPD, produto) para uso com Claude Code.
+- **[`CLAUDE.md`](CLAUDE.md)** — hub operacional (stack, rotas, convenções)
+- **[`docs/agent/`](docs/agent/README.md)** — documentação modular por domínio
+- Arquivos `simpa_*.md` na raiz — personas especializadas (ETL, DBA, backend, frontend, financiamento, LGPD)
 
 ## Estado do projeto
 
-- [x] PRD, design spec, TechSpec Compozy e planos de implementação
-- [x] **Task 01** — Docker Compose (postgres + api + nginx), migrations 002/003
-- [x] Parser e-SUS (`parse_esus_csv.py`) + seed SQL de exemplo
-- [x] Schema PostgreSQL completo (`schema_full.sql` v3.1.0)
-- [x] Consolidador dashboard (`consolidate_dashboard.py`) — Task 02
-- [x] `sync_sia_mysql.py` — Task 02
-- [x] Backend Express stub (`simpa-backend/`) — health + PG; rotas completas Task 03+
-- [x] Frontend React (`simpa-frontend/`) — Painel, Importação, analytics (tasks 09–15)
-- [x] Docker web — build React integrado no nginx (`Dockerfile.web` multi-stage)
-- [x] **Task 17** — Administração UI (usuários, auditoria, configurações)
-- [x] **Task 18** — nginx prod, Playwright E2E, GitHub Actions CI
+- [x] PRD, design specs, TechSpecs Compozy e planos de implementação
+- [x] Docker Compose (postgres + api + nginx), migrations 002–012
+- [x] Parser e-SUS + consolidador dashboard (contrato JSON **v3.1.0**)
+- [x] Sync SIA produção e cadastros MySQL → PostgreSQL
+- [x] Backend Express completo (auth, importação, cadastros, painel, admin, SIA)
+- [x] Frontend React — Painel, Importação, Cadastros, Metas, Indicadores, Relatórios, Admin
+- [x] Importação de-para unidade/equipe, perfil/enriquecimento por estabelecimento
+- [x] Widgets dinâmicos do Painel + cadastro Indicadores do Painel
+- [x] Cadastro individual e-SUS → `populacao_cadastrada` (denominadores de qualidade)
+- [x] Playwright E2E + GitHub Actions CI
+- [ ] Cálculo de `exec`/`meta` nos 13 indicadores de `/indicadores` (denominadores parciais já consolidados)
 
 ## CI / E2E
 

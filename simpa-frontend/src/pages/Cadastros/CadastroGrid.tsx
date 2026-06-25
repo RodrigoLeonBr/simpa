@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { CADASTRO_GRID_ITEMS, cadastroGridTestId } from '../../config/cadastroEntities';
 import { CadastroSyncBanner } from './CadastroSyncBanner';
 import { SiaProducaoSyncBanner } from './SiaProducaoSyncBanner';
+import { SihSyncStatusBadge } from './SihSyncStatusBadge';
 import { canEditImportMappings } from '../../utils/importacao/permissions';
 import { readStoredSession } from '../../types/auth';
 
@@ -20,6 +21,7 @@ export function CadastroGrid() {
 
       <CadastroSyncBanner />
       {canManageSiaSync ? <SiaProducaoSyncBanner /> : null}
+      <SihSyncStatusBadge />
 
       <div className="cadastro-grid">
         {CADASTRO_GRID_ITEMS.map((item) => {

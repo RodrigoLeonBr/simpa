@@ -77,47 +77,10 @@ CREATE INDEX IF NOT EXISTS idx_esus_raw_valores_gin
 COMMENT ON TABLE esus_indicadores_raw IS
     'EAV: uma linha por (seção, descrição) de cada relatório e-SUS. valores = JSONB com colunas normalizadas.';
 
--- ----------------------------------------------------------------------------
--- 3. populacao_cadastrada
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS populacao_cadastrada (
-    id                  BIGSERIAL PRIMARY KEY,
-    carga_id            BIGINT       NOT NULL REFERENCES esus_cargas(id) ON DELETE CASCADE,
-    estabelecimento_id  BIGINT       NOT NULL REFERENCES estabelecimentos(id),
-    competencia         DATE         NOT NULL,
-    cidadaos_ativos     INT          NOT NULL DEFAULT 0,
-    saidas              INT          NOT NULL DEFAULT 0,
-    sexo_masculino      INT,
-    sexo_feminino       INT,
-    faixa_etaria        JSONB        NOT NULL DEFAULT '[]',
-    condicoes_saude     JSONB        NOT NULL DEFAULT '{}',
-    raca_cor            JSONB        NOT NULL DEFAULT '{}',
-    sociodemografico    JSONB        NOT NULL DEFAULT '{}',
-    extras              JSONB        NOT NULL DEFAULT '{}',
-    importado_em        TIMESTAMP    NOT NULL DEFAULT now(),
-    UNIQUE (carga_id),
-    UNIQUE (competencia, estabelecimento_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_pop_cad_competencia
-    ON populacao_cadastrada (competencia, estabelecimento_id);
-
-CREATE INDEX IF NOT EXISTS idx_pop_cad_condicoes_gin
-    ON populacao_cadastrada USING GIN (condicoes_saude);
-
-COMMENT ON TABLE populacao_cadastrada IS
-    'Snapshot agregado do relatório de cadastro individual e-SUS por unidade e competência. '
-    'Uma linha por (competencia, estabelecimento_id). Fonte dos denominadores de indicadores de qualidade APS.';
-
-COMMENT ON COLUMN populacao_cadastrada.faixa_etaria IS
-    'Array JSON: [{faixa, masculino, feminino, indeterminado, nao_informado}] na ordem do CSV.';
-COMMENT ON COLUMN populacao_cadastrada.condicoes_saude IS
-    'Condições de saúde: {hipertensao, diabetes, gestante, fumante, …}: {sim, nao, nao_informado}.';
-COMMENT ON COLUMN populacao_cadastrada.extras IS
-    'Seções do CSV não mapeadas para colunas estruturadas. Preserva compatibilidade com versões futuras do e-SUS PEC.';
+-- populacao_cadastrada: criada em migration_012 (depende de estabelecimentos, migration_004).
 
 -- ----------------------------------------------------------------------------
--- 4. dados_consolidados
+-- 3. dados_consolidados
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS dados_consolidados (
     id              BIGSERIAL PRIMARY KEY,
@@ -200,21 +163,15 @@ CREATE TABLE IF NOT EXISTS sia_producao (
     sincronizacao_id  BIGINT NOT NULL REFERENCES sia_sincronizacoes(id) ON DELETE CASCADE,
     competencia       DATE NOT NULL,
     unidade           VARCHAR(200),
-    cnes              VARCHAR(7),
-    estabelecimento_id BIGINT REFERENCES estabelecimentos(id),
     codigo_sigtap     VARCHAR(20) NOT NULL,
     descricao         VARCHAR(300),
     quantidade        INT NOT NULL DEFAULT 0,
-    quantidade_apresentada INT NOT NULL DEFAULT 0,
     valor_aprovado    NUMERIC(12,2),
-    valor_apresentado NUMERIC(15,2),
     faixa_etaria      VARCHAR(20),
     sexo              CHAR(1) CHECK (sexo IN ('M','F','I')),
     cbo               VARCHAR(10),
-    rubrica           VARCHAR(4),
     dados_extras      JSONB,
-    CONSTRAINT uq_sia_producao_grupo_cnes
-        UNIQUE NULLS NOT DISTINCT (sincronizacao_id, cnes, codigo_sigtap, faixa_etaria, sexo, cbo, rubrica)
+    UNIQUE (sincronizacao_id, unidade, codigo_sigtap, faixa_etaria, sexo, cbo)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sia_producao_grupo
@@ -223,8 +180,6 @@ CREATE INDEX IF NOT EXISTS idx_sia_producao_demografico
     ON sia_producao (competencia, faixa_etaria, sexo);
 CREATE INDEX IF NOT EXISTS idx_sia_producao_cbo
     ON sia_producao (competencia, cbo);
-CREATE INDEX IF NOT EXISTS idx_sia_producao_estab
-    ON sia_producao (competencia, estabelecimento_id);
 CREATE INDEX IF NOT EXISTS idx_sia_producao_gin
     ON sia_producao USING GIN (dados_extras);
 
@@ -250,3 +205,100 @@ CREATE INDEX IF NOT EXISTS idx_rubricas_sia_status_descricao
 
 COMMENT ON TABLE rubricas_sia IS
     'Espelho read-only de s_rub (MySQL/XAMPP). codigo_rubrica = RUB_ID canônico 4 chars.';
+
+-- ----------------------------------------------------------------------------
+-- 9. sih_sincronizacoes (migration_013)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS sih_sincronizacoes (
+    id                BIGSERIAL    PRIMARY KEY,
+    competencia       DATE         NOT NULL,
+    status            VARCHAR(20)  NOT NULL DEFAULT 'pendente'
+                          CONSTRAINT chk_sih_sync_status
+                          CHECK (status IN ('ok', 'parcial', 'erro', 'pendente')),
+    qtd_internacoes   INT          NOT NULL DEFAULT 0,
+    qtd_procedimentos INT          NOT NULL DEFAULT 0,
+    orphan_cnes       INT          NOT NULL DEFAULT 0,
+    erros             INT          NOT NULL DEFAULT 0,
+    sincronizado_em   TIMESTAMP    NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sih_sync_competencia
+    ON sih_sincronizacoes (competencia);
+
+COMMENT ON TABLE sih_sincronizacoes IS
+    'Registro de cada importação SIHD por competência. Uma linha por competência.';
+
+-- ----------------------------------------------------------------------------
+-- 10. sih_internacoes (migration_013)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS sih_internacoes (
+    id                  BIGSERIAL     PRIMARY KEY,
+    sincronizacao_id    BIGINT        NOT NULL
+                            REFERENCES sih_sincronizacoes(id) ON DELETE CASCADE,
+    competencia         DATE          NOT NULL,
+    cnes                VARCHAR(7)    NOT NULL,
+    estabelecimento_id  INT           REFERENCES estabelecimentos(id),
+    proc_principal      VARCHAR(10),
+    diag_principal      VARCHAR(4),
+    complexidade        VARCHAR(2),
+    financiamento       VARCHAR(2),
+    motivo_saida        VARCHAR(2),
+    sexo                VARCHAR(1),
+    qtd_aih             INT           NOT NULL DEFAULT 0,
+    total_diarias       INT           NOT NULL DEFAULT 0,
+    total_diarias_uti   INT           NOT NULL DEFAULT 0,
+    total_valor         NUMERIC(15,2) NOT NULL DEFAULT 0,
+    media_idade         NUMERIC(5,2),
+    media_diarias       NUMERIC(5,2)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sih_int_cns_cmp
+    ON sih_internacoes (competencia, cnes);
+CREATE INDEX IF NOT EXISTS idx_sih_int_estab
+    ON sih_internacoes (competencia, estabelecimento_id);
+CREATE INDEX IF NOT EXISTS idx_sih_int_diag
+    ON sih_internacoes (competencia, diag_principal);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sih_int_grain
+    ON sih_internacoes
+    (sincronizacao_id, cnes,
+     COALESCE(proc_principal, ''),
+     COALESCE(diag_principal, ''),
+     COALESCE(complexidade, ''),
+     COALESCE(financiamento, ''),
+     COALESCE(motivo_saida, ''),
+     COALESCE(sexo, ''));
+
+COMMENT ON TABLE sih_internacoes IS
+    'Internações SIHD (s_aih) agregadas. financiamento = 2 chars = RUB_ID direto.';
+
+-- ----------------------------------------------------------------------------
+-- 11. sih_procedimentos (migration_013)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS sih_procedimentos (
+    id                    BIGSERIAL     PRIMARY KEY,
+    sincronizacao_id      BIGINT        NOT NULL
+                              REFERENCES sih_sincronizacoes(id) ON DELETE CASCADE,
+    competencia           DATE          NOT NULL,
+    cnes                  VARCHAR(7)    NOT NULL,
+    estabelecimento_id    INT           REFERENCES estabelecimentos(id),
+    proc_detalhado        VARCHAR(10),
+    cbo_profissional      VARCHAR(6),
+    financiamento_detalhe VARCHAR(2),
+    qtd_aih_distintas     INT           NOT NULL DEFAULT 0,
+    total_quantidade      INT           NOT NULL DEFAULT 0,
+    total_valor_item      NUMERIC(15,2) NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_sih_proc_cns_cmp
+    ON sih_procedimentos (competencia, cnes);
+CREATE INDEX IF NOT EXISTS idx_sih_proc_estab
+    ON sih_procedimentos (competencia, estabelecimento_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sih_proc_grain
+    ON sih_procedimentos
+    (sincronizacao_id, cnes,
+     COALESCE(proc_detalhado, ''),
+     COALESCE(cbo_profissional, ''),
+     COALESCE(financiamento_detalhe, ''));
+
+COMMENT ON TABLE sih_procedimentos IS
+    'Procedimentos por internação SIHD (s_aih_pa) agregados.';

@@ -364,6 +364,28 @@ def _build_financiamento_metas() -> dict[str, Any]:
     }
 
 
+def _build_hospitalar_sihd(sih_data: dict | None) -> dict:
+    """Constrói o bloco hospitalar_sihd do ContratoDashboard.
+
+    sih_data é o retorno de fetch_sih_rows() em consolidate_dashboard.py.
+    Quando None ou ausente, retorna estrutura mínima PENDING_AIH_FILE.
+    """
+    if not sih_data or sih_data.get("status_importacao") != "OK":
+        return {
+            "status_importacao": "PENDING_AIH_FILE",
+            "internacoes_por_capitulo_cid": [],
+        }
+    return {
+        "status_importacao": "OK",
+        "competencia_sincronizada": sih_data.get("competencia_sincronizada"),
+        "total_aih": sih_data.get("total_aih", 0),
+        "total_valor": sih_data.get("total_valor", 0.0),
+        "pct_diarias_uti": sih_data.get("pct_diarias_uti", 0.0),
+        "taxa_mortalidade": sih_data.get("taxa_mortalidade", 0.0),
+        "internacoes_por_capitulo_cid": sih_data.get("internacoes_por_capitulo_cid", []),
+    }
+
+
 def _build_ambulatorial_sia(
     sia_rows: list[dict[str, Any]], mysql_available: bool
 ) -> dict[str, Any]:
@@ -415,6 +437,7 @@ def build_payload(
     sia_rows: list[dict[str, Any]] | None = None,
     mysql_available: bool = False,
     pop_row: dict[str, Any] | None = None,
+    sih_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Transform staged rows into ContratoDashboard v3.1.0 JSON."""
     sia_rows = sia_rows or []
@@ -463,10 +486,7 @@ def build_payload(
                 "temas_coletivos": _temas_coletivos(indexed),
             },
             "ambulatorial_sia": _build_ambulatorial_sia(sia_rows, mysql_available),
-            "hospitalar_sihd": {
-                "status_importacao": "PENDING_AIH_FILE",
-                "internacoes_por_capitulo_cid": [],
-            },
+            "hospitalar_sihd": _build_hospitalar_sihd(sih_data),
             "financiamento_metas": _build_financiamento_metas(),
             "elementos_futuros": {
                 "nota_tecnica": (
