@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   SihConflictError,
+  getSihSincronizacaoExiste,
   getSihSincronizacoes,
   getSihSyncProgress,
   sincronizarSih,
@@ -15,6 +16,7 @@ vi.mock('../../api/sih', async () => {
     ...actual,
     getSihSincronizacoes: vi.fn(),
     getSihSyncProgress: vi.fn(),
+    getSihSincronizacaoExiste: vi.fn(),
     sincronizarSih: vi.fn(),
   };
 });
@@ -22,6 +24,7 @@ vi.mock('../../api/sih', async () => {
 const mockSincronizarSih = vi.mocked(sincronizarSih);
 const mockGetSihSincronizacoes = vi.mocked(getSihSincronizacoes);
 const mockGetSihSyncProgress = vi.mocked(getSihSyncProgress);
+const mockGetSihSincronizacaoExiste = vi.mocked(getSihSincronizacaoExiste);
 
 const defaultHistory = [
   {
@@ -50,6 +53,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockGetSihSincronizacoes.mockResolvedValue(defaultHistory);
   mockGetSihSyncProgress.mockRejectedValue(new Error('404'));
+  mockGetSihSincronizacaoExiste.mockResolvedValue({
+    competencia: '',
+    exists: false,
+    status: null,
+    qtd_internacoes: 0,
+    qtd_procedimentos: 0,
+  });
   mockSincronizarSih.mockResolvedValue(defaultSyncResult);
 });
 
@@ -64,7 +74,6 @@ describe('SihImportSection rendering', () => {
     render(<SihImportSection />);
     const input = screen.getByTestId('sih-import-competencia') as HTMLInputElement;
     expect(input.type).toBe('month');
-    // Default is previous month — just verify it's a valid YYYY-MM format
     expect(input.value).toMatch(/^\d{4}-\d{2}$/);
   });
 
@@ -88,6 +97,22 @@ describe('SihImportSection rendering', () => {
       expect(screen.getByTestId('sih-history-table')).toHaveTextContent('120');
     });
   });
+
+  it('shows "já importada" badge when competencia exists', async () => {
+    mockGetSihSincronizacaoExiste.mockResolvedValue({
+      competencia: '2025-01',
+      exists: true,
+      status: 'ok',
+      qtd_internacoes: 120,
+      qtd_procedimentos: 380,
+      sincronizado_em: '2025-02-01T10:00:00Z',
+    });
+    render(<SihImportSection />);
+    await waitFor(() => {
+      expect(screen.getByTestId('sih-import-badge-importada')).toBeInTheDocument();
+      expect(screen.getByTestId('sih-import-badge-importada')).toHaveTextContent('Já importada');
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -105,7 +130,10 @@ describe('SihImportSection import action', () => {
 
     await user.click(screen.getByTestId('sih-import-btn'));
 
-    expect(mockSincronizarSih).toHaveBeenCalledWith('2025-03', undefined);
+    expect(mockSincronizarSih).toHaveBeenCalledWith(
+      '2025-03',
+      expect.objectContaining({ reimportar: undefined }),
+    );
   });
 
   it('disables button while syncing', async () => {
@@ -185,7 +213,6 @@ describe('SihImportSection 409 ConfirmDialog', () => {
     const user = userEvent.setup();
     render(<SihImportSection />);
 
-    // Get whatever competencia is currently set (default = previous month)
     const input = screen.getByTestId('sih-import-competencia') as HTMLInputElement;
     const currentComp = input.value;
 
@@ -202,7 +229,10 @@ describe('SihImportSection 409 ConfirmDialog', () => {
 
     await waitFor(() => {
       expect(mockSincronizarSih).toHaveBeenCalledTimes(2);
-      expect(mockSincronizarSih).toHaveBeenLastCalledWith(currentComp, true);
+      expect(mockSincronizarSih).toHaveBeenLastCalledWith(
+        currentComp,
+        expect.objectContaining({ reimportar: true }),
+      );
     });
   });
 
@@ -219,7 +249,6 @@ describe('SihImportSection 409 ConfirmDialog', () => {
     await user.click(screen.getByTestId('sih-import-btn'));
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
 
-    // Click cancel button (ghost button)
     const cancelBtn = screen.getByRole('button', { name: /cancelar/i });
     await user.click(cancelBtn);
 
@@ -231,11 +260,11 @@ describe('SihImportSection 409 ConfirmDialog', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 503 MySQL unavailable
+// 503 MySQL unavailable — error dialog
 // ---------------------------------------------------------------------------
 
 describe('SihImportSection 503 MySQL unavailable', () => {
-  it('shows PT-BR error message when HTTP 503 is thrown', async () => {
+  it('shows error dialog when HTTP 503 is thrown', async () => {
     mockSincronizarSih.mockRejectedValueOnce(new Error('HTTP 503'));
 
     const user = userEvent.setup();
@@ -244,13 +273,13 @@ describe('SihImportSection 503 MySQL unavailable', () => {
     await user.click(screen.getByTestId('sih-import-btn'));
 
     await waitFor(() => {
-      const alert = screen.getByRole('alert');
-      expect(alert.textContent).toMatch(/XAMPP/i);
-      expect(alert.textContent).toMatch(/indisponível/i);
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.textContent).toMatch(/XAMPP/i);
+      expect(dialog.textContent).toMatch(/indisponível/i);
     });
   });
 
-  it('shows PT-BR message when result.error is SIH_MYSQL_UNAVAILABLE', async () => {
+  it('shows error dialog when result.error is SIH_MYSQL_UNAVAILABLE', async () => {
     mockSincronizarSih.mockResolvedValueOnce({
       ...defaultSyncResult,
       status: 'erro',
@@ -263,8 +292,21 @@ describe('SihImportSection 503 MySQL unavailable', () => {
     await user.click(screen.getByTestId('sih-import-btn'));
 
     await waitFor(() => {
-      const alert = screen.getByRole('alert');
-      expect(alert.textContent).toMatch(/indisponível/i);
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.textContent).toMatch(/indisponível/i);
     });
+  });
+
+  it('error dialog closes after clicking OK', async () => {
+    mockSincronizarSih.mockRejectedValueOnce(new Error('HTTP 503'));
+
+    const user = userEvent.setup();
+    render(<SihImportSection />);
+
+    await user.click(screen.getByTestId('sih-import-btn'));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+
+    await user.click(screen.getByTestId('confirm-dialog-action'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });

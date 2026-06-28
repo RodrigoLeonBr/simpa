@@ -73,7 +73,7 @@ describe('SiaProducaoSyncBanner', () => {
 
     await user.click(screen.getByTestId('sia-sync-button'));
 
-    expect(screen.getByRole('button', { name: /Importando/i })).toBeDisabled();
+    expect(screen.getByTestId('sia-sync-button')).toBeDisabled();
 
     resolveSync?.({
       competencia: '2026-05',

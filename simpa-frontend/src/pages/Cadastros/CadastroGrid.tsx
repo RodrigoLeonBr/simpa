@@ -1,15 +1,10 @@
 import { Link } from 'react-router-dom';
 import { CADASTRO_GRID_ITEMS, cadastroGridTestId } from '../../config/cadastroEntities';
-import { CadastroSyncBanner } from './CadastroSyncBanner';
-import { SiaProducaoSyncBanner } from './SiaProducaoSyncBanner';
+import { CadastroSyncBadge } from './CadastroSyncBadge';
+import { SiaProducaoBadge } from './SiaProducaoBadge';
 import { SihSyncStatusBadge } from './SihSyncStatusBadge';
-import { canEditImportMappings } from '../../utils/importacao/permissions';
-import { readStoredSession } from '../../types/auth';
 
 export function CadastroGrid() {
-  const perfil = readStoredSession()?.user?.perfil;
-  const canManageSiaSync = canEditImportMappings(perfil);
-
   return (
     <div className="cadastro-page simpa-rise" data-testid="cadastro-grid-page">
       <div className="analytics-header">
@@ -19,8 +14,8 @@ export function CadastroGrid() {
         </p>
       </div>
 
-      <CadastroSyncBanner />
-      {canManageSiaSync ? <SiaProducaoSyncBanner /> : null}
+      <CadastroSyncBadge />
+      <SiaProducaoBadge />
       <SihSyncStatusBadge />
 
       <div className="cadastro-grid">

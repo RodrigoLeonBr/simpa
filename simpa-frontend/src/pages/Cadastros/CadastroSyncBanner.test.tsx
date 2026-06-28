@@ -1,22 +1,15 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  fetchCadastroList,
   fetchUltimaCadastroSync,
   sincronizarCadastros,
 } from '../../api/cadastros';
 import { CadastroSyncBanner } from './CadastroSyncBanner';
-import CadastrosPage from './index';
 
 vi.mock('../../api/cadastros', async () => {
   const actual = await vi.importActual<typeof import('../../api/cadastros')>('../../api/cadastros');
-  return {
-    ...actual,
-    fetchUltimaCadastroSync: vi.fn(),
-    sincronizarCadastros: vi.fn(),
-  };
+  return { ...actual, fetchUltimaCadastroSync: vi.fn(), sincronizarCadastros: vi.fn() };
 });
 
 describe('CadastroSyncBanner', () => {
@@ -33,14 +26,7 @@ describe('CadastroSyncBanner', () => {
     );
 
     const user = userEvent.setup();
-
-    render(
-      <MemoryRouter initialEntries={['/cadastros']}>
-        <Routes>
-          <Route path="/cadastros/*" element={<CadastrosPage />} />
-        </Routes>
-      </MemoryRouter>,
-    );
+    render(<CadastroSyncBanner />);
 
     await user.click(screen.getByTestId('cadastro-sync-button'));
 
@@ -68,14 +54,7 @@ describe('CadastroSyncBanner', () => {
       });
 
     const user = userEvent.setup();
-
-    render(
-      <MemoryRouter initialEntries={['/cadastros']}>
-        <Routes>
-          <Route path="/cadastros/*" element={<CadastrosPage />} />
-        </Routes>
-      </MemoryRouter>,
-    );
+    render(<CadastroSyncBanner />);
 
     await waitFor(() => {
       expect(screen.getByTestId('cadastro-sync-ultima')).toHaveTextContent(

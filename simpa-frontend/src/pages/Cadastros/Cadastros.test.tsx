@@ -17,6 +17,14 @@ import { CadastroCrudPage } from '../../components/cadastros/CadastroCrudPage';
 import CadastrosPage from './index';
 import { AuthProvider } from '../../contexts/AuthContext';
 
+vi.mock('../../api/sia', () => ({
+  fetchUltimaSiaSync: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock('../../api/sih', () => ({
+  getSihSincronizacoes: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock('../../api/cadastros', async () => {
   const actual = await vi.importActual<typeof import('../../api/cadastros')>('../../api/cadastros');
   return {
@@ -73,7 +81,7 @@ describe('Cadastros pages', () => {
     );
 
     expect(screen.getByTestId('cadastro-grid-page')).toBeInTheDocument();
-    expect(screen.getByTestId('cadastro-sync-banner')).toBeInTheDocument();
+    // sync operations moved to /importacao — grid now shows status badges
     expect(screen.getAllByRole('link')).toHaveLength(8);
     expect(screen.getByTestId('cadastro-card-estabelecimentos')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-procedimentos')).toBeInTheDocument();

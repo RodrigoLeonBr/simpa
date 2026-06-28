@@ -15,6 +15,35 @@ import { ToastBanner, useToast } from '../../components/shared/Toast';
 import { formatImportDate } from '../../utils/importacaoView';
 import { ConfirmDialog } from '../../components/cadastros/ConfirmDialog';
 
+function stagePercent(stage?: string): number {
+  switch (stage) {
+    case 'iniciando': return 5;
+    case 'extracao_mysql': return 30;
+    case 'transformacao': return 65;
+    case 'gravar_postgres': return 85;
+    case 'concluido': return 100;
+    default: return 5;
+  }
+}
+
+function SpinnerIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      className="sih-spinner"
+    >
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
+  );
+}
+
 function defaultCompetencia(): string {
   const now = new Date();
   const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -133,6 +162,7 @@ export function SiaProducaoSyncBanner() {
 
   const recentHistory = useMemo(() => history.slice(0, 6), [history]);
   const progressEvents = useMemo(() => progress?.events?.slice(-8).reverse() ?? [], [progress]);
+  const pct = useMemo(() => stagePercent(progress?.stage), [progress]);
 
   useEffect(() => {
     if (!syncing || !executionId) {
@@ -251,12 +281,22 @@ export function SiaProducaoSyncBanner() {
             </label>
             <button
               type="button"
-              className="cadastro-btn primary"
+              className="cadastro-btn primary sih-import-btn-inner"
               disabled={syncing}
               onClick={() => void runSync(false)}
               data-testid="sia-sync-button"
             >
-              {syncing ? 'Importando…' : 'Importar produção SIA'}
+              {syncing ? (
+                <>
+                  <SpinnerIcon />
+                  <span>
+                    {stageLabel(progress?.stage ?? 'iniciando')}
+                    {pct > 5 && pct < 100 ? ` · ${pct}%` : ''}
+                  </span>
+                </>
+              ) : (
+                'Importar produção SIA'
+              )}
             </button>
           </div>
         </div>
@@ -292,10 +332,24 @@ export function SiaProducaoSyncBanner() {
 
         {(syncing || progress) && (
           <div className="cadastro-sync-meta" data-testid="sia-sync-progress-panel">
+            <div className="progress-bar-wrap" style={{ marginBottom: '0.5rem' }}>
+              <div className="progress-bar-track" style={{ height: '6px' }}>
+                <div
+                  className="progress-bar-fill"
+                  style={{
+                    width: `${pct}%`,
+                    background: pct === 100 ? 'var(--green, #22c55e)' : 'var(--accent, #2563eb)',
+                    transition: 'width 0.4s ease',
+                  }}
+                  data-testid="sia-progress-bar"
+                />
+              </div>
+            </div>
             <p className="mono">
-              <strong>Status:</strong>{' '}
+              <strong>Etapa:</strong>{' '}
               {progress ? stageLabel(progress.stage) : 'Iniciando processamento'} ·{' '}
               {progress?.status === 'running' || syncing ? 'Em execução' : 'Finalizado'}
+              {pct > 0 ? ` · ${pct}%` : ''}
             </p>
             {progress?.summary ? (
               <p className="mono" data-testid="sia-sync-progress-summary">

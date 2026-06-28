@@ -206,6 +206,40 @@
   color: inherit;
 }
 
+/* Sync status badges (compact read-only variant) */
+.cadastro-sync-banner--compact {
+  padding: 0.65rem 1rem;
+}
+
+.cadastro-sync-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cadastro-sync-dot-green  { background: #22c55e; }
+.cadastro-sync-dot-amber  { background: #f59e0b; }
+.cadastro-sync-dot-red    { background: #ef4444; }
+
+/* SIH import button — spinner + stage label inline */
+.sih-import-btn-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+@keyframes sih-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sih-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  animation: sih-spin 0.9s linear infinite;
+}
+
 .sia-sync-badge {
   margin-top: 0.65rem;
   display: inline-flex;

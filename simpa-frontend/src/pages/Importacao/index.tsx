@@ -4,6 +4,8 @@ import { fetchCargas } from '../../api/importacao';
 import { useAuth } from '../../contexts/AuthContext';
 import type { CargaEsus } from '../../types/contrato';
 import { canEditImportMappings, CARGAS_UPDATED_EVENT } from '../../utils/importacaoView';
+import { CadastroSyncBanner } from '../Cadastros/CadastroSyncBanner';
+import { SiaProducaoSyncBanner } from '../Cadastros/SiaProducaoSyncBanner';
 import { HistoricoCargas } from './HistoricoCargas';
 import { MapeamentosPanel } from './MapeamentosPanel';
 import { SihImportSection } from './SihImportSection';
@@ -58,9 +60,9 @@ export default function ImportacaoPage() {
   return (
     <div className="import-page simpa-rise" data-testid="importacao-page">
       <div className="analytics-header">
-        <h2 className="analytics-title">Importação e-SUS</h2>
+        <h2 className="analytics-title">Importação de dados</h2>
         <p className="analytics-subtitle">
-          Envie relatórios CSV, confira o preview detectado e acompanhe o histórico de cargas
+          e-SUS, SIA e SIHD — importe, sincronize e acompanhe o histórico
         </p>
       </div>
 
@@ -96,6 +98,12 @@ export default function ImportacaoPage() {
           ) : (
             <HistoricoCargas cargas={cargas} onAtualizar={carregar} />
           )}
+
+          <hr className="import-section-divider" />
+          <CadastroSyncBanner />
+
+          <hr className="import-section-divider" />
+          {showMapeamentos ? <SiaProducaoSyncBanner /> : null}
 
           <hr className="import-section-divider" />
           <SihImportSection />

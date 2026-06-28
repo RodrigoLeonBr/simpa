@@ -69,12 +69,13 @@ function buildQuery(params: Record<string, string | number | undefined>): string
  */
 export async function sincronizarSih(
   competencia: string,
-  reimportar?: boolean,
+  options?: { reimportar?: boolean; executionId?: string },
 ): Promise<SihImportResult> {
+  const { reimportar, executionId } = options ?? {};
   try {
     return await apiFetch<SihImportResult>('/api/sih/sincronizar', {
       method: 'POST',
-      body: JSON.stringify({ competencia, reimportar }),
+      body: JSON.stringify({ competencia, reimportar, executionId }),
     });
   } catch (err) {
     // apiFetch loses the 409 body; re-throw as SihConflictError so isSihConflictError works.

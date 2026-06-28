@@ -29,6 +29,16 @@ vi.mock('../../api/importacao', () => ({
 
 vi.mock('../../api/cadastros', () => ({
   fetchEstabelecimentos: vi.fn(),
+  fetchUltimaCadastroSync: vi.fn().mockResolvedValue(null),
+  sincronizarCadastros: vi.fn(),
+}));
+
+vi.mock('../../api/sia', () => ({
+  fetchSiaSincronizacoes: vi.fn().mockResolvedValue([]),
+  fetchUltimaSiaSync: vi.fn().mockResolvedValue(null),
+  fetchSiaSincronizacaoExiste: vi.fn().mockResolvedValue({ exists: false, status: null, registros: 0, sincronizado_em: null }),
+  sincronizarSiaProducao: vi.fn(),
+  fetchSiaSyncProgress: vi.fn().mockRejectedValue(new Error('404')),
 }));
 
 // SihImportSection (rendered in index.tsx) needs this mock to avoid unhandled rejections.
@@ -38,6 +48,13 @@ vi.mock('../../api/sih', async () => {
     ...actual,
     getSihSincronizacoes: vi.fn().mockResolvedValue([]),
     getSihSyncProgress: vi.fn().mockRejectedValue(new Error('404')),
+    getSihSincronizacaoExiste: vi.fn().mockResolvedValue({
+      competencia: '',
+      exists: false,
+      status: null,
+      qtd_internacoes: 0,
+      qtd_procedimentos: 0,
+    }),
     sincronizarSih: vi.fn(),
   };
 });

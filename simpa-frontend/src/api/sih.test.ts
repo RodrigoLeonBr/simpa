@@ -41,11 +41,11 @@ describe('sincronizarSih', () => {
   it('includes reimportar: true when flag is set', async () => {
     mockApiFetch.mockResolvedValueOnce({ status: 'ok', competencia: '2025-01', qtd_internacoes: 10 });
 
-    await sincronizarSih('2025-01', true);
+    await sincronizarSih('2025-01', { reimportar: true });
 
     expect(apiFetch).toHaveBeenCalledWith('/api/sih/sincronizar', {
       method: 'POST',
-      body: JSON.stringify({ competencia: '2025-01', reimportar: true }),
+      body: JSON.stringify({ competencia: '2025-01', reimportar: true, executionId: undefined }),
     });
   });
 
