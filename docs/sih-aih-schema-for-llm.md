@@ -51,10 +51,13 @@ s_aih_pa  ←──────→  forma         (via SUBSTRING(s_aih_pa.PROC_D
 | `ESPECIALIDADE` | varchar(3) | Código de especialidade (`ah_especialidade`) |
 | `PROC_PRINCIPAL` | varchar(10) | Procedimento principal 10 dígitos → `procedimento.codigo` |
 | `DIAG_PRINCIPAL` | varchar(4) | CID-10 principal (`ah_diag_pri`) |
+| `DIAG_SECUNDARIO` | varchar(4) | CID-10 secundário (`ah_diag_sec`) |
 | `COMPLEXIDADE` | varchar(2) | Complexidade da internação |
 | `FINANCIAMENTO` | varchar(2) | Código de financiamento → `s_rub.RUB_ID` |
 | `ENFERMARIA` | varchar(4) | Código de enfermaria/leito |
+| `CARATER_INTERNACAO` | varchar(2) | Caráter da internação (01 eletiva, 02 urgência, …) |
 | `MOTIVO_SAIDA` | varchar(2) | Motivo de saída (`ah_mot_saida`) |
+| `CID_OBITO` | varchar(4) | CID-10 do óbito, quando houver |
 | `DIARIAS` | int | Total de diárias da internação |
 | `DIARIAS_UTI` | int | Diárias em UTI |
 | `VALOR_TOTAL_AIH` | decimal(12,2) | Valor total da AIH (pré-calculado: `SUM(TB_HPA.pa_valor)` no SIHD) |

@@ -64,6 +64,17 @@ def _clean_str(value) -> str | None:
     return s if s not in ("", "None", "nan") else None
 
 
+def _parse_yyyymmdd(value) -> date | None:
+    """AAAAMMDD (s_aih.DT_INT/DT_SAIDA) -> date, ou None se vazio/inválido."""
+    s = _clean_str(value)
+    if not s or len(s) != 8 or not s.isdigit():
+        return None
+    try:
+        return date(int(s[:4]), int(s[4:6]), int(s[6:8]))
+    except ValueError:
+        return None
+
+
 def emit_sih_progress(
     *,
     exec_id: str | None,
@@ -152,12 +163,17 @@ def build_sih_query_aih_cabecalho() -> str:
             sa.CNES                                            AS cnes,
             sa.PROC_PRINCIPAL                                  AS proc_principal,
             sa.DIAG_PRINCIPAL                                  AS diag_principal,
+            sa.DIAG_SECUNDARIO                                 AS diag_secundario,
+            sa.CID_OBITO                                       AS cid_obito,
+            sa.CARATER_INTERNACAO                              AS carater_internacao,
             sa.COMPLEXIDADE                                    AS complexidade,
             sa.FINANCIAMENTO                                   AS financiamento,
             sa.MOTIVO_SAIDA                                    AS motivo_saida,
             sa.SEXO_PACIENTE                                   AS sexo,
             sa.ESPECIALIDADE                                   AS especialidade,
             sa.IDADE                                           AS idade,
+            sa.DT_INT                                          AS dt_internacao,
+            sa.DT_SAIDA                                        AS dt_saida,
             sa.DIARIAS                                         AS diarias,
             sa.DIARIAS_UTI                                     AS diarias_uti,
             sa.VALOR_TOTAL_AIH                                 AS valor_total
@@ -324,12 +340,17 @@ def gravar_sih_pg(
                     estab_id,
                     _clean_str(row.get("proc_principal")),
                     _clean_str(row.get("diag_principal")),
+                    _clean_str(row.get("diag_secundario")),
+                    _clean_str(row.get("cid_obito")),
+                    _clean_str(row.get("carater_internacao")),
                     _clean_str(row.get("complexidade")),
                     _clean_str(row.get("financiamento")),
                     _clean_str(row.get("motivo_saida")),
                     _clean_str(row.get("sexo")),
                     _clean_str(row.get("especialidade")),
                     idade,
+                    _parse_yyyymmdd(row.get("dt_internacao")),
+                    _parse_yyyymmdd(row.get("dt_saida")),
                     int(row.get("diarias") or 0),
                     int(row.get("diarias_uti") or 0),
                     float(row.get("valor_total") or 0),
@@ -338,10 +359,12 @@ def gravar_sih_pg(
             insert_aih_sql = """
                 INSERT INTO sih_aih (
                     sincronizacao_id, competencia, aih, cnes, estabelecimento_id,
-                    proc_principal, diag_principal, complexidade, financiamento,
+                    proc_principal, diag_principal, diag_secundario, cid_obito,
+                    carater_internacao, complexidade, financiamento,
                     motivo_saida, sexo, especialidade, idade,
+                    dt_internacao, dt_saida,
                     diarias, diarias_uti, valor_total
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT DO NOTHING
             """
 

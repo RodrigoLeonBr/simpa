@@ -19,6 +19,8 @@
 | `migration_013_sih_tabelas.sql` | `sih_sincronizacoes`, `sih_internacoes`, `sih_procedimentos`; seeds widgets Hospitalar Layout A |
 | `migration_020_sih_aih.sql` | `sih_aih` (grão AIH); coluna `qtd_aih` em `sih_sincronizacoes` |
 | `migration_022_procedimentos_esus_sigtap.sql` | `procedimentos_esus_sigtap` — de-para descrição e-SUS → código SIGTAP (relatórios de produção) |
+| `migration_023_sih_aih_campos.sql` | Campos extras em `sih_aih`: `carater_internacao`, `diag_secundario`, `cid_obito`, `dt_internacao`, `dt_saida` (DATE) |
+| `migration_024_sih_aih_widgets.sql` | Métricas `sih.permanencia_media_real`/`sih.pct_obito_cid`/`sih.internacoes_por_carater` + widgets Hospitalar Layout A (ordem 9–11) |
 
 Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `013` em `/docker-entrypoint-initdb.d/`.
 
@@ -62,7 +64,7 @@ Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atu
 | Tabela | Uso |
 |--------|-----|
 | `sih_sincronizacoes` | Histórico por competência; status `ok/parcial/erro/pendente`; `UNIQUE(competencia)`; `qtd_aih` (migration 020) |
-| `sih_aih` | Cabeçalho `s_aih` no grão **AIH × CNES × competência**; coluna `aih` (13 chars) para filtros analíticos (ex. `SUBSTRING(aih,5,1)`) |
+| `sih_aih` | Cabeçalho `s_aih` no grão **AIH × CNES × competência**; coluna `aih` (13 chars) para filtros analíticos (ex. `SUBSTRING(aih,5,1)`). Campos extras (mig. 023): `carater_internacao`, `diag_secundario`, `cid_obito`, `dt_internacao`/`dt_saida` (DATE) |
 | `sih_internacoes` | Cabeçalho AIH agregado por `(sincronizacao_id, cnes, proc_principal, diag_principal, complexidade, financiamento, motivo_saida, sexo)` |
 | `sih_procedimentos` | Itens `s_aih_pa` agregados por `(sincronizacao_id, cnes, proc_detalhado, cbo_profissional, financiamento_detalhe)` |
 
