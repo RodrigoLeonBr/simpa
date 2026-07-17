@@ -11,3 +11,7 @@ dist/
 
 # Releases (Docker images + zips excedem 100MB — não versionar no git)
 release/
+
+# Test/coverage artifacts (gerados por Jest/Vitest/Playwright)
+coverage/
+test-results/
