@@ -14,7 +14,9 @@ const EXPECTED_GRID_MODES: Record<string, CadastroEntityMode> = {
   cbos: 'readonly',
   equipes: 'crud',
   emendas: 'crud',
+  'metas-oci-par': 'custom',
   'indicadores-painel': 'custom',
+  'procedimentos-sigtap': 'crud',
   '/admin': 'custom',
 };
 

@@ -95,6 +95,8 @@ export interface Estabelecimento {
   tipouni?: string | null;
   perfil: EstabelecimentoPerfil;
   perfil_editado: boolean;
+  nome_editado?: boolean;
+  status_editado?: boolean;
   area?: number | null;
   relatorio?: string | null;
   status: string;

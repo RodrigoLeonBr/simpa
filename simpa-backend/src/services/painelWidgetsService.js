@@ -1,5 +1,5 @@
 const { pool, query } = require('./db');
-const { executeMetric } = require('./painelMetricsService');
+const { executeMetric, executeSqlTemplate } = require('./painelMetricsService');
 
 const MUTABLE_FIELDS = [
   'slug',
@@ -15,6 +15,8 @@ const MUTABLE_FIELDS = [
   'spark_metrica_id',
   'spark_config',
   'sql_preview',
+  'sql_override',
+  'spark_sql_override',
   'delta_config',
   'status',
 ];
@@ -110,6 +112,20 @@ async function ensureUniqueSlug(perfil, layout, slug, ignoreId = null) {
   }
 }
 
+function normalizeSqlOverrideField(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null || value === '') {
+    return null;
+  }
+  if (typeof value !== 'string') {
+    throw createHttpError('sql_override deve ser texto SQL ou null', 400, 'VALIDATION_ERROR');
+  }
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
 function normalizeCreatePayload(body = {}) {
   const payload = {};
   for (const field of MUTABLE_FIELDS) {
@@ -133,6 +149,8 @@ function normalizeCreatePayload(body = {}) {
     ensureJsonObjectOrNull(payload.fonte_config, 'fonte_config', { allowNull: false }) ?? {};
   payload.spark_config = ensureJsonObjectOrNull(payload.spark_config, 'spark_config');
   payload.delta_config = ensureJsonObjectOrNull(payload.delta_config, 'delta_config');
+  payload.sql_override = normalizeSqlOverrideField(payload.sql_override);
+  payload.spark_sql_override = normalizeSqlOverrideField(payload.spark_sql_override);
   payload.status = payload.status || 'ativo';
 
   return payload;
@@ -168,6 +186,12 @@ function normalizeUpdatePayload(body = {}) {
   }
   if (Object.prototype.hasOwnProperty.call(payload, 'delta_config')) {
     payload.delta_config = ensureJsonObjectOrNull(payload.delta_config, 'delta_config');
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'sql_override')) {
+    payload.sql_override = normalizeSqlOverrideField(payload.sql_override);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'spark_sql_override')) {
+    payload.spark_sql_override = normalizeSqlOverrideField(payload.spark_sql_override);
   }
 
   return payload;
@@ -252,7 +276,16 @@ async function getMetricByChave(chave) {
   return rows[0] || null;
 }
 
-async function resolveMetricValue(metricaId, scope, fallbackChave = null) {
+async function resolveMetricValue(
+  metricaId,
+  scope,
+  { fallbackChave = null, sqlOverride = null } = {}
+) {
+  const override = typeof sqlOverride === 'string' ? sqlOverride.trim() : '';
+  if (override) {
+    return executeSqlTemplate(override, scope);
+  }
+
   if (!metricaId) {
     return { rows: [], single: null };
   }
@@ -304,15 +337,27 @@ async function resolveDelta(widget, scope, currentValue) {
     competencia: getPreviousCompetencia(scope.competencia),
   };
   const fallbackChave = widget.fonte_config?.fallback_chave;
-  const previousResult = await resolveMetricValue(
-    widget.metrica_id,
-    previousScope,
-    fallbackChave
-  );
+  const previousResult = await resolveMetricValue(widget.metrica_id, previousScope, {
+    fallbackChave,
+    sqlOverride: widget.sql_override,
+  });
   return computeDelta(currentValue, previousResult.single);
 }
 
 async function resolveSparkSeries(widget, scope) {
+  const sparkOverride =
+    typeof widget.spark_sql_override === 'string' ? widget.spark_sql_override.trim() : '';
+
+  if (sparkOverride) {
+    const sparkResult = await executeSqlTemplate(sparkOverride, scope);
+    if (!Array.isArray(sparkResult.rows)) {
+      return [];
+    }
+    return sparkResult.rows
+      .map((row) => Number(row?.valor))
+      .filter((value) => Number.isFinite(value));
+  }
+
   if (!widget.spark_metrica_id) {
     return undefined;
   }
@@ -329,7 +374,10 @@ async function resolveSparkSeries(widget, scope) {
 
 async function resolveCardWidget(widget, scope) {
   const fallbackChave = widget.fonte_config?.fallback_chave;
-  const metricResult = await resolveMetricValue(widget.metrica_id, scope, fallbackChave);
+  const metricResult = await resolveMetricValue(widget.metrica_id, scope, {
+    fallbackChave,
+    sqlOverride: widget.sql_override,
+  });
 
   if (widget.formato === 'fracao') {
     const parChave = widget.fonte_config?.par_chave;
@@ -402,11 +450,10 @@ function mapRankingRows(rows = [], formato = 'numero', limite = 6) {
 }
 
 async function resolveLineWidget(widget, scope) {
-  const metricResult = await resolveMetricValue(
-    widget.metrica_id,
-    scope,
-    widget.fonte_config?.fallback_chave
-  );
+  const metricResult = await resolveMetricValue(widget.metrica_id, scope, {
+    fallbackChave: widget.fonte_config?.fallback_chave,
+    sqlOverride: widget.sql_override,
+  });
   const series = mapLineSeries(metricResult.rows);
   return {
     slug: widget.slug,
@@ -423,11 +470,10 @@ async function resolveLineWidget(widget, scope) {
 }
 
 async function resolveRankingWidget(widget, scope) {
-  const metricResult = await resolveMetricValue(
-    widget.metrica_id,
-    scope,
-    widget.fonte_config?.fallback_chave
-  );
+  const metricResult = await resolveMetricValue(widget.metrica_id, scope, {
+    fallbackChave: widget.fonte_config?.fallback_chave,
+    sqlOverride: widget.sql_override,
+  });
   const limite = Number.parseInt(String(widget.fonte_config?.limite ?? 6), 10) || 6;
   let ranking = mapRankingRows(metricResult.rows, widget.formato, limite);
 
@@ -521,11 +567,13 @@ async function createWidget(body) {
   const { rows } = await query(
     `INSERT INTO painel_widgets (
        slug, perfil, layout, ordem, tipo, titulo, subtitulo, formato,
-       metrica_id, fonte_config, spark_metrica_id, spark_config, sql_preview, delta_config, status,
+       metrica_id, fonte_config, spark_metrica_id, spark_config,
+       sql_preview, sql_override, spark_sql_override, delta_config, status,
        atualizado_em
      ) VALUES (
        $1, $2, $3, $4, $5, $6, $7, $8,
-       $9, $10::jsonb, $11, $12::jsonb, $13, $14::jsonb, $15,
+       $9, $10::jsonb, $11, $12::jsonb,
+       $13, $14, $15, $16::jsonb, $17,
        now()
      )
      RETURNING id`,
@@ -543,6 +591,8 @@ async function createWidget(body) {
       payload.spark_metrica_id,
       payload.spark_config == null ? null : JSON.stringify(payload.spark_config),
       payload.sql_preview ?? null,
+      payload.sql_override ?? null,
+      payload.spark_sql_override ?? null,
       payload.delta_config == null ? null : JSON.stringify(payload.delta_config),
       payload.status,
     ]
@@ -702,6 +752,8 @@ function normalizePreviewDraft(widget = {}) {
     }),
     spark_metrica_id: parseOptionalMetricId(widget.spark_metrica_id, 'spark_metrica_id'),
     spark_config: ensureJsonObjectOrNull(widget.spark_config, 'spark_config'),
+    sql_override: widget.sql_override ?? null,
+    spark_sql_override: widget.spark_sql_override ?? null,
     delta_config: ensureJsonObjectOrNull(widget.delta_config, 'delta_config'),
   };
 

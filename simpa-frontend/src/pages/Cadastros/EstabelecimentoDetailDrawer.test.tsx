@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { updateEnrichmentBySlug, updatePerfil } from '../../api/cadastros';
+import { updateEnrichmentBySlug, updateIdentidade, updatePerfil } from '../../api/cadastros';
 import { AuthProvider } from '../../contexts/AuthContext';
 import { AUTH_STORAGE_KEY } from '../../types/auth';
 import type { Estabelecimento } from '../../types/cadastros';
@@ -13,6 +13,7 @@ vi.mock('../../api/cadastros', async () => {
   return {
     ...actual,
     updatePerfil: vi.fn(),
+    updateIdentidade: vi.fn(),
     updateEnrichmentBySlug: vi.fn(),
   };
 });
@@ -101,6 +102,39 @@ describe('EstabelecimentoDetailDrawer', () => {
       expect(updatePerfil).toHaveBeenCalledWith(1, 'APS');
       expect(onSaved).toHaveBeenCalledWith(
         expect.objectContaining({ perfil: 'APS', perfil_editado: true }),
+      );
+    });
+  });
+
+  it('saves nome and status via updateIdentidade', async () => {
+    seedAuth('Administrador');
+    const onSaved = vi.fn();
+    vi.mocked(updateIdentidade).mockResolvedValue({
+      ...baseEstabelecimento,
+      nome: 'Hospital Atualizado',
+      status: 'inativo',
+      nome_editado: true,
+      status_editado: true,
+    });
+
+    const user = userEvent.setup();
+    renderDrawer(baseEstabelecimento, onSaved);
+
+    await user.clear(screen.getByTestId('estabelecimento-nome-input'));
+    await user.type(screen.getByTestId('estabelecimento-nome-input'), 'Hospital Atualizado');
+    await user.selectOptions(screen.getByTestId('estabelecimento-status-select'), 'inativo');
+    await user.click(screen.getByRole('button', { name: /Salvar nome e status/i }));
+
+    await waitFor(() => {
+      expect(updateIdentidade).toHaveBeenCalledWith(1, {
+        nome: 'Hospital Atualizado',
+        status: 'inativo',
+      });
+      expect(onSaved).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nome: 'Hospital Atualizado',
+          status: 'inativo',
+        }),
       );
     });
   });

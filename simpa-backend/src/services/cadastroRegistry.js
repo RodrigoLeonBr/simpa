@@ -19,6 +19,18 @@ const ENTITIES = {
     requiredCreate: ['codigo', 'nome', 'estabelecimento_id'],
     validateEstabelecimentoFk: true,
   },
+  procedimentos_esus_sigtap: {
+    table: 'procedimentos_esus_sigtap',
+    label: 'Procedimento e-SUS/SIGTAP',
+    listSql: `
+      SELECT id, tipo_relatorio, bloco, descricao_esus, codigo_sigtap, descricao_sigtap, status
+      FROM procedimentos_esus_sigtap
+      WHERE status != 'inativo'
+      ORDER BY tipo_relatorio, bloco, descricao_esus`,
+    createFields: ['tipo_relatorio', 'bloco', 'descricao_esus', 'codigo_sigtap', 'descricao_sigtap'],
+    updateFields: ['tipo_relatorio', 'bloco', 'descricao_esus', 'codigo_sigtap', 'descricao_sigtap', 'status'],
+    requiredCreate: ['tipo_relatorio', 'bloco', 'descricao_esus', 'codigo_sigtap'],
+  },
   emendas: {
     table: 'emendas_parlamentares',
     label: 'Emenda',

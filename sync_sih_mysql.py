@@ -4,7 +4,8 @@ SIMPA - Conector SIHD: MySQL/XAMPP -> PostgreSQL
 =================================================
 
 Lê internações do MySQL/XAMPP (somente leitura) conforme ADR-001 e ADR-002
-(tabelas s_aih, s_aih_pa, prestador) e grava em sih_internacoes e sih_procedimentos.
+(tabelas s_aih, s_aih_pa, prestador) e grava em sih_aih (grão AIH),
+sih_internacoes e sih_procedimentos.
 
 Uso:
     python sync_sih_mysql.py --competencia 2025-01 --json-out
@@ -136,6 +137,35 @@ def build_sih_query_internacoes() -> str:
     """
 
 
+def build_sih_query_aih_cabecalho() -> str:
+    """
+    Extração de s_aih no grão AIH (sem GROUP BY).
+
+    Grão: AIH × CNES × COMPETENCIA — espelha uk_aih do MySQL.
+    Usado em sih_aih (PG) para filtros analíticos (máscara no número AIH, etc.).
+    """
+    table_aih = _sih_env("SIH_TABLE_AIH", "s_aih")
+
+    return f"""
+        SELECT
+            sa.AIH                                             AS aih,
+            sa.CNES                                            AS cnes,
+            sa.PROC_PRINCIPAL                                  AS proc_principal,
+            sa.DIAG_PRINCIPAL                                  AS diag_principal,
+            sa.COMPLEXIDADE                                    AS complexidade,
+            sa.FINANCIAMENTO                                   AS financiamento,
+            sa.MOTIVO_SAIDA                                    AS motivo_saida,
+            sa.SEXO_PACIENTE                                   AS sexo,
+            sa.ESPECIALIDADE                                   AS especialidade,
+            sa.IDADE                                           AS idade,
+            sa.DIARIAS                                         AS diarias,
+            sa.DIARIAS_UTI                                     AS diarias_uti,
+            sa.VALOR_TOTAL_AIH                                 AS valor_total
+        FROM {table_aih} sa
+        WHERE sa.COMPETENCIA = %(comp)s
+    """
+
+
 def build_sih_query_procedimentos() -> str:
     """
     Extração de s_aih_pa com GROUP BY gerencial.
@@ -182,6 +212,12 @@ def extrair_sih_procedimentos(conn_mysql, competencia_date: date) -> pd.DataFram
     return pd.read_sql(query, conn_mysql, params={"comp": comp})
 
 
+def extrair_sih_aih(conn_mysql, competencia_date: date) -> pd.DataFrame:
+    query = build_sih_query_aih_cabecalho()
+    comp = competencia_date.strftime("%Y%m")
+    return pd.read_sql(query, conn_mysql, params={"comp": comp})
+
+
 # ---------------------------------------------------------------------------
 # PG write
 # ---------------------------------------------------------------------------
@@ -204,6 +240,7 @@ def gravar_sih_pg(
     conn_pg,
     df_int: pd.DataFrame,
     df_proc: pd.DataFrame,
+    df_aih: pd.DataFrame,
     competencia_date: date,
     *,
     reimportar: bool = False,
@@ -211,7 +248,8 @@ def gravar_sih_pg(
     exec_id: str | None = None,
 ) -> dict:
     """
-    Grava internações (df_int) e procedimentos (df_proc) no PG.
+    Grava cabeçalhos AIH (df_aih), internações agregadas (df_int) e
+    procedimentos (df_proc) no PG.
 
     Cria/atualiza sih_sincronizacoes, deleta filhos se reimportar,
     insere em lotes com SAVEPOINT por chunk.
@@ -227,15 +265,16 @@ def gravar_sih_pg(
                 """
                 INSERT INTO sih_sincronizacoes
                   (competencia, status, qtd_internacoes, qtd_procedimentos,
-                   orphan_cnes, erros)
-                VALUES (%s, 'pendente', 0, 0, 0, 0)
+                   qtd_aih, orphan_cnes, erros)
+                VALUES (%s, 'pendente', 0, 0, 0, 0, 0)
                 ON CONFLICT (competencia) DO UPDATE SET
-                    status           = 'pendente',
-                    qtd_internacoes  = 0,
+                    status            = 'pendente',
+                    qtd_internacoes   = 0,
                     qtd_procedimentos = 0,
-                    orphan_cnes      = 0,
-                    erros            = 0,
-                    sincronizado_em  = now()
+                    qtd_aih           = 0,
+                    orphan_cnes       = 0,
+                    erros             = 0,
+                    sincronizado_em   = now()
                 RETURNING id
                 """,
                 (competencia_date,),
@@ -244,6 +283,10 @@ def gravar_sih_pg(
 
             # 2. Limpar filhos se reimportação
             if reimportar:
+                cur.execute(
+                    "DELETE FROM sih_aih WHERE sincronizacao_id = %s",
+                    (sinc_id,),
+                )
                 cur.execute(
                     "DELETE FROM sih_internacoes WHERE sincronizacao_id = %s",
                     (sinc_id,),
@@ -258,7 +301,92 @@ def gravar_sih_pg(
             orphan_cnes = 0
 
             # ------------------------------------------------------------------
-            # 4. Inserir sih_internacoes
+            # 4. Inserir sih_aih (grão AIH)
+            # ------------------------------------------------------------------
+            payload_aih: list[tuple] = []
+            for _, row in df_aih.iterrows():
+                cnes = _clean_str(row.get("cnes"))
+                aih = _clean_str(row.get("aih"))
+                if not aih or not cnes:
+                    continue
+                estab_id = estab_map.get(cnes) if cnes else None
+                if cnes and estab_id is None:
+                    orphan_cnes += 1
+
+                idade_raw = row.get("idade")
+                idade = int(idade_raw) if pd.notna(idade_raw) else None
+
+                payload_aih.append((
+                    sinc_id,
+                    competencia_date,
+                    aih,
+                    cnes,
+                    estab_id,
+                    _clean_str(row.get("proc_principal")),
+                    _clean_str(row.get("diag_principal")),
+                    _clean_str(row.get("complexidade")),
+                    _clean_str(row.get("financiamento")),
+                    _clean_str(row.get("motivo_saida")),
+                    _clean_str(row.get("sexo")),
+                    _clean_str(row.get("especialidade")),
+                    idade,
+                    int(row.get("diarias") or 0),
+                    int(row.get("diarias_uti") or 0),
+                    float(row.get("valor_total") or 0),
+                ))
+
+            insert_aih_sql = """
+                INSERT INTO sih_aih (
+                    sincronizacao_id, competencia, aih, cnes, estabelecimento_id,
+                    proc_principal, diag_principal, complexidade, financiamento,
+                    motivo_saida, sexo, especialidade, idade,
+                    diarias, diarias_uti, valor_total
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT DO NOTHING
+            """
+
+            if payload_aih:
+                total_chunks_aih = max(1, (len(payload_aih) + chunk_size - 1) // chunk_size)
+                for i in range(0, len(payload_aih), chunk_size):
+                    chunk = payload_aih[i : i + chunk_size]
+                    chunk_idx = (i // chunk_size) + 1
+                    sp = f"sih_aih_{i // chunk_size}"
+                    started = time.perf_counter()
+                    cur.execute(f"SAVEPOINT {sp}")
+                    try:
+                        execute_batch(cur, insert_aih_sql, chunk)
+                        cur.execute(f"RELEASE SAVEPOINT {sp}")
+                        emit_sih_progress(
+                            exec_id=exec_id,
+                            stage="gravar_postgres",
+                            event="insert_chunk",
+                            message=f"sih_aih chunk {chunk_idx}/{total_chunks_aih}",
+                            chunk_index=chunk_idx,
+                            chunks_total=total_chunks_aih,
+                            table="sih_aih",
+                            rows_processed=len(chunk),
+                            inserted_rows_total=min(i + len(chunk), len(payload_aih)),
+                            duration_ms=int((time.perf_counter() - started) * 1000),
+                        )
+                    except Exception as exc:
+                        erros += len(chunk)
+                        if first_error is None:
+                            first_error = str(exc)
+                        cur.execute(f"ROLLBACK TO SAVEPOINT {sp}")
+                        cur.execute(f"RELEASE SAVEPOINT {sp}")
+                        emit_sih_progress(
+                            exec_id=exec_id,
+                            stage="gravar_postgres",
+                            event="insert_chunk_error",
+                            message=f"Falha sih_aih chunk {chunk_idx}/{total_chunks_aih}",
+                            chunk_index=chunk_idx,
+                            table="sih_aih",
+                            error=str(exc),
+                            duration_ms=int((time.perf_counter() - started) * 1000),
+                        )
+
+            # ------------------------------------------------------------------
+            # 5. Inserir sih_internacoes
             # ------------------------------------------------------------------
             payload_int: list[tuple] = []
             for _, row in df_int.iterrows():
@@ -337,7 +465,7 @@ def gravar_sih_pg(
                         )
 
             # ------------------------------------------------------------------
-            # 5. Inserir sih_procedimentos
+            # 6. Inserir sih_procedimentos
             # ------------------------------------------------------------------
             payload_proc: list[tuple] = []
             for _, row in df_proc.iterrows():
@@ -407,9 +535,9 @@ def gravar_sih_pg(
                         )
 
             # ------------------------------------------------------------------
-            # 6. Atualizar sync record
+            # 7. Atualizar sync record
             # ------------------------------------------------------------------
-            total_rows = len(payload_int) + len(payload_proc)
+            total_rows = len(payload_aih) + len(payload_int) + len(payload_proc)
             if total_rows == 0:
                 status = "parcial"
             elif erros == 0:
@@ -425,18 +553,20 @@ def gravar_sih_pg(
                     status            = %s,
                     qtd_internacoes   = %s,
                     qtd_procedimentos = %s,
+                    qtd_aih           = %s,
                     orphan_cnes       = %s,
                     erros             = %s,
                     sincronizado_em   = now()
                 WHERE id = %s
                 """,
-                (status, len(df_int), len(df_proc), orphan_cnes, erros, sinc_id),
+                (status, len(df_int), len(df_proc), len(df_aih), orphan_cnes, erros, sinc_id),
             )
 
     result: dict = {
         "sincronizacao_id": sinc_id,
         "competencia": str(competencia_date),
         "status": status,
+        "qtd_aih": len(df_aih),
         "qtd_internacoes": len(df_int),
         "qtd_procedimentos": len(df_proc),
         "orphan_cnes": orphan_cnes,
@@ -478,6 +608,7 @@ def sincronizar(
             "competencia": competencia,
             "qtd_internacoes": 0,
             "qtd_procedimentos": 0,
+            "qtd_aih": 0,
             "orphan_cnes": 0,
             "erros": 0,
             "status": "erro",
@@ -497,6 +628,13 @@ def sincronizar(
                 message="Extraindo prévia do MySQL (internações)",
             )
             df_int = extrair_sih_internacoes(conn_mysql, competencia_date)
+            emit_sih_progress(
+                exec_id=exec_id,
+                stage="extracao_mysql",
+                event="preview_started",
+                message="Extraindo prévia do MySQL (cabeçalhos AIH)",
+            )
+            df_aih = extrair_sih_aih(conn_mysql, competencia_date)
             emit_sih_progress(
                 exec_id=exec_id,
                 stage="extracao_mysql",
@@ -525,12 +663,14 @@ def sincronizar(
 
         return {
             "competencia": competencia,
-            "status": "ok" if (len(df_int) or len(df_proc)) else "parcial",
+            "status": "ok" if (len(df_int) or len(df_proc) or len(df_aih)) else "parcial",
+            "qtd_aih": len(df_aih),
             "qtd_internacoes": len(df_int),
             "qtd_procedimentos": len(df_proc),
             "orphan_cnes": 0,
             "erros": 0,
-            "linhas_mysql_raw": len(df_int) + len(df_proc),
+            "linhas_mysql_raw": len(df_int) + len(df_proc) + len(df_aih),
+            "preview_aih": df_aih.head(10).replace({pd.NA: None}).to_dict("records"),
             "preview_internacoes": df_int.head(10).replace({pd.NA: None}).to_dict("records"),
             "preview_procedimentos": df_proc.head(10).replace({pd.NA: None}).to_dict("records"),
         }
@@ -549,8 +689,23 @@ def sincronizar(
             exec_id=exec_id,
             stage="extracao_mysql",
             event="extract_block",
-            message="s_aih extraído",
+            message="s_aih agregado extraído",
             block_rows=len(df_int),
+        )
+
+        emit_sih_progress(
+            exec_id=exec_id,
+            stage="extracao_mysql",
+            event="extract_started",
+            message="Extraindo cabeçalhos AIH (s_aih grão AIH)",
+        )
+        df_aih = extrair_sih_aih(conn_mysql, competencia_date)
+        emit_sih_progress(
+            exec_id=exec_id,
+            stage="extracao_mysql",
+            event="extract_block",
+            message="s_aih cabeçalho extraído",
+            block_rows=len(df_aih),
         )
 
         emit_sih_progress(
@@ -578,6 +733,7 @@ def sincronizar(
             "competencia": competencia,
             "qtd_internacoes": 0,
             "qtd_procedimentos": 0,
+            "qtd_aih": 0,
             "orphan_cnes": 0,
             "erros": 1,
             "status": "erro",
@@ -586,7 +742,7 @@ def sincronizar(
     finally:
         conn_mysql.close()
 
-    linhas_mysql_raw = len(df_int) + len(df_proc)
+    linhas_mysql_raw = len(df_int) + len(df_proc) + len(df_aih)
 
     conn_pg = pg_connect()
     try:
@@ -595,6 +751,7 @@ def sincronizar(
             stage="gravar_postgres",
             event="insert_started",
             message="Iniciando gravação no PostgreSQL",
+            qtd_aih=len(df_aih),
             qtd_internacoes=len(df_int),
             qtd_procedimentos=len(df_proc),
         )
@@ -602,6 +759,7 @@ def sincronizar(
             conn_pg,
             df_int,
             df_proc,
+            df_aih,
             competencia_date,
             reimportar=reimportar,
             exec_id=exec_id,
@@ -629,7 +787,7 @@ def main() -> None:
     parser.add_argument(
         "--pg-write",
         action="store_true",
-        help="Grava em sih_sincronizacoes + sih_internacoes + sih_procedimentos",
+        help="Grava em sih_sincronizacoes + sih_aih + sih_internacoes + sih_procedimentos",
     )
     parser.add_argument(
         "--reimportar",
@@ -657,6 +815,7 @@ def main() -> None:
     )
     print(
         f"  {result['status']} — "
+        f"{result.get('qtd_aih', 0)} AIH, "
         f"{result.get('qtd_internacoes', 0)} internações, "
         f"{result.get('qtd_procedimentos', 0)} procedimentos, "
         f"{result.get('erros', 0)} erros",

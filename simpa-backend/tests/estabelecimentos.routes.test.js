@@ -8,6 +8,7 @@ const {
   listEstabelecimentos,
   getEstabelecimentoById,
   updatePerfil,
+  updateIdentidade,
   upsertEnrichment,
   updateEnriquecimento,
 } = require('../src/services/estabelecimentosService');
@@ -105,6 +106,30 @@ describe('estabelecimentos and procedimentos routes', () => {
 
     expect(res.status).toBe(403);
     expect(updatePerfil).not.toHaveBeenCalled();
+  });
+
+  it('PUT /estabelecimentos/:id/identidade returns 200 for planning staff', async () => {
+    updateIdentidade.mockResolvedValueOnce({
+      id: 1,
+      nome: 'B&B SERVIÇOS MÉDICOS',
+      status: 'ativo',
+      nome_editado: true,
+      status_editado: false,
+    });
+
+    const res = await request(app)
+      .put('/api/cadastros/estabelecimentos/1/identidade')
+      .set('Authorization', authHeader())
+      .send({ nome: 'B&B SERVIÇOS MÉDICOS' });
+
+    expect(res.status).toBe(200);
+    expect(updateIdentidade).toHaveBeenCalledWith('1', {
+      nome: 'B&B SERVIÇOS MÉDICOS',
+      status: undefined,
+    });
+    expect(logAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ acao: 'estabelecimento_identidade_update' }),
+    );
   });
 
   it('PUT /estabelecimentos/:id/enriquecimento/:slug returns 403 on slug/perfil mismatch', async () => {

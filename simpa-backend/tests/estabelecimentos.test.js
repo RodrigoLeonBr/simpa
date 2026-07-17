@@ -19,6 +19,7 @@ const {
   listEstabelecimentos,
   updateEnriquecimento,
   updatePerfil,
+  updateIdentidade,
   upsertEnrichment,
   getEstabelecimentoById,
   mergeEnrichment,
@@ -254,6 +255,27 @@ describe('estabelecimentosService', () => {
 
     expect(query.mock.calls[0][0]).toMatch(/perfil_editado = true/i);
     expect(updated.perfil_editado).toBe(true);
+  });
+
+  it('updateIdentidade sets nome_editado and status_editado', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ ...hospitalDetailRow, nome: 'Novo Nome', status: 'inativo', nome_editado: true, status_editado: true }] });
+
+    const updated = await updateIdentidade(1, { nome: 'Novo Nome', status: 'inativo' });
+
+    expect(query.mock.calls[0][0]).toMatch(/nome_editado = true/i);
+    expect(query.mock.calls[0][0]).toMatch(/status_editado = true/i);
+    expect(updated.nome).toBe('Novo Nome');
+    expect(updated.status).toBe('inativo');
+  });
+
+  it('updateIdentidade rejects invalid status', async () => {
+    await expect(updateIdentidade(1, { status: 'pendente' })).rejects.toMatchObject({ status: 400 });
+  });
+
+  it('updateIdentidade rejects empty payload', async () => {
+    await expect(updateIdentidade(1, {})).rejects.toMatchObject({ status: 400 });
   });
 
   it('upsertEnrichment hospitalar rejects negative leitos', async () => {

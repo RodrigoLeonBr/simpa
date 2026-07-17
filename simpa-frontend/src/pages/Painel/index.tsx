@@ -3,6 +3,7 @@ import { useDashboard } from '../../hooks/useDashboard';
 import {
   buildModuleStatuses,
   isPainelCatalogReady,
+  needsConsolidatedDashboard,
   type PainelLayout,
 } from '../../utils/dashboardView';
 import { LayoutSwitcher, ModuleStatusBar } from '../../components/painel/LayoutSwitcher';
@@ -16,12 +17,16 @@ import { LayoutC } from './LayoutC';
 
 export default function PainelPage() {
   const { competencia, painelPerfil, setPainelPerfil } = useFilters();
-  const { data, unidades, loading, error } = useDashboard();
   const [layout, setLayout] = useState<PainelLayout>('A');
+  const { data, unidades, loading, error } = useDashboard({ layout });
   const catalogReady = isPainelCatalogReady(painelPerfil, layout);
-  const shellLoading = catalogReady && loading;
+  const requiresConsolidated = needsConsolidatedDashboard(painelPerfil, layout);
+  const canRenderLayout = catalogReady && (!requiresConsolidated || Boolean(data));
+  const shellLoading = catalogReady && requiresConsolidated && loading;
   const shellError =
-    catalogReady && (error || !data) ? (error ?? 'Painel indisponível') : null;
+    catalogReady && requiresConsolidated && (error || !data)
+      ? (error ?? 'Painel indisponível')
+      : null;
 
   const moduleStatuses = data ? buildModuleStatuses(data) : [];
 
@@ -42,11 +47,11 @@ export default function PainelPage() {
           </div>
         </div>
 
-        {catalogReady && data ? (
+        {canRenderLayout ? (
           <>
             {layout === 'A' ? <LayoutA data={data} unidades={unidades} /> : null}
-            {layout === 'B' ? <LayoutB data={data} unidades={unidades} /> : null}
-            {layout === 'C' ? <LayoutC data={data} unidades={unidades} /> : null}
+            {layout === 'B' && data ? <LayoutB data={data} unidades={unidades} /> : null}
+            {layout === 'C' && data ? <LayoutC data={data} unidades={unidades} /> : null}
           </>
         ) : (
           <PainelProfilePlaceholder perfil={painelPerfil} unidadesCount={unidades.length} />

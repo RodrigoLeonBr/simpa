@@ -141,7 +141,7 @@ describe('EstabelecimentosPage', () => {
     await user.click(screen.getByText('Hospital Municipal'));
 
     expect(await screen.findByTestId('estabelecimento-detail-drawer')).toBeInTheDocument();
-    expect(screen.getByTestId('locked-field-nome')).toBeDisabled();
+    expect(screen.getByTestId('estabelecimento-nome-input')).toBeEnabled();
     expect(screen.getByTestId('enrichment-form')).toBeInTheDocument();
 
     const clinicoInput = screen.getByLabelText(/Clínico/i);

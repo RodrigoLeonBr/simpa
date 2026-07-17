@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Estabelecimento } from '../../../types/cadastros';
-import { formatCadastroCell, formatCadastroStatus } from '../../../utils/cadastroView';
+import { formatCadastroCell } from '../../../utils/cadastroView';
 import { formatImportDate } from '../../../utils/importacaoView';
 import { LockedField } from './LockedField';
 
@@ -19,11 +19,9 @@ export function EstabelecimentoSyncedSection({
         <h4>Dados sincronizados (SIA)</h4>
         <div className="cadastro-detail-grid">
           <LockedField label="Código externo" value={estabelecimento.codigo_externo} />
-          <LockedField label="Nome" value={estabelecimento.nome} />
           <LockedField label="CNPJ" value={formatCadastroCell(estabelecimento.cnpj)} />
           <LockedField label="RE tipo" value={formatCadastroCell(estabelecimento.re_tipo)} />
           <LockedField label="Tipo unidade" value={formatCadastroCell(estabelecimento.tipouni)} />
-          <LockedField label="Status" value={formatCadastroStatus(estabelecimento.status)} />
           <LockedField
             label="Sincronizado em"
             value={

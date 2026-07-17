@@ -25,7 +25,7 @@ describe('usePainelLayout', () => {
     } as never);
   });
 
-  it('quando painelPerfil MAC não chama fetchPainelLayout', async () => {
+  it('quando painelPerfil MAC chama fetchPainelLayout', async () => {
     const { result } = renderHook(
       () => ({
         hook: usePainelLayout(),
@@ -43,8 +43,9 @@ describe('usePainelLayout', () => {
 
     await waitFor(() => {
       expect(result.current.hook.loading).toBe(false);
-      expect(result.current.hook.layout).toBeNull();
-      expect(fetchPainelLayout).not.toHaveBeenCalled();
+      expect(fetchPainelLayout).toHaveBeenCalledWith(
+        expect.objectContaining({ perfil: 'MAC', layout: 'A' })
+      );
     });
   });
 

@@ -1,12 +1,18 @@
 import type { PainelCatalogStatus, PainelPerfil, PainelViewContext } from '../../types/painel';
 import type { PainelLayout } from './types';
 
+const DYNAMIC_PAINEL_PERFIS: PainelPerfil[] = ['APS', 'MAC', 'Hospitalar'];
+
+export function isDynamicPainelPerfil(perfil: PainelPerfil): boolean {
+  return DYNAMIC_PAINEL_PERFIS.includes(perfil);
+}
+
 export const PAINEL_KPI_CATALOGS: Record<
   PainelPerfil,
   Record<PainelLayout, PainelCatalogStatus>
 > = {
   APS: { A: 'ready', B: 'ready', C: 'ready' },
-  MAC: { A: 'pending', B: 'pending', C: 'pending' },
+  MAC: { A: 'ready', B: 'pending', C: 'pending' },
   Hospitalar: { A: 'ready', B: 'pending', C: 'pending' },
   Misto: { A: 'pending', B: 'pending', C: 'pending' },
 };
@@ -35,4 +41,18 @@ export function resolvePainelViewContext(
 
 export function isPainelCatalogReady(perfil: PainelPerfil, layout: PainelLayout = 'A'): boolean {
   return getPainelCatalogStatus(perfil, layout) === 'ready';
+}
+
+/** Layout A dinâmico (SIA/SIH/e-SUS via painel-layout) não depende de dados_consolidados. */
+export function needsConsolidatedDashboard(
+  perfil: PainelPerfil,
+  layout: PainelLayout = 'A',
+): boolean {
+  if (!isPainelCatalogReady(perfil, layout)) {
+    return false;
+  }
+  if (layout === 'A' && isDynamicPainelPerfil(perfil)) {
+    return false;
+  }
+  return true;
 }

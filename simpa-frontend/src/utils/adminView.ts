@@ -14,12 +14,11 @@ export function canReadAuditLog(perfil: string | undefined): boolean {
   return perfil === 'Administrador' || perfil === 'Planejamento';
 }
 
+export const PLANNING_STAFF_PERFIS = ['Administrador', 'Gestor Secretaria', 'Planejamento'] as const;
+export type PlanningStaffPerfil = (typeof PLANNING_STAFF_PERFIS)[number];
+
 export function canEditCadastrosEstabelecimento(perfil: string | undefined): boolean {
-  return (
-    perfil === 'Administrador' ||
-    perfil === 'Gestor Secretaria' ||
-    perfil === 'Planejamento'
-  );
+  return PLANNING_STAFF_PERFIS.includes((perfil ?? '') as PlanningStaffPerfil);
 }
 
 export const USUARIO_COLUMNS: CadastroColumnDef[] = [

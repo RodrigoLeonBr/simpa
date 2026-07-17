@@ -65,6 +65,20 @@ def test_build_sih_query_internacoes_group_by():
     assert "sa.SEXO_PACIENTE" in query
 
 
+def test_build_sih_query_aih_cabecalho_grain():
+    query = sync_sih_mysql.build_sih_query_aih_cabecalho()
+    normalized = "".join(query.split())
+    assert "WHEREsa.COMPETENCIA=%(comp)s" in normalized
+    assert "GROUPBY" not in normalized
+    assert "sa.AIH" in query
+    assert "sa.VALOR_TOTAL_AIH" in query
+
+
+def test_build_sih_query_aih_cabecalho_no_cast():
+    query = sync_sih_mysql.build_sih_query_aih_cabecalho()
+    assert "CAST(" not in query
+
+
 # ---------------------------------------------------------------------------
 # 2. build_sih_query_procedimentos
 # ---------------------------------------------------------------------------
@@ -156,11 +170,13 @@ def test_gravar_sih_pg_reimportar_deletes_children(monkeypatch):
         conn,
         pd.DataFrame(),
         pd.DataFrame(),
+        pd.DataFrame(),
         date(2025, 1, 1),
         reimportar=True,
     )
 
     executed_sqls = [c.args[0] for c in cur.execute.call_args_list if c.args]
+    assert any("DELETE FROM sih_aih WHERE sincronizacao_id" in s for s in executed_sqls)
     assert any("DELETE FROM sih_internacoes WHERE sincronizacao_id" in s for s in executed_sqls)
     assert any("DELETE FROM sih_procedimentos WHERE sincronizacao_id" in s for s in executed_sqls)
 
@@ -171,6 +187,7 @@ def test_gravar_sih_pg_no_reimportar_no_delete(monkeypatch):
 
     sync_sih_mysql.gravar_sih_pg(
         conn,
+        pd.DataFrame(),
         pd.DataFrame(),
         pd.DataFrame(),
         date(2025, 1, 1),
@@ -228,6 +245,7 @@ def test_gravar_sih_pg_orphan_cnes(monkeypatch):
         conn,
         df_int,
         pd.DataFrame(),
+        pd.DataFrame(),
         date(2025, 1, 1),
         reimportar=False,
     )
@@ -272,6 +290,7 @@ def test_gravar_sih_pg_savepoint_per_chunk(monkeypatch, capsys):
     sync_sih_mysql.gravar_sih_pg(
         conn,
         df_int,
+        pd.DataFrame(),
         pd.DataFrame(),
         date(2025, 1, 1),
         batch_size=1,  # one row per chunk → 2 SAVEPOINTs
@@ -322,6 +341,7 @@ def test_gravar_sih_pg_chunk_error_continues(monkeypatch):
         conn,
         df_int,
         pd.DataFrame(),
+        pd.DataFrame(),
         date(2025, 1, 1),
         batch_size=1,
     )
@@ -364,6 +384,9 @@ def test_sincronizar_dry_run_no_pg_write(monkeypatch):
         {"cnes": "1234567", "proc_detalhado": "0301010010", "total_quantidade": 5},
     ])
     monkeypatch.setattr(sync_sih_mysql, "extrair_sih_internacoes", lambda *_: df_int_sample)
+    monkeypatch.setattr(sync_sih_mysql, "extrair_sih_aih", lambda *_: pd.DataFrame([
+        {"aih": "1234500000001", "cnes": "1234567", "valor_total": 100.0},
+    ]))
     monkeypatch.setattr(sync_sih_mysql, "extrair_sih_procedimentos", lambda *_: df_proc_sample)
 
     pg_connect_called = {"called": False}
@@ -374,7 +397,8 @@ def test_sincronizar_dry_run_no_pg_write(monkeypatch):
     assert result["status"] == "ok"
     assert result["qtd_internacoes"] == 1
     assert result["qtd_procedimentos"] == 1
-    assert "preview_internacoes" in result
+    assert result["qtd_aih"] == 1
+    assert "preview_aih" in result
     assert pg_connect_called["called"] is False
 
 
@@ -397,7 +421,11 @@ def test_sincronizar_pg_write_passes_reimportar(monkeypatch):
     df_proc = pd.DataFrame([
         {"cnes": "1111111", "proc_detalhado": "0301010010", "total_quantidade": 2},
     ])
+    df_aih = pd.DataFrame([
+        {"aih": "1234500000001", "cnes": "1111111", "valor_total": 500.0},
+    ])
     monkeypatch.setattr(sync_sih_mysql, "extrair_sih_internacoes", lambda *_: df_int)
+    monkeypatch.setattr(sync_sih_mysql, "extrair_sih_aih", lambda *_: df_aih)
     monkeypatch.setattr(sync_sih_mysql, "extrair_sih_procedimentos", lambda *_: df_proc)
 
     mock_pg = MagicMock()
@@ -406,14 +434,16 @@ def test_sincronizar_pg_write_passes_reimportar(monkeypatch):
 
     captured = {}
 
-    def fake_gravar(conn_pg, df_int_, df_proc_, comp_date, *, reimportar, **kwargs):
+    def fake_gravar(conn_pg, df_int_, df_proc_, df_aih_, comp_date, *, reimportar, **kwargs):
         captured["reimportar"] = reimportar
         captured["qtd_int"] = len(df_int_)
         captured["qtd_proc"] = len(df_proc_)
+        captured["qtd_aih"] = len(df_aih_)
         return {
             "sincronizacao_id": 1,
             "competencia": str(comp_date),
             "status": "ok",
+            "qtd_aih": len(df_aih_),
             "qtd_internacoes": len(df_int_),
             "qtd_procedimentos": len(df_proc_),
             "orphan_cnes": 0,
@@ -428,4 +458,5 @@ def test_sincronizar_pg_write_passes_reimportar(monkeypatch):
     assert captured["reimportar"] is True
     assert captured["qtd_int"] == 1
     assert captured["qtd_proc"] == 1
-    assert result["linhas_mysql_raw"] == 2  # len(df_int) + len(df_proc)
+    assert captured["qtd_aih"] == 1
+    assert result["linhas_mysql_raw"] == 3  # len(df_int) + len(df_proc) + len(df_aih)

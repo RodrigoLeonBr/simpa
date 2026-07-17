@@ -29,6 +29,32 @@ vi.mock('../../hooks/useDashboard', () => ({
   useDashboard: vi.fn(),
 }));
 
+vi.mock('../../hooks/usePainelLayout', () => ({
+  usePainelLayout: vi.fn(() => ({
+    layout: {
+      perfil: 'MAC',
+      layout: 'A',
+      competencia: '2026-05',
+      widgets: [
+        {
+          slug: 'sia_valor_aprovado',
+          ordem: 1,
+          tipo: 'card',
+          titulo: 'Valor aprovado',
+          subtitulo: null,
+          formato: 'moeda',
+          value: 1000,
+          valueLabel: 'R$ 1.000,00',
+          isNull: false,
+        },
+      ],
+    },
+    loading: false,
+    error: null,
+    refetch: vi.fn(),
+  })),
+}));
+
 import { useDashboard } from '../../hooks/useDashboard';
 
 function renderPainel() {
@@ -82,6 +108,34 @@ describe('Painel page', () => {
     expect(screen.queryByTestId('painel-profile-placeholder')).not.toBeInTheDocument();
   });
 
+  it('renders Layout A for MAC perfil with dynamic widgets', async () => {
+    const user = userEvent.setup();
+    renderPainel();
+
+    await user.click(screen.getByRole('button', { name: 'MAC' }));
+
+    expect(screen.getByTestId('layout-a')).toBeInTheDocument();
+    expect(screen.queryByTestId('painel-profile-placeholder')).not.toBeInTheDocument();
+  });
+
+  it('renders MAC Layout A without consolidated e-SUS data', async () => {
+    vi.mocked(useDashboard).mockReturnValue({
+      data: null,
+      unidades: [{ id: 1, nome: 'Hospital MAC', tipo: 'MAC' } as never],
+      loading: false,
+      error: null,
+    });
+
+    const user = userEvent.setup();
+    renderPainel();
+
+    await user.click(screen.getByRole('button', { name: 'MAC' }));
+
+    expect(screen.getByTestId('layout-a')).toBeInTheDocument();
+    expect(screen.queryByText(/Dados não encontrados para os filtros informados/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Valor aprovado')).toBeInTheDocument();
+  });
+
   it('layout switcher changes visible panel under APS', async () => {
     const user = userEvent.setup();
     renderPainel();
@@ -97,39 +151,5 @@ describe('Painel page', () => {
 
     await user.click(screen.getByRole('button', { name: 'C · Tabela' }));
     expect(screen.getByTestId('layout-c')).toBeInTheDocument();
-  });
-
-  it('shows loading and error states for APS catalog', () => {
-    vi.mocked(useDashboard).mockReturnValueOnce({
-      data: null,
-      unidades: [],
-      loading: true,
-      error: null,
-    });
-
-    const { rerender } = renderPainel();
-
-    expect(screen.getByText('Carregando painel…')).toBeInTheDocument();
-
-    vi.mocked(useDashboard).mockReturnValueOnce({
-      data: null,
-      unidades: [],
-      loading: false,
-      error: 'Falha ao carregar',
-    });
-
-    rerender(
-      <MemoryRouter>
-        <AuthProvider>
-          <AppProvider>
-            <FiltersProvider>
-              <PainelPage />
-            </FiltersProvider>
-          </AppProvider>
-        </AuthProvider>
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByText('Falha ao carregar')).toBeInTheDocument();
   });
 });

@@ -9,7 +9,9 @@ export type {
 
 export {
   getPainelCatalogStatus,
+  isDynamicPainelPerfil,
   isPainelCatalogReady,
+  needsConsolidatedDashboard,
   PAINEL_KPI_CATALOGS,
   resolvePainelViewContext,
 } from './catalogView';

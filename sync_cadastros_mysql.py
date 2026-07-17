@@ -37,18 +37,34 @@ DEFAULT_PERFIL_MAP: dict[str, Any] = {
 
 DEFAULT_SNAPSHOT_MIN_RATIO = 0.25
 
+_NOME_REPAIR_RULES: tuple[tuple[str, str], ...] = (
+    ("SERVI?OS", "SERVIÇOS"),
+    ("M?DICOS", "MÉDICOS"),
+    ("M?DICA", "MÉDICA"),
+    ("CL?NICA", "CLÍNICA"),
+    ("ATEN??O", "ATENÇÃO"),
+    ("ASSIST?NCIA", "ASSISTÊNCIA"),
+    ("SA?DE", "SAÚDE"),
+    ("RADIOL?GICA", "RADIOLÓGICA"),
+    ("C?SIMO", "CÁSIMO"),
+    ("AT ? SA", "AT SA"),
+)
+
 COUNT_TEMPLATE = {"inserted": 0, "updated": 0, "inactivated": 0}
 
 UPSERT_ESTABELECIMENTO_SQL = """
     INSERT INTO estabelecimentos (
-        codigo_externo, nome, cnpj, re_tipo, tipouni, perfil, perfil_editado,
+        codigo_externo, nome, cnpj, re_tipo, tipouni, perfil, perfil_editado, nome_editado, status_editado,
         area, relatorio, status, sincronizado_em
     ) VALUES (
-        %(codigo_externo)s, %(nome)s, %(cnpj)s, %(re_tipo)s, %(tipouni)s, %(perfil)s, false,
+        %(codigo_externo)s, %(nome)s, %(cnpj)s, %(re_tipo)s, %(tipouni)s, %(perfil)s, false, false, false,
         %(area)s, %(relatorio)s, %(status)s, %(sincronizado_em)s
     )
     ON CONFLICT (codigo_externo) DO UPDATE SET
-        nome = EXCLUDED.nome,
+        nome = CASE
+            WHEN estabelecimentos.nome_editado THEN estabelecimentos.nome
+            ELSE EXCLUDED.nome
+        END,
         cnpj = EXCLUDED.cnpj,
         re_tipo = EXCLUDED.re_tipo,
         tipouni = EXCLUDED.tipouni,
@@ -58,7 +74,10 @@ UPSERT_ESTABELECIMENTO_SQL = """
         END,
         area = EXCLUDED.area,
         relatorio = EXCLUDED.relatorio,
-        status = EXCLUDED.status,
+        status = CASE
+            WHEN estabelecimentos.status_editado THEN estabelecimentos.status
+            ELSE EXCLUDED.status
+        END,
         sincronizado_em = EXCLUDED.sincronizado_em
 """
 
@@ -263,6 +282,15 @@ def _clean_str(value: Any, *, max_len: int | None = None) -> str | None:
     return text
 
 
+def repair_prestador_nome(nome: str) -> str:
+    if not nome or "?" not in nome:
+        return nome
+    repaired = nome
+    for old, new in _NOME_REPAIR_RULES:
+        repaired = repaired.replace(old, new)
+    return repaired
+
+
 def normalize_prestador_row(
     row: dict[str, Any],
     perfil_map: dict[str, Any] | None = None,
@@ -270,7 +298,7 @@ def normalize_prestador_row(
 ) -> dict[str, Any]:
     sync_ts = sync_ts or datetime.now(timezone.utc)
     codigo = _clean_str(row.get("codigo_externo"), max_len=20)
-    nome = _clean_str(row.get("nome"), max_len=200)
+    nome = repair_prestador_nome(_clean_str(row.get("nome"), max_len=200) or "")
     if not codigo or not nome:
         raise ValueError("prestador row missing codigo_externo or nome")
 

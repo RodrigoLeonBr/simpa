@@ -1,4 +1,5 @@
 const { query } = require('./db');
+const { parsePaginationParams, paginatedQuery } = require('./queryUtils');
 
 function mapProcedimentoRow(row) {
   return {
@@ -17,11 +18,9 @@ function mapProcedimentoRow(row) {
 }
 
 async function listProcedimentos(queryParams = {}) {
+  const { page, limit, offset } = parsePaginationParams(queryParams);
   const q = queryParams.q ? `%${queryParams.q}%` : null;
   const status = queryParams.status || 'ativo';
-  const page = Math.max(parseInt(queryParams.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(queryParams.limit, 10) || 50, 1), 200);
-  const offset = (page - 1) * limit;
 
   const conditions = ['1=1'];
   const params = [];
@@ -33,39 +32,20 @@ async function listProcedimentos(queryParams = {}) {
 
   if (q) {
     params.push(q);
-    conditions.push(
-      `(descricao ILIKE $${params.length} OR codigo_sigtap ILIKE $${params.length})`
-    );
+    conditions.push(`(descricao ILIKE $${params.length} OR codigo_sigtap ILIKE $${params.length})`);
   }
 
-  const where = conditions.join(' AND ');
-
-  const countResult = await query(
-    `SELECT COUNT(*)::int AS total FROM procedimentos WHERE ${where}`,
-    params
-  );
-  const total = countResult.rows[0].total;
-
-  params.push(limit, offset);
-  const { rows } = await query(
-    `SELECT id, codigo_sigtap, descricao, tipo, pa_total, rubrica, pa_id,
-            financiamento, fonte, status, sincronizado_em
-     FROM procedimentos
-     WHERE ${where}
-     ORDER BY codigo_sigtap
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
-
-  return {
-    data: rows.map(mapProcedimentoRow),
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit) || 1,
-    },
-  };
+  return paginatedQuery({
+    table: 'procedimentos',
+    select: 'SELECT id, codigo_sigtap, descricao, tipo, pa_total, rubrica, pa_id, financiamento, fonte, status, sincronizado_em',
+    orderBy: 'codigo_sigtap',
+    conditions,
+    params,
+    mapFn: mapProcedimentoRow,
+    page,
+    limit,
+    offset,
+  });
 }
 
 async function getProcedimentoById(id) {

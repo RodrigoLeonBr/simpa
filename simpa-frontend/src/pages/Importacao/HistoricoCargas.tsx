@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CargaEsus } from '../../types/contrato';
 import { excluirCarga, reprocessarCarga, substituirCarga } from '../../api/importacao';
 import { ToastBanner, useToast } from '../../components/shared/Toast';
@@ -15,6 +15,9 @@ interface HistoricoCargasProps {
   cargas: CargaEsus[];
   onAtualizar: () => void;
 }
+
+const INITIAL_VISIBLE = 15;
+const LOAD_MORE_STEP = 20;
 
 function CargaStatusBadge({
   registrosIdentificados,
@@ -38,9 +41,19 @@ function CargaStatusBadge({
 export function HistoricoCargas({ cargas, onAtualizar }: HistoricoCargasProps) {
   const [confirmExcluir, setConfirmExcluir] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const replaceTargetRef = useRef<number | null>(null);
   const { toast, showToast } = useToast();
+
+  useEffect(() => {
+    setVisibleCount((prev) => Math.max(INITIAL_VISIBLE, Math.min(prev, cargas.length)));
+  }, [cargas]);
+
+  const visibleCargas = cargas.slice(0, visibleCount);
+  const hasMore = visibleCount < cargas.length;
+  const remaining = cargas.length - visibleCount;
+  const nextBatch = Math.min(LOAD_MORE_STEP, remaining);
 
   const runAction = async (id: number, action: () => Promise<unknown>, successMessage: string) => {
     setBusyId(id);
@@ -113,7 +126,7 @@ export function HistoricoCargas({ cargas, onAtualizar }: HistoricoCargasProps) {
               </tr>
             </thead>
             <tbody>
-              {cargas.map((carga) => (
+              {visibleCargas.map((carga) => (
                 <tr key={carga.id}>
                   <td className="mono import-history-type">{formatTipoRelatorio(carga.tipo_relatorio)}</td>
                   <td className="mono">{formatCompetencia(carga.competencia)}</td>
@@ -171,6 +184,24 @@ export function HistoricoCargas({ cargas, onAtualizar }: HistoricoCargasProps) {
           </table>
         </div>
       )}
+
+      {cargas.length > INITIAL_VISIBLE ? (
+        <div className="import-history-footer">
+          <span className="import-history-showing">
+            Exibindo {visibleCargas.length} de {cargas.length}
+          </span>
+          {hasMore ? (
+            <button
+              type="button"
+              className="import-history-load-more"
+              data-testid="historico-cargas-load-more"
+              onClick={() => setVisibleCount((prev) => Math.min(prev + LOAD_MORE_STEP, cargas.length))}
+            >
+              Ver mais importações ({nextBatch})
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <input
         ref={replaceInputRef}

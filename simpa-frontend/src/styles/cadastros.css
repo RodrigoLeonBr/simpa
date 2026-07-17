@@ -579,3 +579,249 @@
   white-space: pre-wrap;
   overflow-x: auto;
 }
+
+/* Widget edit drawer — SQL override (principal + sparkline) */
+.widget-edit-drawer {
+  width: min(1240px, 98vw);
+  max-height: calc(100vh - 24px);
+}
+
+.widget-edit-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.widget-edit-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.widget-edit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.widget-edit-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 18px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+
+.widget-edit-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 14px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--bg-subtle, #f6f8fb) 55%, transparent);
+}
+
+.widget-edit-aside h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.widget-edit-section h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.widget-edit-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.widget-edit-meta-grid .cadastro-field:first-child:nth-last-child(odd) {
+  grid-column: span 2;
+}
+
+.widget-sql-editor-block {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.widget-sql-editor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget-sql-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.widget-sql-restore {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.widget-sql-textarea {
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.widget-sql-catalog-readonly {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-subtle, #f6f8fb);
+  font-size: 11px;
+  line-height: 1.45;
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.widget-sql-inline-examples summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.widget-sql-example-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.widget-sql-example-btn {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.widget-edit-preview-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.widget-edit-preview-result {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.widget-sql-ref-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.widget-sql-ref-tab {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.widget-sql-ref-tab.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+}
+
+.widget-sql-ref-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--bg-card);
+}
+
+.widget-sql-ref-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.widget-sql-ref-target {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.widget-sql-ref-pre {
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg-subtle, #f6f8fb);
+  font-size: 10px;
+  line-height: 1.4;
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.widget-sql-ref-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.widget-edit-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+}
+
+@media (max-width: 960px) {
+  .widget-edit-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .widget-edit-main {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .widget-edit-preview-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .widget-edit-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}

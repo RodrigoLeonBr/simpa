@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import mockDb from '../../../mock/db.json';
+import { FiltersProvider } from '../../hooks/useFilters';
 import { LayoutA } from './LayoutA';
 
 vi.mock('echarts/core', () => ({
@@ -26,7 +27,9 @@ import { usePainelLayout } from '../../hooks/usePainelLayout';
 
 function renderLayoutA() {
   return render(
-    <LayoutA data={mockDb.planejamento[0] as never} unidades={mockDb.unidades as never} />
+    <FiltersProvider>
+      <LayoutA data={mockDb.planejamento[0] as never} unidades={mockDb.unidades as never} />
+    </FiltersProvider>,
   );
 }
 

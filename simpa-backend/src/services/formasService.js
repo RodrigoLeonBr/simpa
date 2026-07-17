@@ -1,4 +1,4 @@
-const { query } = require('./db');
+const { parsePaginationParams, paginatedQuery } = require('./queryUtils');
 
 const VALID_STATUS = ['ativo', 'inativo', 'all'];
 const GRUPO_PATTERN = /^[0-9A-Za-z]{2}$/;
@@ -23,25 +23,15 @@ function mapFormaRow(row) {
 }
 
 async function listFormas(queryParams = {}) {
+  const { page, limit, offset } = parsePaginationParams(queryParams);
   const q = queryParams.q ? `%${queryParams.q}%` : null;
   const status = queryParams.status || 'ativo';
   const grupo = queryParams.grupo ? String(queryParams.grupo).trim() : null;
   const subgrupo = queryParams.subgrupo ? String(queryParams.subgrupo).trim() : null;
-  const page = Math.max(parseInt(queryParams.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(queryParams.limit, 10) || 50, 1), 200);
-  const offset = (page - 1) * limit;
 
-  if (!VALID_STATUS.includes(status)) {
-    throw createHttpError('status inválido', 400);
-  }
-
-  if (grupo && !GRUPO_PATTERN.test(grupo)) {
-    throw createHttpError('grupo inválido', 400);
-  }
-
-  if (subgrupo && !SUBGRUPO_PATTERN.test(subgrupo)) {
-    throw createHttpError('subgrupo inválido', 400);
-  }
+  if (!VALID_STATUS.includes(status)) throw createHttpError('status inválido', 400);
+  if (grupo && !GRUPO_PATTERN.test(grupo)) throw createHttpError('grupo inválido', 400);
+  if (subgrupo && !SUBGRUPO_PATTERN.test(subgrupo)) throw createHttpError('subgrupo inválido', 400);
 
   const conditions = ['1=1'];
   const params = [];
@@ -63,38 +53,20 @@ async function listFormas(queryParams = {}) {
 
   if (q) {
     params.push(q);
-    conditions.push(
-      `(descricao ILIKE $${params.length} OR codigo_forma ILIKE $${params.length})`
-    );
+    conditions.push(`(descricao ILIKE $${params.length} OR codigo_forma ILIKE $${params.length})`);
   }
 
-  const where = conditions.join(' AND ');
-
-  const countResult = await query(
-    `SELECT COUNT(*)::int AS total FROM formas_sia WHERE ${where}`,
-    params
-  );
-  const total = countResult.rows[0].total;
-
-  params.push(limit, offset);
-  const { rows } = await query(
-    `SELECT id, codigo_grupo, codigo_subgrupo, codigo_forma, descricao, status, sincronizado_em
-     FROM formas_sia
-     WHERE ${where}
-     ORDER BY codigo_forma
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
-
-  return {
-    data: rows.map(mapFormaRow),
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit) || 1,
-    },
-  };
+  return paginatedQuery({
+    table: 'formas_sia',
+    select: 'SELECT id, codigo_grupo, codigo_subgrupo, codigo_forma, descricao, status, sincronizado_em',
+    orderBy: 'codigo_forma',
+    conditions,
+    params,
+    mapFn: mapFormaRow,
+    page,
+    limit,
+    offset,
+  });
 }
 
 module.exports = {

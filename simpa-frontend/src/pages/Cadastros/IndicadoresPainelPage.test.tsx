@@ -6,6 +6,7 @@ import { IndicadoresPainelPage } from './IndicadoresPainelPage';
 vi.mock('../../api/painelWidgets', () => ({
   fetchPainelWidgets: vi.fn(),
   fetchPainelMetricas: vi.fn(),
+  fetchPainelMetrica: vi.fn(),
   updatePainelWidget: vi.fn(),
   createPainelWidget: vi.fn(),
   inactivatePainelWidget: vi.fn(),
@@ -25,6 +26,7 @@ import { fetchPainelWidgets } from '../../api/painelWidgets';
 import {
   createPainelWidget,
   discoverPainelMetricas,
+  fetchPainelMetrica,
   fetchPainelMetricas,
   inactivatePainelWidget,
   previewPainelWidget,
@@ -62,6 +64,8 @@ function buildWidgets(count: number) {
     spark_metrica_id: null,
     spark_config: null,
     sql_preview: null,
+    sql_override: null,
+    spark_sql_override: null,
     delta_config: null,
     status: 'ativo',
   }));
@@ -99,6 +103,14 @@ describe('IndicadoresPainelPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(fetchEstabelecimentosAps).mockResolvedValue([]);
+    vi.mocked(fetchPainelMetrica).mockImplementation(async (id: number) => {
+      const metric = buildWidgets(8)[0].metrica!;
+      return { ...metric, id } as never;
+    });
+    vi.mocked(fetchPainelMetricas).mockResolvedValue({
+      data: [buildWidgets(1)[0].metrica],
+      pagination: { page: 1, limit: 30, total: 1, pages: 1 },
+    } as never);
   });
 
   afterEach(() => {
@@ -208,7 +220,7 @@ describe('IndicadoresPainelPage', () => {
       fireEvent.change(tituloInput, { target: { value: '' } });
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Salvar widget' })).toBeDisabled();
       });
     });
 
@@ -230,7 +242,7 @@ describe('IndicadoresPainelPage', () => {
 
       await waitFor(() => {
         expect(fetchPainelMetricas).toHaveBeenCalledWith(
-          expect.objectContaining({ q: 'atend', limit: 20, page: 1 }),
+          expect.objectContaining({ q: 'atend', limit: 30, page: 1 }),
         );
       });
     });
@@ -251,11 +263,11 @@ describe('IndicadoresPainelPage', () => {
 
       const tituloInput = await screen.findByLabelText('Título');
       fireEvent.change(tituloInput, { target: { value: 'Widget atualizado' } });
-      fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar widget' }));
 
       await waitFor(() => {
         expect(updatePainelWidget).toHaveBeenCalled();
-        expect(screen.queryByTestId('form-dialog')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('widget-edit-drawer')).not.toBeInTheDocument();
       });
     });
 
@@ -282,7 +294,7 @@ describe('IndicadoresPainelPage', () => {
       fireEvent.change(await screen.findByLabelText('Slug'), { target: { value: 'novo-widget' } });
       fireEvent.change(screen.getByLabelText('Título'), { target: { value: 'Widget novo' } });
       fireEvent.change(screen.getByLabelText('Métrica principal'), { target: { value: '1' } });
-      fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar widget' }));
 
       await waitFor(() => {
         expect(createPainelWidget).toHaveBeenCalledWith(
@@ -294,7 +306,7 @@ describe('IndicadoresPainelPage', () => {
             layout: 'A',
           }),
         );
-        expect(screen.queryByTestId('form-dialog')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('widget-edit-drawer')).not.toBeInTheDocument();
       });
     });
 
@@ -331,12 +343,12 @@ describe('IndicadoresPainelPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
 
       fireEvent.change(await screen.findByLabelText('Título'), { target: { value: 'Widget inválido' } });
-      fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar widget' }));
 
       await waitFor(() => {
         expect(updatePainelWidget).toHaveBeenCalled();
         expect(screen.getByText('Falha validação API')).toBeInTheDocument();
-        expect(screen.getByTestId('form-dialog')).toBeInTheDocument();
+        expect(screen.getByTestId('widget-edit-drawer')).toBeInTheDocument();
       });
     });
   });
@@ -529,27 +541,22 @@ describe('IndicadoresPainelPage', () => {
       });
     });
 
-    it('descoberta com picker aberto refaz fetchPainelMetricas', async () => {
+    it('descoberta com drawer aberto mantém drawer visível', async () => {
       mockPlanningUser();
       vi.mocked(fetchPainelWidgets).mockResolvedValue(buildWidgets(1) as never);
-      vi.mocked(fetchPainelMetricas).mockResolvedValue({
-        data: [buildWidgets(1)[0].metrica],
-        pagination: { page: 1, limit: 20, total: 1, pages: 1 },
-      } as never);
       vi.mocked(discoverPainelMetricas).mockResolvedValue({ inserted: 1, updated: 0 });
 
       renderPage();
 
       await waitFor(() => expect(screen.getAllByRole('button', { name: 'Editar' }).length).toBe(1));
       fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
-      await waitFor(() => expect(fetchPainelMetricas).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(screen.getByTestId('widget-edit-drawer')).toBeInTheDocument());
 
-      vi.mocked(fetchPainelMetricas).mockClear();
       fireEvent.click(screen.getByTestId('discover-catalog-button'));
 
       await waitFor(() => {
         expect(discoverPainelMetricas).toHaveBeenCalledTimes(1);
-        expect(fetchPainelMetricas).toHaveBeenCalledTimes(1);
+        expect(screen.getByTestId('widget-edit-drawer')).toBeInTheDocument();
       });
     });
 

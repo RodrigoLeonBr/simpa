@@ -157,7 +157,35 @@ def test_upsert_estabelecimento_sql_preserves_manual_perfil():
     sql = sync.UPSERT_ESTABELECIMENTO_SQL
     assert "perfil_editado" in sql
     assert "WHEN estabelecimentos.perfil_editado THEN estabelecimentos.perfil" in sql
-    assert "%(perfil)s, false," in sql
+    assert "nome_editado" in sql
+    assert "WHEN estabelecimentos.nome_editado THEN estabelecimentos.nome" in sql
+    assert "status_editado" in sql
+    assert "WHEN estabelecimentos.status_editado THEN estabelecimentos.status" in sql
+    assert "%(perfil)s, false, false, false," in sql
+
+
+def test_repair_prestador_nome_fixes_common_corruption():
+    assert sync.repair_prestador_nome("B&B SERVI?OS M?DICOS") == "B&B SERVIÇOS MÉDICOS"
+    assert sync.repair_prestador_nome("DIGIMAX UNIDADE RADIOL?GICA") == "DIGIMAX UNIDADE RADIOLÓGICA"
+    assert sync.repair_prestador_nome("UBS CENTRO") == "UBS CENTRO"
+
+
+def test_normalize_prestador_row_repairs_corrupted_nome(perfil_map, sync_ts):
+    row = sync.normalize_prestador_row(
+        {
+            "codigo_externo": "0751073",
+            "nome": "B&B SERVI?OS M?DICOS",
+            "cnpj": None,
+            "re_tipo": "A",
+            "tipouni": "2",
+            "area": None,
+            "relatorio": None,
+            "ativo": 1,
+        },
+        perfil_map,
+        sync_ts,
+    )
+    assert row["nome"] == "B&B SERVIÇOS MÉDICOS"
 
 
 def test_inactivate_estabelecimentos_skips_empty_snapshot():

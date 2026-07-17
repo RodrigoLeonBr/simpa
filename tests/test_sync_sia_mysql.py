@@ -13,7 +13,6 @@ EXCLUDED_COLUMNS = (
     "PRD_ORG",
     "PRD_FLPA",
     "PRD_FLER",
-    "PRD_APANUM",
     "PRD_CNSMED",
     "PRD_CNPJ",
     "PRD_NFIS",
@@ -47,6 +46,7 @@ def test_build_sia_query_defaults_match_producao_schema():
     assert "SUM(CAST(prd.PRD_VL_AASDECIMAL(15,2)))ASvalor_aprovado" in normalized
     assert "SUM(CAST(prd.PRD_VL_PASDECIMAL(15,2)))ASvalor_apresentado" in normalized
     assert "WHEREprd.prd_cmp=%(comp)s" in normalized
+    assert "NULLIF(TRIM(prd.PRD_APANUM),'')ASapac_num" in normalized.replace(" ", "")
     assert "GROUPBY" in normalized
     assert "sr.RUB_DC" in query
     assert "LEFT JOIN cbo cb" in query
@@ -319,7 +319,8 @@ def test_gravar_pg_batch_resolve_estabelecimento_and_orphan(monkeypatch):
     assert first_chunk[8] == 12  # quantidade_apresentada
     assert float(first_chunk[10]) == 120.0  # valor_apresentado
     assert first_chunk[14] == "0602"  # rubrica relacional
-    assert json.loads(first_chunk[15])["rubrica_codigo"] == "0602"
+    assert first_chunk[15] is None  # apac_num
+    assert json.loads(first_chunk[16])["rubrica_codigo"] == "0602"
 
     delete_calls = [
         call

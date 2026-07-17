@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { updateEnrichmentBySlug, updatePerfil } from '../../api/cadastros';
+import { updateEnrichmentBySlug, updateIdentidade, updatePerfil } from '../../api/cadastros';
 import { EstabelecimentoDrawerChrome } from '../../components/cadastros/estabelecimento/EstabelecimentoDrawerChrome';
+import { EstabelecimentoIdentidadeEditor } from '../../components/cadastros/estabelecimento/EstabelecimentoIdentidadeEditor';
 import {
   EstabelecimentoEnrichmentPanel,
   resolveLeitosSummary,
@@ -34,10 +35,16 @@ export function EstabelecimentoDetailDrawer({
   const canEdit = canEditCadastrosEstabelecimento(user?.perfil);
   const canManageImportMappings = canEditImportMappings(user?.perfil);
   const [perfilDraft, setPerfilDraft] = useState<EstabelecimentoPerfil>(estabelecimento.perfil);
+  const [nomeDraft, setNomeDraft] = useState(estabelecimento.nome);
+  const [statusDraft, setStatusDraft] = useState(estabelecimento.status);
   const [savingPerfil, setSavingPerfil] = useState(false);
+  const [savingIdentidade, setSavingIdentidade] = useState(false);
   const [perfilError, setPerfilError] = useState<string | null>(null);
+  const [identidadeError, setIdentidadeError] = useState<string | null>(null);
 
   const perfilUnsaved = perfilDraft !== estabelecimento.perfil;
+  const identidadeUnsaved =
+    nomeDraft.trim() !== estabelecimento.nome || statusDraft !== estabelecimento.status;
   const enrichmentPerfil = perfilDraft;
   const enrichment =
     perfilUnsaved ? undefined : resolveEstabelecimentoEnrichment(estabelecimento);
@@ -48,8 +55,37 @@ export function EstabelecimentoDetailDrawer({
 
   useEffect(() => {
     setPerfilDraft(estabelecimento.perfil);
+    setNomeDraft(estabelecimento.nome);
+    setStatusDraft(estabelecimento.status);
     setPerfilError(null);
-  }, [estabelecimento.id, estabelecimento.perfil]);
+    setIdentidadeError(null);
+  }, [estabelecimento.id, estabelecimento.perfil, estabelecimento.nome, estabelecimento.status]);
+
+  async function handleIdentidadeSave(event: FormEvent) {
+    event.preventDefault();
+    if (!canEdit || !identidadeUnsaved) return;
+
+    const payload: { nome?: string; status?: string } = {};
+    if (nomeDraft.trim() !== estabelecimento.nome) {
+      payload.nome = nomeDraft.trim();
+    }
+    if (statusDraft !== estabelecimento.status) {
+      payload.status = statusDraft;
+    }
+    if (!payload.nome && !payload.status) return;
+
+    setSavingIdentidade(true);
+    setIdentidadeError(null);
+    try {
+      const updated = await updateIdentidade(estabelecimento.id, payload);
+      onSaved(updated);
+      showToast('Nome e status atualizados');
+    } catch (err) {
+      setIdentidadeError(err instanceof Error ? err.message : 'Falha ao salvar identidade');
+    } finally {
+      setSavingIdentidade(false);
+    }
+  }
 
   async function handlePerfilSave(event: FormEvent) {
     event.preventDefault();
@@ -78,6 +114,18 @@ export function EstabelecimentoDetailDrawer({
       <EstabelecimentoSyncedSection
         estabelecimento={estabelecimento}
         showImportMappingsLink={canManageImportMappings}
+      />
+      <EstabelecimentoIdentidadeEditor
+        estabelecimento={estabelecimento}
+        canEdit={canEdit}
+        nomeDraft={nomeDraft}
+        statusDraft={statusDraft}
+        identidadeUnsaved={identidadeUnsaved}
+        savingIdentidade={savingIdentidade}
+        identidadeError={identidadeError}
+        onNomeChange={setNomeDraft}
+        onStatusChange={setStatusDraft}
+        onSubmit={(event) => void handleIdentidadeSave(event)}
       />
       <EstabelecimentoPerfilEditor
         estabelecimento={estabelecimento}

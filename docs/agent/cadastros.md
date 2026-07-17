@@ -254,3 +254,60 @@ Grid: card `cadastro-card-indicadores-painel`. Diferente de `/indicadores` (dril
 | adr-003 | Binding server-side; SQL nunca no browser |
 
 Testes: `painelMetricsService.test.js`, `painelWidgets*.test.js`, `IndicadoresPainelPage.test.tsx`, E2E `painel-widgets.spec.ts`.
+
+## De-para procedimentos e-SUS → SIGTAP (migration 022)
+
+Relatórios de produção por unidade agregam **quantidade de procedimentos por código SIGTAP**. Os relatórios analíticos e-SUS gravam em `esus_indicadores_raw` só a **descrição amigável** (`esus_indicadores_raw.descricao`) — sem código. A tabela `procedimentos_esus_sigtap` faz o de-para.
+
+### Duas categorias de bloco
+
+| Categoria | Onde | Como obter o código |
+|-----------|------|---------------------|
+| **Nome amigável** (precisa de-para) | `procedimentos_individualizados` → Procedimentos / Pequenas cirurgias, Testes rápidos, Administração de medicamentos · `atendimento_odontologico` → Procedimentos · `atendimento_domiciliar` → Procedimentos | JOIN em `procedimentos_esus_sigtap` |
+| **Código inline** (não precisa de-para) | Qualquer bloco "Outros procedimentos (SIGTAP)" · `atividade_coletiva` → Práticas em saúde | 10 primeiros dígitos da própria `descricao` |
+
+Regra do código SIGTAP: **10 primeiros dígitos** do campo, separados do nome por `-` ou espaço (`0309050022 - SESSÃO DE ACUPUNTURA…`).
+
+### Tabela `procedimentos_esus_sigtap`
+
+`(tipo_relatorio, bloco, descricao_esus, codigo_sigtap CHAR(10), descricao_sigtap)` · `UNIQUE(tipo_relatorio, descricao_esus)`.
+
+Chave de join: `tipo_relatorio` (= `esus_cargas.tipo_relatorio`) + `descricao_esus` (= `esus_indicadores_raw.descricao`). `bloco` é informativo. Códigos consistentes entre relatórios (ex.: "Retirada de pontos…" = `0301100152` em individualizados/odonto/domiciliar).
+
+### Produção por unidade + SIGTAP
+
+```sql
+-- Blocos com nome amigável (via de-para)
+SELECT c.estabelecimento_id, m.codigo_sigtap, m.descricao_sigtap,
+       SUM((r.valores->>'quantidade')::int) AS quantidade
+FROM esus_indicadores_raw r
+JOIN esus_cargas c ON c.id = r.carga_id
+JOIN procedimentos_esus_sigtap m
+  ON m.tipo_relatorio = c.tipo_relatorio AND m.descricao_esus = r.descricao
+WHERE c.competencia = $1 AND m.status = 'ativo'
+GROUP BY c.estabelecimento_id, m.codigo_sigtap, m.descricao_sigtap;
+
+-- Blocos "Outros procedimentos (SIGTAP)": código já vem na descrição
+SELECT LEFT(regexp_replace(r.descricao, '\D', '', 'g'), 10) AS codigo_sigtap,
+       SUM((r.valores->>'quantidade')::int) AS quantidade
+FROM esus_indicadores_raw r
+JOIN esus_cargas c ON c.id = r.carga_id
+WHERE r.secao ILIKE 'Outros procedimentos%'
+GROUP BY 1;
+```
+
+`descricao_sigtap` reflete o texto do relatório e-SUS — alguns diferem do nome oficial SIGTAP (ex.: `0307010082` rotulado "DENTE DECÍDUO POSTERIOR"). Mantido como veio; corrigir só se virar requisito.
+
+### Cadastro UI — `/cadastros/procedimentos-sigtap`
+
+CRUD genérico (`mode: 'crud'`), mesmo motor de Equipes/Emendas — sem código dedicado:
+
+| Camada | Onde |
+|--------|------|
+| Backend | entry `procedimentos_esus_sigtap` em `cadastroRegistry.js` → `registerResource` auto-monta GET/POST/PUT/DELETE em `/api/cadastros/procedimentos_esus_sigtap` |
+| Frontend | entry em `CADASTRO_ENTITIES` + `CADASTRO_GRID_ITEMS` (`cadastroEntities.ts`) → `CadastroCrudPage` genérico |
+| Soft-delete | coluna `status` (`ativo`/`inativo`); DELETE = inativa; lista filtra `status != 'inativo'` |
+
+`tipo_relatorio` é `<select>` com enum fixo (`TIPO_RELATORIO_OPTIONS`) — evita typo que quebraria o join. `descricao_esus` livre: **precisa bater exatamente** com `esus_indicadores_raw.descricao`.
+
+**Ceiling:** writes usam só `verifyJWT` (padrão do `registerResource`, igual Equipes/Emendas), sem `requirePlanningStaff`. Se precisar restringir a planning staff, é preciso guard por-entidade no `registerResource` — hoje não existe.

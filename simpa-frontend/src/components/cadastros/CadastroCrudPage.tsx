@@ -70,11 +70,17 @@ export function CadastroCrudPage({ config }: CadastroCrudPageProps) {
   const { toast, showToast } = useToast();
 
   const selectOptions = useMemo<Record<string, SelectOption[]>>(() => {
-    if (config.key !== 'equipes') {
-      return {} as Record<string, SelectOption[]>;
+    const opts: Record<string, SelectOption[]> = {};
+    // Opções estáticas declaradas no config (enums)
+    for (const field of config.fields) {
+      if (field.options) opts[field.key] = field.options;
     }
-    return { estabelecimento_id: estabelecimentoOptions };
-  }, [config.key, estabelecimentoOptions]);
+    // Opções dinâmicas (FK estabelecimento) — só equipes
+    if (config.key === 'equipes') {
+      opts.estabelecimento_id = estabelecimentoOptions;
+    }
+    return opts;
+  }, [config.fields, config.key, estabelecimentoOptions]);
 
   const carregar = useCallback(async () => {
     setLoading(true);

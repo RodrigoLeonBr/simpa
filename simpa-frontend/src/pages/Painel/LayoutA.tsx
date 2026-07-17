@@ -7,6 +7,7 @@ import {
 } from '../../utils/dashboardView';
 import { EChart, trendOption } from '../../components/charts/LazyEChart';
 import { KpiCard } from '../../components/painel/KpiCard';
+import { useFilters } from '../../hooks/useFilters';
 import { usePainelLayout } from '../../hooks/usePainelLayout';
 import {
   mapWidgetToKpi,
@@ -16,13 +17,15 @@ import {
 } from '../../utils/painelWidgetsView';
 
 interface LayoutAProps {
-  data: ContratoDashboard;
+  data: ContratoDashboard | null;
   unidades: Unidade[];
 }
 
 export function LayoutA({ data, unidades }: LayoutAProps) {
+  const { painelPerfil } = useFilters();
   const { layout, loading: layoutLoading, error: layoutError } = usePainelLayout('A');
   const useFallback = Boolean(layoutError) || !layout?.widgets?.length;
+  const cardLimit = painelPerfil === 'APS' ? 6 : 9;
 
   const sortedWidgets = [...(layout?.widgets ?? [])].sort((a, b) => a.ordem - b.ordem);
   const split = splitPainelWidgetsByTipo(sortedWidgets);
@@ -30,17 +33,23 @@ export function LayoutA({ data, unidades }: LayoutAProps) {
   const rankingWidget = split.rankings[0];
 
   const kpis = useFallback
-    ? buildPainelKpis(data)
-    : split.cards.slice(0, 6).map((widget) => mapWidgetToKpi(widget));
+    ? data
+      ? buildPainelKpis(data)
+      : []
+    : split.cards.slice(0, cardLimit).map((widget) => mapWidgetToKpi(widget));
 
   const trend = useFallback
-    ? buildTrendSeries(data)
+    ? data
+      ? buildTrendSeries(data)
+      : []
     : lineWidget
       ? mapWidgetToTrendSeries(lineWidget)
       : [];
 
   const ranking = useFallback
-    ? buildRanking(data, unidades)
+    ? data
+      ? buildRanking(data, unidades)
+      : []
     : rankingWidget
       ? mapWidgetToRanking(rankingWidget)
       : [];

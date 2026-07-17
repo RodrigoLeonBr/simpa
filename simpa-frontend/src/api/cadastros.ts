@@ -118,6 +118,16 @@ export function updatePerfil(
   });
 }
 
+export function updateIdentidade(
+  id: number,
+  body: { nome?: string; status?: string },
+): Promise<Estabelecimento> {
+  return apiFetch<Estabelecimento>(`/api/cadastros/estabelecimentos/${id}/identidade`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
 export function updateEnrichmentBySlug<S extends EnrichmentSlug>(
   id: number,
   slug: S,
@@ -164,4 +174,40 @@ export function fetchCbos(
   return apiFetch<CbosListResponse>(
     `/api/cadastros/cbos${buildQuery(query)}`,
   );
+}
+
+export interface MetaOciPar {
+  id: number;
+  competencia: string;
+  tipo_oci: string;
+  estabelecimento_id: number | null;
+  estabelecimento_nome?: string | null;
+  meta_quantidade: number;
+  meta_valor: number | null;
+  codigo_sigtap_prefix: string | null;
+  periodicidade: 'mensal' | 'quadrimestral' | 'anual';
+  origem: string;
+  status: string;
+}
+
+export function fetchMetasOciPar(query?: Record<string, string>): Promise<MetaOciPar[]> {
+  return apiFetch<MetaOciPar[]>(`/api/cadastros/metas-oci-par${buildQuery(query)}`);
+}
+
+export function createMetaOciPar(body: Partial<MetaOciPar>): Promise<MetaOciPar> {
+  return apiFetch<MetaOciPar>('/api/cadastros/metas-oci-par', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateMetaOciPar(id: number, body: Partial<MetaOciPar>): Promise<MetaOciPar> {
+  return apiFetch<MetaOciPar>(`/api/cadastros/metas-oci-par/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export function inactivateMetaOciPar(id: number): Promise<void> {
+  return apiFetch<void>(`/api/cadastros/metas-oci-par/${id}`, { method: 'DELETE' });
 }

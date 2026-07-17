@@ -42,6 +42,8 @@ export interface PainelWidgetConfig {
   spark_metrica_id: number | null;
   spark_config: Record<string, unknown> | null;
   sql_preview: string | null;
+  sql_override: string | null;
+  spark_sql_override: string | null;
   delta_config: Record<string, unknown> | null;
   status: string;
 }

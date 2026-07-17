@@ -1,4 +1,4 @@
-const { query } = require('./db');
+const { parsePaginationParams, paginatedQuery } = require('./queryUtils');
 
 const VALID_STATUS = ['ativo', 'inativo', 'all'];
 
@@ -19,11 +19,9 @@ function mapCboRow(row) {
 }
 
 async function listCbos(queryParams = {}) {
+  const { page, limit, offset } = parsePaginationParams(queryParams);
   const q = queryParams.q ? `%${queryParams.q}%` : null;
   const status = queryParams.status || 'ativo';
-  const page = Math.max(parseInt(queryParams.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(queryParams.limit, 10) || 50, 1), 200);
-  const offset = (page - 1) * limit;
 
   if (!VALID_STATUS.includes(status)) {
     throw createHttpError('status inválido', 400);
@@ -39,38 +37,20 @@ async function listCbos(queryParams = {}) {
 
   if (q) {
     params.push(q);
-    conditions.push(
-      `(descricao ILIKE $${params.length} OR codigo_cbo ILIKE $${params.length})`
-    );
+    conditions.push(`(descricao ILIKE $${params.length} OR codigo_cbo ILIKE $${params.length})`);
   }
 
-  const where = conditions.join(' AND ');
-
-  const countResult = await query(
-    `SELECT COUNT(*)::int AS total FROM cbos_sia WHERE ${where}`,
-    params
-  );
-  const total = countResult.rows[0].total;
-
-  params.push(limit, offset);
-  const { rows } = await query(
-    `SELECT id, codigo_cbo, descricao, status, sincronizado_em
-     FROM cbos_sia
-     WHERE ${where}
-     ORDER BY codigo_cbo
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
-
-  return {
-    data: rows.map(mapCboRow),
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit) || 1,
-    },
-  };
+  return paginatedQuery({
+    table: 'cbos_sia',
+    select: 'SELECT id, codigo_cbo, descricao, status, sincronizado_em',
+    orderBy: 'codigo_cbo',
+    conditions,
+    params,
+    mapFn: mapCboRow,
+    page,
+    limit,
+    offset,
+  });
 }
 
 module.exports = {

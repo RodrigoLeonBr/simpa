@@ -17,6 +17,8 @@
 | `migration_011_rubricas_sia.sql` | `rubricas_sia` |
 | `migration_012_populacao_cadastrada.sql` | `populacao_cadastrada` + tabelas denominadores |
 | `migration_013_sih_tabelas.sql` | `sih_sincronizacoes`, `sih_internacoes`, `sih_procedimentos`; seeds widgets Hospitalar Layout A |
+| `migration_020_sih_aih.sql` | `sih_aih` (grão AIH); coluna `qtd_aih` em `sih_sincronizacoes` |
+| `migration_022_procedimentos_esus_sigtap.sql` | `procedimentos_esus_sigtap` — de-para descrição e-SUS → código SIGTAP (relatórios de produção) |
 
 Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `013` em `/docker-entrypoint-initdb.d/`.
 
@@ -40,6 +42,7 @@ Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … 
 | `enriquecimento_aps` … `enriquecimento_outro` | enriquecimento manual por perfil |
 | `estabelecimentos.enriquecimento` | JSONB legado (somente leitura/backfill) |
 | `procedimentos` | Códigos SIGTAP |
+| `procedimentos_esus_sigtap` | De-para descrição amigável e-SUS → código SIGTAP (migration 022); usado em relatórios de produção por unidade |
 | `formas_sia` | Forma de organização (grupo/subgrupo/forma 6 chars); espelho MySQL `forma` |
 | `cbos_sia` | CBO canônico 6 chars; espelho MySQL `cbo` |
 | `cadastros_sincronizacoes` | Histórico sync cadastros (incl. contadores forma/cbo) |
@@ -58,11 +61,12 @@ Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atu
 
 | Tabela | Uso |
 |--------|-----|
-| `sih_sincronizacoes` | Histórico por competência; status `ok/parcial/erro/pendente`; `UNIQUE(competencia)` |
+| `sih_sincronizacoes` | Histórico por competência; status `ok/parcial/erro/pendente`; `UNIQUE(competencia)`; `qtd_aih` (migration 020) |
+| `sih_aih` | Cabeçalho `s_aih` no grão **AIH × CNES × competência**; coluna `aih` (13 chars) para filtros analíticos (ex. `SUBSTRING(aih,5,1)`) |
 | `sih_internacoes` | Cabeçalho AIH agregado por `(sincronizacao_id, cnes, proc_principal, diag_principal, complexidade, financiamento, motivo_saida, sexo)` |
 | `sih_procedimentos` | Itens `s_aih_pa` agregados por `(sincronizacao_id, cnes, proc_detalhado, cbo_profissional, financiamento_detalhe)` |
 
-FK: `sih_internacoes.sincronizacao_id` e `sih_procedimentos.sincronizacao_id` → `sih_sincronizacoes(id) ON DELETE CASCADE`.
+FK: `sih_aih`, `sih_internacoes` e `sih_procedimentos.sincronizacao_id` → `sih_sincronizacoes(id) ON DELETE CASCADE`.
 
 **FINANCIAMENTO 2-char vs RUB_ID:** `s_aih.FINANCIAMENTO` é 2 chars → mapeia direto para `rubricas_sia.RUB_ID` (2 chars). Diferente do SIA onde `PRD_RUB` tem 4 chars com `LEFT(PRD_RUB, 4)`. Não usar CAST — colunas numéricas `DIARIAS`, `DIARIAS_UTI`, `VALOR_TOTAL_AIH` são nativas `int`/`decimal`.
 

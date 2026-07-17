@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>17/17</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>17/17</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -83,46 +83,46 @@
 <a name='L18'></a><a href='#L18'>18</a>
 <a name='L19'></a><a href='#L19'>19</a>
 <a name='L20'></a><a href='#L20'>20</a>
-<a name='L21'></a><a href='#L21'>21</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
+<a name='L21'></a><a href='#L21'>21</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">23x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = require('express');
-const dashboardRoutes = require('./dashboard');
-const importacaoRoutes = require('./importacao');
-const siaRoutes = require('./sia');
-const sihRoutes = require('./sih');
-const cadastrosRoutes = require('./cadastros');
-const adminRoutes = require('./admin');
-const populacaoRoutes = require('./populacao');
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = <span class="cstat-no" title="statement not covered" >require('express');</span>
+const dashboardRoutes = <span class="cstat-no" title="statement not covered" >require('./dashboard');</span>
+const importacaoRoutes = <span class="cstat-no" title="statement not covered" >require('./importacao');</span>
+const siaRoutes = <span class="cstat-no" title="statement not covered" >require('./sia');</span>
+const sihRoutes = <span class="cstat-no" title="statement not covered" >require('./sih');</span>
+const cadastrosRoutes = <span class="cstat-no" title="statement not covered" >require('./cadastros');</span>
+const adminRoutes = <span class="cstat-no" title="statement not covered" >require('./admin');</span>
+const populacaoRoutes = <span class="cstat-no" title="statement not covered" >require('./populacao');</span>
 &nbsp;
-const router = express.Router();
+const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
 &nbsp;
-router.use('/v1/dashboard', dashboardRoutes);
-router.use('/importacao', importacaoRoutes);
-router.use('/sia', siaRoutes);
-router.use('/sih', sihRoutes);
-router.use('/cadastros', cadastrosRoutes);
-router.use('/admin', adminRoutes);
-router.use('/populacao', populacaoRoutes);
+<span class="cstat-no" title="statement not covered" >router.use('/v1/dashboard', dashboardRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use('/importacao', importacaoRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use('/sia', siaRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use('/sih', sihRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use('/cadastros', cadastrosRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use('/admin', adminRoutes);</span>
+<span class="cstat-no" title="statement not covered" >router.use('/populacao', populacaoRoutes);</span>
 &nbsp;
-module.exports = router;
+<span class="cstat-no" title="statement not covered" >module.exports = router;</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -130,7 +130,7 @@ module.exports = router;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-25T01:00:43.602Z
+                at 2026-06-28T22:02:58.181Z
             </div>
         <script src="../prettify.js"></script>
         <script>

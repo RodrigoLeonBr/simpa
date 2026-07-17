@@ -111,6 +111,7 @@ function finalizeProgressSuccess(executionId, result) {
   entry.stage = result?.status === 'erro' ? 'erro' : 'concluido';
   entry.summary = {
     status: result?.status || 'ok',
+    qtd_aih: Number(result?.qtd_aih || 0),
     qtd_internacoes: Number(result?.qtd_internacoes || 0),
     qtd_procedimentos: Number(result?.qtd_procedimentos || 0),
     orphan_cnes: Number(result?.orphan_cnes || 0),
@@ -157,7 +158,7 @@ async function getCompetenciaImportada(competencia) {
   if (!competenciaDate) return null;
 
   const { rows } = await query(
-    `SELECT status, qtd_internacoes, qtd_procedimentos, sincronizado_em
+    `SELECT status, qtd_aih, qtd_internacoes, qtd_procedimentos, sincronizado_em
      FROM sih_sincronizacoes
      WHERE competencia = $1
        AND status IN ('ok', 'parcial')
@@ -170,6 +171,7 @@ async function getCompetenciaImportada(competencia) {
     return {
       exists: false,
       status: null,
+      qtd_aih: 0,
       qtd_internacoes: 0,
       qtd_procedimentos: 0,
       sincronizado_em: null,
@@ -179,6 +181,7 @@ async function getCompetenciaImportada(competencia) {
   return {
     exists: true,
     status: rows[0].status,
+    qtd_aih: Number(rows[0].qtd_aih || 0),
     qtd_internacoes: Number(rows[0].qtd_internacoes || 0),
     qtd_procedimentos: Number(rows[0].qtd_procedimentos || 0),
     sincronizado_em: rows[0].sincronizado_em,

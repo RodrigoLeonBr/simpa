@@ -1,8 +1,5 @@
 import { Link } from 'react-router-dom';
 import { CADASTRO_GRID_ITEMS, cadastroGridTestId } from '../../config/cadastroEntities';
-import { CadastroSyncBadge } from './CadastroSyncBadge';
-import { SiaProducaoBadge } from './SiaProducaoBadge';
-import { SihSyncStatusBadge } from './SihSyncStatusBadge';
 
 export function CadastroGrid() {
   return (
@@ -13,10 +10,6 @@ export function CadastroGrid() {
           Espelho SIA + cadastros manuais · equipes e emendas editáveis
         </p>
       </div>
-
-      <CadastroSyncBadge />
-      <SiaProducaoBadge />
-      <SihSyncStatusBadge />
 
       <div className="cadastro-grid">
         {CADASTRO_GRID_ITEMS.map((item) => {

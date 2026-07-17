@@ -360,6 +360,40 @@
 
 .import-history-wrap {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(2.5rem + 15 * 2.75rem);
+}
+
+.import-history-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-input);
+}
+
+.import-history-showing {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.import-history-load-more {
+  border: 1px solid var(--border);
+  background: var(--bg-card, var(--bg));
+  color: var(--brand);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.import-history-load-more:hover {
+  border-color: var(--brand);
+  background: var(--brand-bg);
 }
 
 .import-history-table {
@@ -381,6 +415,9 @@
   font-size: 11px;
   font-weight: 600;
   background: var(--bg-input);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .import-history-type {

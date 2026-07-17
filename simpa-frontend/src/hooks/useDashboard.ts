@@ -7,7 +7,8 @@ import {
   buildEstabelecimentosPerfilQuery,
   mapEstabelecimentosToUnidades,
 } from '../utils/estabelecimentosView';
-import { isPainelCatalogReady } from '../utils/dashboardView';
+import { needsConsolidatedDashboard } from '../utils/dashboardView';
+import type { PainelLayout } from '../utils/painel/types';
 
 export interface DashboardViewModel {
   data: ContratoDashboard;
@@ -27,7 +28,8 @@ export function buildDashboardFilters(
   return { estabelecimentoId: unidadeId, equipeId };
 }
 
-export function useDashboard() {
+export function useDashboard(options?: { layout?: PainelLayout }) {
+  const layout = options?.layout ?? 'A';
   const { competencia, unidadeId, equipeId, painelPerfil } = useFilters();
   const [data, setData] = useState<ContratoDashboard | null>(null);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
@@ -35,8 +37,8 @@ export function useDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const filterKey = useMemo(
-    () => `${painelPerfil}:${competencia}:${unidadeId ?? 'all'}:${equipeId ?? 'all'}`,
-    [painelPerfil, competencia, unidadeId, equipeId],
+    () => `${layout}:${painelPerfil}:${competencia}:${unidadeId ?? 'all'}:${equipeId ?? 'all'}`,
+    [layout, painelPerfil, competencia, unidadeId, equipeId],
   );
 
   useEffect(() => {
@@ -68,9 +70,10 @@ export function useDashboard() {
     let cancelled = false;
 
     async function loadDashboard() {
-      if (!isPainelCatalogReady(painelPerfil)) {
+      if (!needsConsolidatedDashboard(painelPerfil, layout)) {
         if (!cancelled) {
           setData(null);
+          setError(null);
           setLoading(false);
         }
         return;
@@ -103,7 +106,7 @@ export function useDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [filterKey, competencia, unidadeId, equipeId, painelPerfil]);
+  }, [filterKey, competencia, unidadeId, equipeId, painelPerfil, layout]);
 
   return { data, unidades, loading, error };
 }

@@ -21,6 +21,15 @@ services:
       - ./migration_011_rubricas_sia.sql:/docker-entrypoint-initdb.d/11-migration_011_rubricas_sia.sql:ro
       - ./migration_012_populacao_cadastrada.sql:/docker-entrypoint-initdb.d/12-migration_012_populacao_cadastrada.sql:ro
       - ./migration_013_sih_tabelas.sql:/docker-entrypoint-initdb.d/13-migration_013_sih_tabelas.sql:ro
+      - ./migration_014_sia_painel_indicadores.sql:/docker-entrypoint-initdb.d/14-migration_014_sia_painel_indicadores.sql:ro
+      - ./migration_015_apac_metas_oci_par.sql:/docker-entrypoint-initdb.d/15-migration_015_apac_metas_oci_par.sql:ro
+      - ./migration_016_fix_painel_widgets_utf8.sql:/docker-entrypoint-initdb.d/16-migration_016_fix_painel_widgets_utf8.sql:ro
+      - ./migration_017_estabelecimentos_nome_utf8.sql:/docker-entrypoint-initdb.d/17-migration_017_estabelecimentos_nome_utf8.sql:ro
+      - ./migration_018_estabelecimentos_status_editado.sql:/docker-entrypoint-initdb.d/18-migration_018_estabelecimentos_status_editado.sql:ro
+      - ./migration_019_widget_sql_override.sql:/docker-entrypoint-initdb.d/19-migration_019_widget_sql_override.sql:ro
+      - ./migration_020_sih_aih.sql:/docker-entrypoint-initdb.d/20-migration_020_sih_aih.sql:ro
+      - ./migration_021_fix_painel_metricas_utf8.sql:/docker-entrypoint-initdb.d/21-migration_021_fix_painel_metricas_utf8.sql:ro
+      - ./migration_022_procedimentos_esus_sigtap.sql:/docker-entrypoint-initdb.d/22-migration_022_procedimentos_esus_sigtap.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

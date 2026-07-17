@@ -273,6 +273,7 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 | Como Layout A carrega widgets dinâmicos? | `usePainelLayout.ts` → `fetchPainelLayout` · fallback `dashboardView.ts` |
 | Como cadastro de widgets do Painel? | `IndicadoresPainelPage.tsx` · `painelWidgetsService.js` |
 | Extensão SIH forma/cbo? | `cadastroReferenciaService.js` → `resolveFormaDescricao` / `resolveCboDescricao` |
+| De-para procedimento e-SUS→SIGTAP? | `cadastroRegistry.js` (`procedimentos_esus_sigtap`) + tabela homônima (migration 022) · UI `/cadastros/procedimentos-sigtap` |
 | Enriquecimento por perfil? | `PUT …/enriquecimento/:slug` + tabelas `enriquecimento_*` |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |
 | Roles de usuário | `requirePlanningStaff.js`, `admin.js` |

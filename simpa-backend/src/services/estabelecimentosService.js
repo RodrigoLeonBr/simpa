@@ -1,6 +1,7 @@
 const { pool, query } = require('./db');
 
 const VALID_PERFIS = ['APS', 'MAC', 'Hospitalar', 'Misto', 'Outro'];
+const VALID_STATUS = ['ativo', 'inativo'];
 const VALID_SLUGS = ['aps', 'mac', 'hospitalar', 'misto', 'outro'];
 
 const PERFIL_TO_SLUG = {
@@ -55,7 +56,7 @@ const LEGACY_ENRICHMENT_KEYS = ['leitos', 'especialidades', 'habilitacoes', 'not
 
 const DETAIL_SELECT = `
   SELECT e.id, e.codigo_externo, e.nome, e.cnpj, e.re_tipo, e.tipouni, e.perfil,
-         e.perfil_editado, e.area, e.relatorio, e.status, e.sincronizado_em,
+         e.perfil_editado, e.nome_editado, e.status_editado, e.area, e.relatorio, e.status, e.sincronizado_em,
          ea.notas_territorio, ea.cobertura_populacional, ea.vinculo_esus,
          ea.prioridades_planejamento, ea.notas AS aps_notas,
          em.capacidades AS mac_capacidades, em.relacionamento_referencia,
@@ -333,6 +334,8 @@ function mapEstabelecimentoRow(row, { includeEnrichment = false } = {}) {
     tipouni: row.tipouni,
     perfil: row.perfil,
     perfil_editado: row.perfil_editado ?? false,
+    nome_editado: row.nome_editado ?? false,
+    status_editado: row.status_editado ?? false,
     area: row.area,
     relatorio: row.relatorio,
     status: row.status,
@@ -534,7 +537,7 @@ async function listEstabelecimentos(queryParams = {}) {
   params.push(limit, offset);
   const { rows } = await query(
     `SELECT id, codigo_externo, nome, cnpj, re_tipo, tipouni, perfil, perfil_editado,
-            area, relatorio, status, sincronizado_em
+            nome_editado, status_editado, area, relatorio, status, sincronizado_em
      FROM estabelecimentos
      WHERE ${where}
      ORDER BY nome
@@ -581,6 +584,52 @@ async function updatePerfil(id, perfil) {
   }
 
   return getEstabelecimentoById(id);
+}
+
+async function updateIdentidade(id, { nome, status } = {}) {
+  const parsedId = Number.parseInt(String(id), 10);
+  if (!Number.isFinite(parsedId) || parsedId < 1) {
+    throw createHttpError('id inválido', 400);
+  }
+
+  const fields = [];
+  const params = [];
+
+  if (nome !== undefined) {
+    const trimmed = String(nome).trim();
+    if (!trimmed || trimmed.length > 200) {
+      throw createHttpError('nome inválido', 400);
+    }
+    params.push(trimmed);
+    fields.push(`nome = $${params.length}`, 'nome_editado = true');
+  }
+
+  if (status !== undefined) {
+    if (!VALID_STATUS.includes(status)) {
+      throw createHttpError('status inválido', 400);
+    }
+    params.push(status);
+    fields.push(`status = $${params.length}`, 'status_editado = true');
+  }
+
+  if (!fields.length) {
+    throw createHttpError('Informe nome e/ou status', 400);
+  }
+
+  params.push(parsedId);
+  const { rows } = await query(
+    `UPDATE estabelecimentos
+     SET ${fields.join(', ')}
+     WHERE id = $${params.length}
+     RETURNING id`,
+    params
+  );
+
+  if (!rows.length) {
+    throw createHttpError('Estabelecimento não encontrado', 404);
+  }
+
+  return getEstabelecimentoById(parsedId);
 }
 
 async function upsertEnrichment(id, slug, body) {
@@ -703,6 +752,7 @@ module.exports = {
   listEstabelecimentos,
   getEstabelecimentoById,
   updatePerfil,
+  updateIdentidade,
   upsertEnrichment,
   updateEnriquecimento,
   mapEstabelecimentoRow,

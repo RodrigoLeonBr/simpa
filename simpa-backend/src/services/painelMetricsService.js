@@ -336,6 +336,16 @@ async function getMetricaById(id) {
   return result.rows[0];
 }
 
+async function executeSqlTemplate(sqlTemplate, scope) {
+  const bound = bindTemplate(sqlTemplate, scope);
+  const execution = await query(bound.text, bound.values);
+
+  return {
+    rows: execution.rows,
+    single: extractSingleValue(execution.rows),
+  };
+}
+
 async function executeMetric(metricaId, scope) {
   const parsedMetricId = Number.parseInt(String(metricaId), 10);
   if (!Number.isFinite(parsedMetricId) || parsedMetricId < 1) {
@@ -355,13 +365,7 @@ async function executeMetric(metricaId, scope) {
     throw new MetricNotFoundError(`Métrica ${parsedMetricId} não encontrada`);
   }
 
-  const bound = bindTemplate(metricResult.rows[0].sql_template, scope);
-  const execution = await query(bound.text, bound.values);
-
-  return {
-    rows: execution.rows,
-    single: extractSingleValue(execution.rows),
-  };
+  return executeSqlTemplate(metricResult.rows[0].sql_template, scope);
 }
 
 module.exports = {
@@ -370,6 +374,7 @@ module.exports = {
   InvalidMetricTemplateError,
   InvalidMetricScopeError,
   bindTemplate,
+  executeSqlTemplate,
   executeMetric,
   extractSingleValue,
   slugifySegment,

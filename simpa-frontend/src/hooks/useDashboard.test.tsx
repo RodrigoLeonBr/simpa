@@ -37,10 +37,10 @@ describe('useDashboard', () => {
     vi.mocked(fetchDashboard).mockResolvedValue(mockDb.planejamento[0] as never);
   });
 
-  it('refetches when filter changes', async () => {
+  it('refetches when filter changes (layout B exige consolidado)', async () => {
     const { result } = renderHook(
       () => ({
-        dashboard: useDashboard(),
+        dashboard: useDashboard({ layout: 'B' }),
         filters: useFilters(),
       }),
       { wrapper: Wrapper },
@@ -140,7 +140,7 @@ describe('useDashboard', () => {
   it('passes estabelecimentoId and equipeId when both filters are set', async () => {
     const { result } = renderHook(
       () => ({
-        dashboard: useDashboard(),
+        dashboard: useDashboard({ layout: 'B' }),
         filters: useFilters(),
       }),
       { wrapper: Wrapper },
@@ -164,7 +164,7 @@ describe('useDashboard', () => {
   it('passes estabelecimentoId only when unidade selected without equipe', async () => {
     const { result } = renderHook(
       () => ({
-        dashboard: useDashboard(),
+        dashboard: useDashboard({ layout: 'B' }),
         filters: useFilters(),
       }),
       { wrapper: Wrapper },
@@ -185,7 +185,7 @@ describe('useDashboard', () => {
   it('omits ID params for municipal aggregate when filters are null', async () => {
     const { result } = renderHook(
       () => ({
-        dashboard: useDashboard(),
+        dashboard: useDashboard({ layout: 'B' }),
         filters: useFilters(),
       }),
       { wrapper: Wrapper },
@@ -207,7 +207,7 @@ describe('useDashboard', () => {
 
     const { result } = renderHook(
       () => ({
-        dashboard: useDashboard(),
+        dashboard: useDashboard({ layout: 'B' }),
         filters: useFilters(),
       }),
       { wrapper: Wrapper },
@@ -234,10 +234,10 @@ describe('useDashboard', () => {
     });
   });
 
-  it('clears dashboard data while establishments reload after perfil change to pending profile', async () => {
+  it('clears dashboard data while establishments reload after perfil change to dynamic profile', async () => {
     const { result } = renderHook(
       () => ({
-        dashboard: useDashboard(),
+        dashboard: useDashboard({ layout: 'B' }),
         filters: useFilters(),
       }),
       { wrapper: Wrapper },
@@ -273,10 +273,10 @@ describe('useDashboard', () => {
     });
   });
 
-  it('does not fetch dashboard payload for pending catalog profiles', async () => {
+  it('does not fetch dashboard payload for Layout A dinâmico (MAC/Hospitalar/APS)', async () => {
     const { result } = renderHook(
       () => ({
-        dashboard: useDashboard(),
+        dashboard: useDashboard({ layout: 'A' }),
         filters: useFilters(),
       }),
       { wrapper: Wrapper },
@@ -295,13 +295,21 @@ describe('useDashboard', () => {
       expect(result.current.dashboard.data).toBeNull();
       expect(fetchDashboard).not.toHaveBeenCalled();
     });
+
+    act(() => {
+      result.current.filters.setPainelPerfil('Hospitalar');
+    });
+
+    await waitFor(() => {
+      expect(fetchDashboard).not.toHaveBeenCalled();
+    });
   });
 
   it('stores error message when dashboard fetch fails', async () => {
     vi.mocked(fetchDashboard).mockReset();
     vi.mocked(fetchDashboard).mockRejectedValue(new Error('Falha API'));
 
-    const { result } = renderHook(() => useDashboard(), { wrapper: Wrapper });
+    const { result } = renderHook(() => useDashboard({ layout: 'B' }), { wrapper: Wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -328,7 +336,7 @@ describe('useDashboard', () => {
 
     const { result } = renderHook(
       () => ({
-        dashboard: useDashboard(),
+        dashboard: useDashboard({ layout: 'B' }),
         filters: useFilters(),
       }),
       { wrapper: Wrapper },

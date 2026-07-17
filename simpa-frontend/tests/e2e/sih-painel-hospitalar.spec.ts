@@ -1,5 +1,5 @@
 /**
- * E2E: Painel Hospitalar Layout A regression + SihSyncStatusBadge in Cadastros.
+ * E2E: Painel Hospitalar Layout A regression + SIHD import section in Importação.
  * Uses page.route() mocks so tests run without live DB data.
  */
 import { expect, test } from '@playwright/test';
@@ -56,26 +56,37 @@ test.describe('Painel Hospitalar Layout A', () => {
     });
   });
 
-  test('SihSyncStatusBadge is visible in Cadastros with SIHD link', async ({ page }) => {
+  test('SihImportSection is visible in Importação', async ({ page }) => {
     await login(page);
 
-    await page.goto('/cadastros');
-    await expect(page.getByTestId('cadastro-grid-page')).toBeVisible();
-    await expect(page.getByTestId('sih-sync-badge')).toBeVisible({ timeout: 5000 });
-
-    const link = page.getByTestId('sih-sync-badge').getByRole('link');
-    const href = await link.getAttribute('href');
-    expect(href).toBe('/importacao');
+    await page.goto('/importacao');
+    await expect(page.getByTestId('importacao-page')).toBeVisible();
+    await expect(page.getByTestId('sih-import-section')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('sih-import-btn')).toBeVisible();
   });
 
-  test('SihSyncStatusBadge shows ok sync competencia', async ({ page }) => {
+  test('SihImportSection shows imported competencia badge', async ({ page }) => {
     await login(page);
 
-    await page.goto('/cadastros');
-    await expect(page.getByTestId('sih-sync-badge')).toBeVisible({ timeout: 5000 });
+    await page.route('**/api/sih/sincronizacoes/existe**', (route) =>
+      route.fulfill({
+        json: {
+          exists: true,
+          competencia: '2025-01-01',
+          status: 'ok',
+          qtd_internacoes: 42,
+          qtd_procedimentos: 110,
+          sincronizado_em: '2025-02-01T10:00:00Z',
+        },
+      }),
+    );
 
-    const badgeText = await page.getByTestId('sih-sync-badge').textContent();
-    expect(badgeText).toContain('SIHD · AIH');
-    expect(badgeText).toContain('2025-01');
+    await page.goto('/importacao');
+    await expect(page.getByTestId('sih-import-section')).toBeVisible({ timeout: 5000 });
+
+    const badge = page.getByTestId('sih-import-badge-importada');
+    await expect(badge).toBeVisible({ timeout: 5000 });
+    const badgeText = await badge.textContent();
+    expect(badgeText).toContain('42 internações');
   });
 });

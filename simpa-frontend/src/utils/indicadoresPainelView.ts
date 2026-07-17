@@ -62,7 +62,14 @@ export function widgetRowToFormValues(row?: PainelWidgetConfig | null): Record<s
   };
 }
 
-export function mapWidgetFormPayload(values: Record<string, string>): Partial<PainelWidgetConfig> {
+export const PAINEL_WIDGET_PERFIS = ['APS', 'MAC', 'Hospitalar'] as const;
+
+export type PainelWidgetPerfil = (typeof PAINEL_WIDGET_PERFIS)[number];
+
+export function mapWidgetFormPayload(
+  values: Record<string, string>,
+  perfil: PainelWidgetPerfil = 'APS',
+): Partial<PainelWidgetConfig> {
   return {
     slug: values.slug.trim(),
     titulo: values.titulo.trim(),
@@ -71,14 +78,21 @@ export function mapWidgetFormPayload(values: Record<string, string>): Partial<Pa
     formato: values.formato as PainelWidgetConfig['formato'],
     metrica_id: values.metrica_id ? Number(values.metrica_id) : null,
     spark_metrica_id: values.spark_metrica_id ? Number(values.spark_metrica_id) : null,
-    perfil: 'APS',
+    perfil,
     layout: 'A',
   };
 }
 
-export async function fetchPainelWidgetsApsLayoutA(): Promise<PainelWidgetConfig[]> {
-  const data = await fetchPainelWidgets({ perfil: 'APS', layout: 'A' });
+export async function fetchPainelWidgetsByPerfilLayoutA(
+  perfil: PainelWidgetPerfil,
+): Promise<PainelWidgetConfig[]> {
+  const data = await fetchPainelWidgets({ perfil, layout: 'A' });
   return [...data].sort((a, b) => a.ordem - b.ordem);
+}
+
+/** @deprecated Use fetchPainelWidgetsByPerfilLayoutA('APS') */
+export async function fetchPainelWidgetsApsLayoutA(): Promise<PainelWidgetConfig[]> {
+  return fetchPainelWidgetsByPerfilLayoutA('APS');
 }
 
 export function mapWidgetForTable(row: PainelWidgetConfig): Record<string, unknown> {

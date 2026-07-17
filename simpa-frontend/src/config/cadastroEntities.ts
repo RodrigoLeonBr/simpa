@@ -1,4 +1,4 @@
-export type CadastroEntityKey = 'equipes' | 'emendas';
+export type CadastroEntityKey = 'equipes' | 'emendas' | 'procedimentos_esus_sigtap';
 
 export type CadastroEntityMode = 'readonly' | 'crud' | 'custom';
 
@@ -10,6 +10,8 @@ export interface CadastroFieldDef {
   required?: boolean;
   type?: FieldType;
   mono?: boolean;
+  /** Opções estáticas para type='select' (dropdowns de enum, não FK dinâmica) */
+  options?: { value: string; label: string }[];
 }
 
 export interface CadastroColumnDef {
@@ -86,12 +88,28 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
     description: 'id_emenda, esfera, tipo, autor, objeto, valor repassado, status.',
   },
   {
+    route: 'metas-oci-par',
+    title: 'Metas OCI / PAR',
+    tableName: 'metas_oci_par',
+    mode: 'custom',
+    description:
+      'Metas de produção OCI pactuadas no PAR (PMAE/PATE). Alimentam alcance meta no Painel MAC.',
+  },
+  {
     route: 'indicadores-painel',
     title: 'Indicadores do Painel',
     tableName: 'painel_widgets',
     mode: 'custom',
     description:
       'Configuração dinâmica dos cards e gráficos do Painel APS (layout e métricas governadas).',
+  },
+  {
+    route: 'procedimentos-sigtap',
+    title: 'Procedimentos e-SUS → SIGTAP',
+    tableName: 'procedimentos_esus_sigtap',
+    mode: 'crud',
+    description:
+      'De-para descrição de procedimento e-SUS → código SIGTAP, por relatório e bloco. Alimenta relatórios de produção por unidade.',
   },
   {
     route: '/admin',
@@ -103,7 +121,44 @@ export const CADASTRO_GRID_ITEMS: CadastroGridItem[] = [
   },
 ];
 
+const TIPO_RELATORIO_OPTIONS = [
+  { value: 'procedimentos_individualizados', label: 'Procedimentos individualizados' },
+  { value: 'atendimento_odontologico', label: 'Atendimento odontológico' },
+  { value: 'atendimento_domiciliar', label: 'Atendimento domiciliar' },
+  { value: 'atividade_coletiva', label: 'Atividade coletiva' },
+];
+
 export const CADASTRO_ENTITIES: CadastroEntityConfig[] = [
+  {
+    key: 'procedimentos_esus_sigtap',
+    route: 'procedimentos-sigtap',
+    title: 'Procedimentos e-SUS → SIGTAP',
+    tableName: 'procedimentos_esus_sigtap',
+    mode: 'crud',
+    description:
+      'De-para descrição e-SUS → código SIGTAP. A descrição precisa ser idêntica à do relatório (é a chave do join).',
+    columns: [
+      { key: 'tipo_relatorio', label: 'Relatório' },
+      { key: 'bloco', label: 'Bloco' },
+      { key: 'descricao_esus', label: 'Descrição e-SUS' },
+      { key: 'codigo_sigtap', label: 'SIGTAP', mono: true },
+      { key: 'descricao_sigtap', label: 'Descrição SIGTAP' },
+      { key: 'status', label: 'Status' },
+    ],
+    fields: [
+      {
+        key: 'tipo_relatorio',
+        label: 'Relatório',
+        required: true,
+        type: 'select',
+        options: TIPO_RELATORIO_OPTIONS,
+      },
+      { key: 'bloco', label: 'Bloco', required: true },
+      { key: 'descricao_esus', label: 'Descrição e-SUS (idêntica ao relatório)', required: true },
+      { key: 'codigo_sigtap', label: 'Código SIGTAP (10 dígitos)', required: true, mono: true },
+      { key: 'descricao_sigtap', label: 'Descrição SIGTAP' },
+    ],
+  },
   {
     key: 'equipes',
     route: 'equipes',

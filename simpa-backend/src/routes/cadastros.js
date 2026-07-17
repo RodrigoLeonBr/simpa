@@ -15,6 +15,7 @@ const {
   listEstabelecimentos,
   getEstabelecimentoById,
   updatePerfil,
+  updateIdentidade,
   upsertEnrichment,
   updateEnriquecimento,
   PERFIL_TO_SLUG,
@@ -25,6 +26,12 @@ const {
 } = require('../services/procedimentosService');
 const { listFormas } = require('../services/formasService');
 const { listCbos } = require('../services/cbosService');
+const {
+  listMetasOciPar,
+  createMetaOciPar,
+  updateMetaOciPar,
+  inactivateMetaOciPar,
+} = require('../services/metasOciParService');
 const { logAudit } = require('../services/auditService');
 const requirePlanningStaff = require('../middleware/requirePlanningStaff');
 const { registerPainelWidgetsCadastrosRoutes } = require('./painelWidgetsCadastrosRoutes');
@@ -99,6 +106,33 @@ router.put('/estabelecimentos/:id/perfil', requirePlanningStaff, async (req, res
       detalhes: JSON.stringify({
         estabelecimento_id: Number(req.params.id),
         perfil: row.perfil,
+      }),
+      ip: req.ip,
+    });
+
+    return res.json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put('/estabelecimentos/:id/identidade', requirePlanningStaff, async (req, res, next) => {
+  try {
+    const row = await updateIdentidade(req.params.id, {
+      nome: req.body?.nome,
+      status: req.body?.status,
+    });
+
+    await logAudit({
+      usuarioId: req.user?.id ?? null,
+      acao: 'estabelecimento_identidade_update',
+      recurso: 'estabelecimentos',
+      detalhes: JSON.stringify({
+        estabelecimento_id: Number(req.params.id),
+        nome: row.nome,
+        status: row.status,
+        nome_editado: row.nome_editado,
+        status_editado: row.status_editado,
       }),
       ip: req.ip,
     });
@@ -266,5 +300,65 @@ function registerResource(pathKey) {
 Object.keys(ENTITIES).forEach(registerResource);
 registerPainelWidgetsCadastrosRoutes(router);
 registerPainelMetricasCadastrosRoutes(router);
+
+router.get('/metas-oci-par', async (req, res, next) => {
+  try {
+    const rows = await listMetasOciPar({
+      competencia: req.query.competencia,
+      tipo_oci: req.query.tipo_oci,
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/metas-oci-par', requirePlanningStaff, async (req, res, next) => {
+  try {
+    const row = await createMetaOciPar(req.body);
+    await logAudit({
+      usuarioId: req.user?.id ?? null,
+      acao: 'metas_oci_par_create',
+      recurso: 'metas_oci_par',
+      detalhes: JSON.stringify({ id: row.id, tipo_oci: row.tipo_oci }),
+      ip: req.ip,
+    });
+    return res.status(201).json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put('/metas-oci-par/:id', requirePlanningStaff, async (req, res, next) => {
+  try {
+    const row = await updateMetaOciPar(req.params.id, req.body);
+    await logAudit({
+      usuarioId: req.user?.id ?? null,
+      acao: 'metas_oci_par_update',
+      recurso: 'metas_oci_par',
+      detalhes: JSON.stringify({ id: row.id, tipo_oci: row.tipo_oci }),
+      ip: req.ip,
+    });
+    return res.json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.delete('/metas-oci-par/:id', requirePlanningStaff, async (req, res, next) => {
+  try {
+    await inactivateMetaOciPar(req.params.id);
+    await logAudit({
+      usuarioId: req.user?.id ?? null,
+      acao: 'metas_oci_par_inactivate',
+      recurso: 'metas_oci_par',
+      detalhes: JSON.stringify({ id: Number(req.params.id) }),
+      ip: req.ip,
+    });
+    return res.status(204).send();
+  } catch (err) {
+    return next(err);
+  }
+});
 
 module.exports = router;

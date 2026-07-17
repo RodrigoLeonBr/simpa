@@ -28,6 +28,7 @@
 | [sia-atualizacao-cadastro-dicionario-dados.md](sia-atualizacao-cadastro-dicionario-dados.md) | Tabelas estabelecimentos, procedimentos, formas/cbo |
 | [sia-importacao-producao-regras.md](sia-importacao-producao-regras.md) | Sync produção SIA, gate 409, status |
 | [sia-importacao-producao-dicionario-dados.md](sia-importacao-producao-dicionario-dados.md) | `sia_producao`, sincronizações, enriquecimento |
+| [sia-painel-indicadores-proposta.md](sia-painel-indicadores-proposta.md) | Indicadores SIA/OCI/PATE no Painel MAC, metas e periodicidades |
 
 ## Manutenção
 

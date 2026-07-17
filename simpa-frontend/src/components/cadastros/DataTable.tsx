@@ -6,9 +6,10 @@ interface DataTableProps {
   rows: Record<string, unknown>[];
   onEdit: (row: Record<string, unknown>) => void;
   onInactivate: (row: Record<string, unknown>) => void;
-  onDelete: (row: Record<string, unknown>) => void;
+  onDelete?: (row: Record<string, unknown>) => void;
   busyId?: number | null;
   showDelete?: boolean;
+  canEdit?: boolean;
 }
 
 function renderCell(key: string, row: Record<string, unknown>): string {
@@ -26,6 +27,7 @@ export function DataTable({
   onDelete,
   busyId = null,
   showDelete = true,
+  canEdit = true,
 }: DataTableProps) {
   return (
     <div className="cadastro-table-wrap">
@@ -35,7 +37,7 @@ export function DataTable({
             {columns.map((column) => (
               <th key={column.key}>{column.label}</th>
             ))}
-            <th aria-label="Ações" />
+            {canEdit ? <th aria-label="Ações" /> : null}
           </tr>
         </thead>
         <tbody>
@@ -50,6 +52,7 @@ export function DataTable({
                     {renderCell(column.key, row)}
                   </td>
                 ))}
+                {canEdit ? (
                 <td>
                   <div className="cadastro-row-actions">
                     <button
@@ -68,7 +71,7 @@ export function DataTable({
                     >
                       Inativar
                     </button>
-                    {showDelete ? (
+                    {showDelete && onDelete ? (
                       <button
                         type="button"
                         className="cadastro-action-btn danger"
@@ -80,6 +83,7 @@ export function DataTable({
                     ) : null}
                   </div>
                 </td>
+                ) : null}
               </tr>
             );
           })}

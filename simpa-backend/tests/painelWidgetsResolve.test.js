@@ -7,10 +7,11 @@ jest.mock('../src/services/db', () => ({
 
 jest.mock('../src/services/painelMetricsService', () => ({
   executeMetric: jest.fn(),
+  executeSqlTemplate: jest.fn(),
 }));
 
 const { query } = require('../src/services/db');
-const { executeMetric } = require('../src/services/painelMetricsService');
+const { executeMetric, executeSqlTemplate } = require('../src/services/painelMetricsService');
 const {
   resolvePainelLayout,
   previewWidget,
@@ -365,6 +366,42 @@ describe('painelWidgetsService resolve/preview', () => {
     expect(getPreviousCompetencia('invalid')).toBe('invalid');
   });
 
+  it('card usa sql_override quando definido', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          slug: 'custom',
+          ordem: 1,
+          tipo: 'card',
+          titulo: 'Custom',
+          subtitulo: null,
+          formato: 'numero',
+          metrica_id: 10,
+          fonte_config: {},
+          spark_metrica_id: null,
+          sql_override: 'SELECT 99 AS valor',
+          spark_sql_override: null,
+          delta_config: null,
+        },
+      ],
+    });
+    executeSqlTemplate.mockResolvedValueOnce({ rows: [{ valor: 99 }], single: 99 });
+
+    const result = await resolvePainelLayout({
+      perfil: 'APS',
+      layout: 'A',
+      competencia: '2026-05',
+    });
+
+    expect(executeSqlTemplate).toHaveBeenCalledWith(
+      'SELECT 99 AS valor',
+      expect.objectContaining({ competencia: '2026-05' })
+    );
+    expect(executeMetric).not.toHaveBeenCalled();
+    expect(result.widgets[0].value).toBe(99);
+  });
+
   it('resolveMetricValue cobre sem métrica e fallback ausente', async () => {
     await expect(
       resolveMetricValue(null, { competencia: '2026-05' })
@@ -372,7 +409,9 @@ describe('painelWidgetsService resolve/preview', () => {
 
     executeMetric.mockResolvedValueOnce({ rows: [{ valor: null }], single: null });
     query.mockResolvedValueOnce({ rows: [] });
-    const fallbackMiss = await resolveMetricValue(10, { competencia: '2026-05' }, 'x.y');
+    const fallbackMiss = await resolveMetricValue(10, { competencia: '2026-05' }, {
+      fallbackChave: 'x.y',
+    });
     expect(fallbackMiss.single).toBeNull();
   });
 

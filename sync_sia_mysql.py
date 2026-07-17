@@ -107,6 +107,7 @@ def build_sia_query(*, paginated: bool = False) -> tuple[str, dict[str, str]]:
         "col_desc": _sia_env("SIA_COL_DESC_PROC", "procedimento"),
         "col_cbo_pk": _sia_env("SIA_COL_CBO_PK", "CBO"),
         "col_rubrica": _sia_env("SIA_COL_RUBRICA", "PRD_RUB"),
+        "col_apac": _sia_env("SIA_COL_APAC", "PRD_APANUM"),
         "col_rub_pk": _sia_env("SIA_COL_RUBRICA_PK", "RUB_ID"),
         "col_rub_desc": _sia_env("SIA_COL_RUBRICA_DESC", "RUB_DC"),
         "col_sexo": _sia_env("SIA_COL_SEXO", ""),
@@ -148,7 +149,8 @@ def build_sia_query(*, paginated: bool = False) -> tuple[str, dict[str, str]]:
             prd.{col_cbo},
             LEFT(prd.{col_rubrica}, 4),
             sr.{col_rub_desc},
-            prd.{col_idade}{sexo_group}
+            prd.{col_idade}{sexo_group},
+            NULLIF(TRIM(prd.{col_apac}), '')
         LIMIT %(limit)s OFFSET %(offset)s
         """.format(
             col_prd_uid=cfg["col_prd_uid"],
@@ -159,6 +161,7 @@ def build_sia_query(*, paginated: bool = False) -> tuple[str, dict[str, str]]:
             col_rubrica=cfg["col_rubrica"],
             col_rub_desc=cfg["col_rub_desc"],
             col_idade=cfg["col_idade"],
+            col_apac=cfg["col_apac"],
             sexo_group=sexo_group,
         )
 
@@ -177,7 +180,8 @@ def build_sia_query(*, paginated: bool = False) -> tuple[str, dict[str, str]]:
             SUM(CAST(prd.{cfg['col_valor_aprovado']} AS DECIMAL(15,2))) AS valor_aprovado,
             SUM(CAST(prd.{cfg['col_valor_apresentado']} AS DECIMAL(15,2))) AS valor_apresentado,
             {sexo_expr},
-            cb.{cfg['col_cbo_pk']} AS cbo_cadastro
+            cb.{cfg['col_cbo_pk']} AS cbo_cadastro,
+            NULLIF(TRIM(prd.{cfg['col_apac']}), '') AS apac_num
         FROM {cfg['table_prd']} prd
         LEFT JOIN {cfg['table_prest']} p
             ON {prd_uid_join} =
@@ -200,7 +204,8 @@ def build_sia_query(*, paginated: bool = False) -> tuple[str, dict[str, str]]:
             prd.{cfg['col_cbo']},
             LEFT(prd.{cfg['col_rubrica']}, 4),
             sr.{cfg['col_rub_desc']},
-            prd.{cfg['col_idade']}{sexo_group}
+            prd.{cfg['col_idade']}{sexo_group},
+            NULLIF(TRIM(prd.{cfg['col_apac']}), '')
         {pagination_clause}
     """
     return query, cfg
@@ -298,6 +303,13 @@ def transformar(df: pd.DataFrame) -> pd.DataFrame:
     )
     out["valor_aprovado"] = pd.to_numeric(out["valor_aprovado"], errors="coerce")
     out["valor_apresentado"] = pd.to_numeric(out["valor_apresentado"], errors="coerce")
+    if "apac_num" in out.columns:
+        out["apac_num"] = (
+            out["apac_num"]
+            .astype(str)
+            .str.strip()
+            .replace({"": None, "nan": None, "None": None})
+        )
     return out
 
 
@@ -328,6 +340,8 @@ def consolidar_para_carga(df: pd.DataFrame) -> pd.DataFrame:
         "cbo",
         "rubrica_codigo",
     ]
+    if "apac_num" in df.columns:
+        keys.append("apac_num")
     grouped = (
         df.groupby(keys, dropna=False, as_index=False)
         .agg(
@@ -461,6 +475,12 @@ def gravar_pg(
                     dados_extras["rubrica_codigo"] = str(rubrica_codigo).strip()
                 if pd.notna(rubrica_descricao):
                     dados_extras["rubrica_descricao"] = str(rubrica_descricao).strip()
+                apac_raw = row.get("apac_num")
+                apac_num = str(apac_raw).strip() if pd.notna(apac_raw) else None
+                if apac_num in ("", "None", "nan"):
+                    apac_num = None
+                if apac_num:
+                    dados_extras["apac_num"] = apac_num
 
                 payload.append(
                     (
@@ -483,6 +503,7 @@ def gravar_pg(
                         row.get("sexo"),
                         row.get("cbo"),
                         rubrica,
+                        apac_num,
                         json.dumps(dados_extras, ensure_ascii=False) if dados_extras else None,
                     )
                 )
@@ -493,8 +514,9 @@ def gravar_pg(
                     INSERT INTO sia_producao (
                         sincronizacao_id, competencia, unidade, cnes, estabelecimento_id,
                         codigo_sigtap, descricao, quantidade, quantidade_apresentada,
-                        valor_aprovado, valor_apresentado, faixa_etaria, sexo, cbo, rubrica, dados_extras
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                        valor_aprovado, valor_apresentado, faixa_etaria, sexo, cbo, rubrica,
+                        apac_num, dados_extras
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
                 """
                 total_chunks = max(1, (len(payload) + chunk_size - 1) // chunk_size)
                 for i in range(0, len(payload), chunk_size):

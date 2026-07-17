@@ -6,6 +6,7 @@ import { CbosPage } from './CbosPage';
 import { EstabelecimentosPage } from './EstabelecimentosPage';
 import { FormasPage } from './FormasPage';
 import { IndicadoresPainelPage } from './IndicadoresPainelPage';
+import { MetasOciParPage } from './MetasOciParPage';
 import { ProcedimentosPage } from './ProcedimentosPage';
 
 export default function CadastrosPage() {
@@ -17,6 +18,7 @@ export default function CadastrosPage() {
       <Route path="formas" element={<FormasPage />} />
       <Route path="cbos" element={<CbosPage />} />
       <Route path="indicadores-painel" element={<IndicadoresPainelPage />} />
+      <Route path="metas-oci-par" element={<MetasOciParPage />} />
       {CADASTRO_ENTITIES.map((entity) => (
         <Route
           key={entity.key}

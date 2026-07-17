@@ -112,7 +112,11 @@ WEB_PORT=8080
 
 ## nginx
 
-Config: `docker/nginx.conf` — proxy `/api` e `/auth` para serviço `api`.
+Config: `docker/nginx/nginx.conf` — proxy `/api` e `/auth` para serviço `api`.
+
+`POST /api/sia/sincronizar` e `POST /api/sih/sincronizar` usam `proxy_read_timeout 600s` (demais rotas `/api/` permanecem em 120s). Rebuild/restart do container `web` após alterar o nginx.
+
+Variáveis de lote SIA (`SIA_EXTRACT_BLOCK_SIZE`, `SIA_PG_BATCH_SIZE`): ver `.env.docker.example` — restart do container `api` após alterar.
 
 ## Deploy remoto (build local, sem compilar no servidor)
 

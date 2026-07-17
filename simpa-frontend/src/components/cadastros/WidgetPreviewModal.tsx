@@ -184,11 +184,11 @@ export function WidgetPreviewModal({ open, widget, onClose, onError }: WidgetPre
               </section>
             ) : null}
 
-            {widget.sql_preview ? (
+            {widget.sql_override?.trim() || widget.sql_preview ? (
               <details className="widget-sql-details" data-testid="widget-sql-details">
                 <summary>Query detail</summary>
                 <pre className="widget-sql-preview mono" data-testid="widget-sql-preview">
-                  {widget.sql_preview}
+                  {widget.sql_override?.trim() || widget.sql_preview}
                 </pre>
               </details>
             ) : null}

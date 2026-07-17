@@ -47,6 +47,17 @@ const sampleCargas: CargaEsus[] = [
   },
 ];
 
+function buildManyCargas(count: number): CargaEsus[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...sampleCargas[0]!,
+    id: index + 1,
+    competencia: `2026-${String(Math.max(1, 12 - (index % 12))).padStart(2, '0')}-01`,
+    unidade: `UNIDADE ${index + 1}`,
+    equipe_nome: `EQUIPE ${index + 1}`,
+    importado_em: `2026-06-${String(Math.max(1, 28 - (index % 28))).padStart(2, '0')}T10:00:00`,
+  }));
+}
+
 describe('HistoricoCargas', () => {
   afterEach(() => cleanup());
 
@@ -116,5 +127,27 @@ describe('HistoricoCargas', () => {
       expect(excluirCarga).toHaveBeenCalledWith(1);
       expect(onAtualizar).toHaveBeenCalled();
     });
+  });
+
+  it('shows 15 cargas initially and loads 20 more on demand', async () => {
+    const cargas = buildManyCargas(40);
+    const user = userEvent.setup();
+
+    render(<HistoricoCargas cargas={cargas} onAtualizar={vi.fn()} />);
+
+    expect(screen.getByText('Exibindo 15 de 40')).toBeInTheDocument();
+    expect(screen.getAllByRole('row')).toHaveLength(16);
+    expect(screen.getByTestId('historico-cargas-load-more')).toHaveTextContent('Ver mais importações (20)');
+
+    await user.click(screen.getByTestId('historico-cargas-load-more'));
+
+    expect(screen.getByText('Exibindo 35 de 40')).toBeInTheDocument();
+    expect(screen.getAllByRole('row')).toHaveLength(36);
+    expect(screen.getByTestId('historico-cargas-load-more')).toHaveTextContent('Ver mais importações (5)');
+
+    await user.click(screen.getByTestId('historico-cargas-load-more'));
+
+    expect(screen.getByText('Exibindo 40 de 40')).toBeInTheDocument();
+    expect(screen.queryByTestId('historico-cargas-load-more')).not.toBeInTheDocument();
   });
 });
