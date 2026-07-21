@@ -65,7 +65,22 @@ const DETAIL_SELECT = `
          eh.capacidade_notas, eh.notas AS eh_notas,
          emi.leitos AS emi_leitos, emi.capacidades_ambulatoriais,
          emi.notas_mac, emi.notas AS emi_notas,
-         eo.notas AS outro_notas
+         eo.notas AS outro_notas,
+         COALESCE((
+           SELECT jsonb_agg(
+                    jsonb_build_object(
+                      'id', v.id,
+                      'estabelecimento_id', v.estabelecimento_id,
+                      'vigencia_inicio', v.vigencia_inicio,
+                      'vigencia_fim', v.vigencia_fim,
+                      'leitos', v.leitos,
+                      'leitos_detalhe', v.leitos_detalhe,
+                      'atualizado_em', v.atualizado_em
+                    ) ORDER BY v.vigencia_inicio
+                  )
+           FROM enriquecimento_hospitalar_leitos_vigencia v
+           WHERE v.estabelecimento_id = e.id
+         ), '[]'::jsonb) AS leitos_vigencias
   FROM estabelecimentos e
   LEFT JOIN enriquecimento_aps ea ON ea.estabelecimento_id = e.id
   LEFT JOIN enriquecimento_mac em ON em.estabelecimento_id = e.id
@@ -344,6 +359,7 @@ function mapEstabelecimentoRow(row, { includeEnrichment = false } = {}) {
 
   if (includeEnrichment) {
     mapped.enrichment = mapEnrichmentFromJoin(row);
+    mapped.leitos_vigencias = row.leitos_vigencias ?? [];
   }
 
   return mapped;

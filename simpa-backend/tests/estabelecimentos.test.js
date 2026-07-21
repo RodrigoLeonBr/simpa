@@ -308,6 +308,37 @@ describe('estabelecimentosService', () => {
     expect(detail.perfil_editado).toBe(false);
   });
 
+  it('getEstabelecimentoById includes leitos_vigencias when present', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          ...hospitalDetailRow,
+          leitos_vigencias: [
+            {
+              id: 10,
+              estabelecimento_id: 1,
+              vigencia_inicio: '202410',
+              vigencia_fim: '999999',
+              leitos: { uti_adulto: 17 },
+              leitos_detalhe: {},
+            },
+          ],
+        },
+      ],
+    });
+
+    const detail = await getEstabelecimentoById(1);
+    expect(Array.isArray(detail.leitos_vigencias)).toBe(true);
+    expect(detail.leitos_vigencias).toHaveLength(1);
+    expect(detail.leitos_vigencias[0].vigencia_fim).toBe('999999');
+  });
+
+  it('getEstabelecimentoById defaults leitos_vigencias to empty array', async () => {
+    query.mockResolvedValueOnce({ rows: [hospitalDetailRow] });
+    const detail = await getEstabelecimentoById(1);
+    expect(detail.leitos_vigencias).toEqual([]);
+  });
+
   it('rejects identity fields like nome on update', async () => {
     await expect(
       updateEnriquecimento(1, { nome: 'hack' })
