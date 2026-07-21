@@ -21,6 +21,7 @@
 | `migration_022_procedimentos_esus_sigtap.sql` | `procedimentos_esus_sigtap` — de-para descrição e-SUS → código SIGTAP (relatórios de produção) |
 | `migration_023_sih_aih_campos.sql` | Campos extras em `sih_aih`: `carater_internacao`, `diag_secundario`, `cid_obito`, `dt_internacao`, `dt_saida` (DATE) |
 | `migration_024_sih_aih_widgets.sql` | Métricas `sih.permanencia_media_real`/`sih.pct_obito_cid`/`sih.internacoes_por_carater` + widgets Hospitalar Layout A (ordem 9–11) |
+| `migration_026_leitos_vigencia.sql` | `enriquecimento_hospitalar_leitos_vigencia` — leitos hospitalares versionados por vigência (Hospitalar/Misto) |
 
 Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `013` em `/docker-entrypoint-initdb.d/`.
 
@@ -43,6 +44,7 @@ Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … 
 | `estabelecimentos` | espelho MySQL; `perfil`, `perfil_editado`, `status` |
 | `enriquecimento_aps` … `enriquecimento_outro` | enriquecimento manual por perfil |
 | `estabelecimentos.enriquecimento` | JSONB legado (somente leitura/backfill) |
+| `enriquecimento_hospitalar_leitos_vigencia` | leitos hospitalares por vigência (migration 026); ver seção dedicada abaixo |
 | `procedimentos` | Códigos SIGTAP |
 | `procedimentos_esus_sigtap` | De-para descrição amigável e-SUS → código SIGTAP (migration 022); usado em relatórios de produção por unidade |
 | `formas_sia` | Forma de organização (grupo/subgrupo/forma 6 chars); espelho MySQL `forma` |
@@ -69,6 +71,8 @@ Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atu
 | `sih_procedimentos` | Itens `s_aih_pa` agregados por `(sincronizacao_id, cnes, proc_detalhado, cbo_profissional, financiamento_detalhe)` |
 
 FK: `sih_aih`, `sih_internacoes` e `sih_procedimentos.sincronizacao_id` → `sih_sincronizacoes(id) ON DELETE CASCADE`.
+
+**Dicionário de campos / SQL para Indicadores:** [sihd-internacao-dicionario-dados.md](sihd-internacao-dicionario-dados.md).
 
 **FINANCIAMENTO 2-char vs RUB_ID:** `s_aih.FINANCIAMENTO` é 2 chars → mapeia direto para `rubricas_sia.RUB_ID` (2 chars). Diferente do SIA onde `PRD_RUB` tem 4 chars com `LEFT(PRD_RUB, 4)`. Não usar CAST — colunas numéricas `DIARIAS`, `DIARIAS_UTI`, `VALOR_TOTAL_AIH` são nativas `int`/`decimal`.
 
@@ -132,6 +136,16 @@ Novas importações devem gravar FKs (app layer); linhas legadas permanecem null
 - **`cadastros_sincronizacoes`:** colunas `forma_inseridos/atualizados/inativados`, `cbo_inseridos/atualizados/inativados`.
 
 Join analítico SIA: `left(trim(codigo_sigtap), 6)` → `formas_sia.codigo_forma`; CBO canônico 6 chars → `cbos_sia.codigo_cbo`. Detalhe: [cadastros.md#workflow-forma-cbo-sia-sih](cadastros.md#workflow-forma-cbo-sia-sih).
+
+## Migration 026 (aplicada)
+
+`migration_026_leitos_vigencia.sql` — ordem Docker: `26-migration_026_leitos_vigencia.sql`.
+
+- **`enriquecimento_hospitalar_leitos_vigencia`:** `id` (PK), `estabelecimento_id` (FK → `estabelecimentos(id) ON DELETE CASCADE`), `vigencia_inicio`/`vigencia_fim` `CHAR(6)` (formato `YYYYMM`; `999999` = vigência aberta/sem fim definido), `leitos` JSONB (resumo — 6 chaves: `clinico`, `cirurgico`, `obstetrico`, `pediatrico`, `uti_adulto`, `uti_neonatal`), `leitos_detalhe` JSONB (opcional, por código CNES), `atualizado_em`.
+- **Constraints:** `chk_leitos_vigencia_ym` (ambas as colunas casam `^[0-9]{6}$`); `chk_leitos_vigencia_ordem` (`vigencia_inicio <= vigencia_fim`). Não-sobreposição de vigências por estabelecimento é validada em app layer (`leitosVigenciaValidation.js`), não via constraint SQL.
+- **Índice:** `idx_leitos_vigencia_estab` em `estabelecimento_id`.
+- **Backfill:** cria uma vigência aberta (`000001`–`999999`) por estabelecimento a partir de `enriquecimento_hospitalar.leitos` / `enriquecimento_misto.leitos` existentes (pula estabelecimentos que já têm vigência); normaliza chave legada `uti` → `uti_adulto`.
+- **Relação com colunas legadas:** `enriquecimento_hospitalar.leitos` / `enriquecimento_misto.leitos` continuam existindo e são mantidas como **espelho somente-leitura da vigência aberta** (`vigencia_fim = '999999'`), atualizado por `mirrorOpenVigenciaLeitos` a cada create/update/delete de vigência — `PUT /enriquecimento/:slug` não grava mais em `leitos` (ver [cadastros.md](cadastros.md#workflow-leitos-hospitalares-vigencia)).
 
 ## Queries úteis
 

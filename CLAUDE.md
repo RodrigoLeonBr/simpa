@@ -243,6 +243,14 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 
 ---
 
+## Feature concluída: leitos-hospitalares-vigencia
+
+**Entregue:** leitos hospitalares (perfis Hospitalar/Misto) versionados por vigência em vez de campo único; `migration_026_leitos_vigencia.sql` (tabela `enriquecimento_hospitalar_leitos_vigencia` + backfill da vigência aberta); `leitosCatalog.js`/`leitosVigenciaValidation.js`/`leitosVigenciaService.js` no backend; rotas `GET/POST /estabelecimentos/:id/leitos-vigencias` e `PUT/DELETE …/:vigenciaId` (mutações `requirePlanningStaff`, audit `estabelecimento_leitos_vigencia_update`); `getEstabelecimentoById` retorna `leitos_vigencias`; `utils/leitosCatalog.ts` + `LeitosVigenciasPanel.tsx`/`LeitosVigenciaEditor.tsx` no drawer de estabelecimento; edição inline de leitos no enriquecimento removida (leitos só por vigência); espelho automático da vigência aberta em `enriquecimento_hospitalar/misto.leitos`.
+
+Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-leitos-hospitalares-vigencia)** · API: **[backend-api.md](docs/agent/backend-api.md)** · DB: **[database.md](docs/agent/database.md)**.
+
+---
+
 ## Convenções para agentes
 
 ### Faça
@@ -275,6 +283,7 @@ Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Res
 | Extensão SIH forma/cbo? | `cadastroReferenciaService.js` → `resolveFormaDescricao` / `resolveCboDescricao` |
 | De-para procedimento e-SUS→SIGTAP? | `cadastroRegistry.js` (`procedimentos_esus_sigtap`) + tabela homônima (migration 022) · UI `/cadastros/procedimentos-sigtap` |
 | Enriquecimento por perfil? | `PUT …/enriquecimento/:slug` + tabelas `enriquecimento_*` |
+| Como cadastra leitos por vigência? | `leitosVigenciaService.js` / `LeitosVigenciasPanel.tsx` |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |
 | Roles de usuário | `requirePlanningStaff.js`, `admin.js` |
 

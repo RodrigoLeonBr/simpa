@@ -147,8 +147,9 @@ components/cadastros/
 │   ├── EstabelecimentoDrawerChrome.tsx
 │   ├── EstabelecimentoSyncedSection.tsx
 │   ├── EstabelecimentoPerfilEditor.tsx
-│   └── EstabelecimentoEnrichmentPanel.tsx
-├── enrichment/                # forms por perfil (EnrichmentFormByPerfil)
+│   └── EstabelecimentoEnrichmentPanel.tsx  # renderiza LeitosVigenciasPanel (Hospitalar/Misto)
+├── enrichment/                # forms por perfil (EnrichmentFormByPerfil) — sem leitos inline
+├── leitos/                    # LeitosVigenciasPanel.tsx, LeitosVigenciaEditor.tsx
 └── ...
 ```
 
@@ -160,7 +161,8 @@ components/cadastros/
 - **Custom:** Estabelecimentos (drawer SIA/perfil/enriquecimento), Indicadores do Painel (`useEntityCrud` estendido).
 - **Indicadores do Painel:** planning staff — ver [cadastros.md#workflow-painel-widgets-dinamicos](cadastros.md#workflow-painel-widgets-dinamicos).
 - **Estabelecimentos drawer:** chrome + seção SIA locked + editor perfil + painel enriquecimento por perfil.
-- **Enriquecimento:** `components/cadastros/enrichment/*`; readonly para Visualizador (`canViewEnrichment`).
+- **Enriquecimento:** `components/cadastros/enrichment/*`; readonly para Visualizador (`canViewEnrichment`). Leitos (Hospitalar/Misto) **não** fazem parte deste form — ver leitos por vigência abaixo.
+- **Leitos hospitalares por vigência:** `EstabelecimentoEnrichmentPanel.tsx` renderiza `components/cadastros/leitos/LeitosVigenciasPanel.tsx` (lista + Nova/Editar/Excluir) acima do `EnrichmentFormByPerfil` quando `perfil` é Hospitalar/Misto; edição de uma vigência via `LeitosVigenciaEditor.tsx` (datas MM/AAAA + resumo 6 chaves + detalhe CNES opcional). Catálogo/parse/validação em `utils/leitosCatalog.ts` (espelha `leitosCatalog.js`/`leitosVigenciaValidation.js` do backend). A edição inline de leitos que existia no form de enriquecimento foi removida. Detalhe do modelo/regras: [cadastros.md#workflow-leitos-hospitalares-vigencia](cadastros.md#workflow-leitos-hospitalares-vigencia).
 
 Helpers: `utils/enrichmentView.ts` → `buildPaginatedCatalogQuery`, `buildFormasQuery`, `buildCbosQuery`.
 
@@ -206,6 +208,6 @@ Ver **[cadastros.md](cadastros.md)** e workflow forma/cbo em **[cadastros.md#wor
 
 ## Testes
 
-- Vitest: `simpa-frontend/src/**/*.test.ts(x)`.
+- Vitest: `simpa-frontend/src/**/*.test.ts(x)` (inclui `components/cadastros/leitos/LeitosVigenciasPanel.test.tsx`).
 - Playwright: `perfil-painel.spec.ts`, `painel-widgets.spec.ts`, `sih-import.spec.ts`, `sih-painel-hospitalar.spec.ts`, `helpers.ts` (`login`, …).
 - `npm run test:web` na raiz.

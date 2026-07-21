@@ -311,3 +311,45 @@ CRUD genérico (`mode: 'crud'`), mesmo motor de Equipes/Emendas — sem código 
 `tipo_relatorio` é `<select>` com enum fixo (`TIPO_RELATORIO_OPTIONS`) — evita typo que quebraria o join. `descricao_esus` livre: **precisa bater exatamente** com `esus_indicadores_raw.descricao`.
 
 **Ceiling:** writes usam só `verifyJWT` (padrão do `registerResource`, igual Equipes/Emendas), sem `requirePlanningStaff`. Se precisar restringir a planning staff, é preciso guard por-entidade no `registerResource` — hoje não existe.
+
+---
+
+## Workflow: leitos-hospitalares-vigencia {#workflow-leitos-hospitalares-vigencia}
+
+Migration: `migration_026_leitos_vigencia.sql` (tabela `enriquecimento_hospitalar_leitos_vigencia`) — ver [database.md](database.md#migration-026-aplicada). Endpoints: [backend-api.md](backend-api.md).
+
+### Modelo de dados
+
+Leitos hospitalares (perfis **Hospitalar** e **Misto**) deixaram de ser um campo único editável no enriquecimento e passaram a ser **versionados por vigência** (período `vigencia_inicio`/`vigencia_fim`, formato `YYYYMM`, `vigencia_fim = '999999'` = vigência aberta/sem data de término). Cada vigência tem:
+
+- **Resumo (`leitos`):** objeto com 6 chaves fixas (`LEITOS_RESUMO_KEYS` em `leitosCatalog.js`/`leitosCatalog.ts`) — `clinico`, `cirurgico`, `obstetrico`, `pediatrico`, `uti_adulto`, `uti_neonatal`. UTI foi desdobrada em adulto/neonatal (chave legada `uti` é migrada para `uti_adulto` no backfill e em qualquer payload que ainda a envie).
+- **Detalhe opcional (`leitos_detalhe`):** objeto por código do catálogo fixo CNES (`75`, `81`, `03`, `13`, `33`, `10`, `43`, `47`, `68`, `45`) — cada código mapeia para um grupo do resumo (ex.: `47` Psiquiatria → `clinico`; `75` UTI-A Tipo II → `uti_adulto`). Catálogo único, compartilhado backend (`leitosCatalog.js`) e frontend (`utils/leitosCatalog.ts`).
+
+### Regras de negócio
+
+- **Consistência lenient:** só valida grupos do resumo que têm ao menos um código de detalhe informado — se o detalhe cobre um grupo, a soma dos códigos daquele grupo precisa bater com o valor do resumo (`assertDetalheConsistente`, duplicado em backend e frontend para validação client-side + server-side).
+- **Sem sobreposição:** vigências do mesmo estabelecimento não podem se sobrepor (`rangesOverlap` em `leitosVigenciaValidation.js`), validado em app layer no create/update (exclui a própria linha no update).
+- **Espelho da vigência aberta:** `enriquecimento_hospitalar.leitos` / `enriquecimento_misto.leitos` (colunas legadas) são atualizadas automaticamente por `mirrorOpenVigenciaLeitos` a cada create/update/delete de vigência, refletindo sempre a vigência com `vigencia_fim = '999999'` (ou `{}` se não houver). O `PUT /enriquecimento/:slug` **não gerencia mais leitos** — só os demais campos do perfil.
+
+### Backend
+
+| Arquivo | Responsabilidade |
+|---------|------------------|
+| `leitosCatalog.js` | `LEITOS_RESUMO_KEYS`, `LEITOS_DETALHE_CATALOG`, `DETALHE_CODIGO_TO_GRUPO` |
+| `leitosVigenciaValidation.js` | `normalizeLeitosResumo` (migra `uti`→`uti_adulto`), `rangesOverlap`, `assertDetalheConsistente`, `validateVigenciaPayload` |
+| `leitosVigenciaService.js` | `listLeitosVigencias`, `createLeitosVigencia`, `updateLeitosVigencia`, `deleteLeitosVigencia`, `mirrorOpenVigenciaLeitos` (transação `BEGIN/COMMIT` por mutação) |
+
+`estabelecimentosService.getEstabelecimentoById` agrega `leitos_vigencias` (JOIN lateral com `jsonb_agg`, ordenado por `vigencia_inicio`) no detalhe do estabelecimento.
+
+### Frontend
+
+| Arquivo | Comportamento |
+|---------|---------------|
+| `utils/leitosCatalog.ts` | Espelho TS do catálogo backend + `parseVigenciaUi`/`formatVigenciaUi` (MM/AAAA ↔ YYYYMM, `99/9999` ↔ `999999`) + `assertDetalheConsistente` (validação client-side) |
+| `components/cadastros/leitos/LeitosVigenciasPanel.tsx` | Lista vigências do estabelecimento, ações Nova/Editar/Excluir (planning staff) |
+| `components/cadastros/leitos/LeitosVigenciaEditor.tsx` | Form de uma vigência (datas + resumo + detalhe opcional), valida no submit antes de chamar a API |
+| `components/cadastros/estabelecimento/EstabelecimentoEnrichmentPanel.tsx` | Renderiza `LeitosVigenciasPanel` acima do `EnrichmentFormByPerfil` quando `perfil` é Hospitalar/Misto |
+
+A edição inline de leitos que existia dentro do form de enriquecimento (Hospitalar/Misto) foi **removida** — leitos só são editados via painel de vigências. Ver [frontend.md](frontend.md#cadastros).
+
+Testes: `simpa-backend/tests/leitosVigencia*.test.js`, `simpa-frontend/src/components/cadastros/leitos/LeitosVigenciasPanel.test.tsx`.

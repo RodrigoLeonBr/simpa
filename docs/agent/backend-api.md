@@ -163,10 +163,33 @@ Services SIHD:
 | PUT | `/api/cadastros/estabelecimentos/:id/perfil` | JWT + `requirePlanningStaff` |
 | PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento/:slug` | JWT + `requirePlanningStaff` |
 | PUT | `/api/cadastros/estabelecimentos/:id/enriquecimento` | JWT + `requirePlanningStaff` (legado) |
+| GET | `/api/cadastros/estabelecimentos/:id/leitos-vigencias` | JWT |
+| POST | `/api/cadastros/estabelecimentos/:id/leitos-vigencias` | JWT + `requirePlanningStaff` |
+| PUT | `/api/cadastros/estabelecimentos/:id/leitos-vigencias/:vigenciaId` | JWT + `requirePlanningStaff` |
+| DELETE | `/api/cadastros/estabelecimentos/:id/leitos-vigencias/:vigenciaId` | JWT + `requirePlanningStaff` |
 | GET | `/api/cadastros/formas` | JWT — listagem paginada (`formasService.listFormas`) |
 | GET | `/api/cadastros/cbos` | JWT — listagem paginada (`cbosService.listCbos`) |
 | POST/PUT/DELETE | `/api/cadastros/formas`, `/cbos` | JWT — **405** read-only (MySQL espelho) |
 | GET/POST | procedimentos, sincronizar, … | ver **[cadastros.md](cadastros.md)** |
+
+#### Leitos hospitalares por vigência
+
+Service: `leitosVigenciaService.js` (validação em `leitosVigenciaValidation.js`, catálogo em `leitosCatalog.js`).
+
+| Método | Path | Auth | Corpo |
+|--------|------|------|-------|
+| GET | `/api/cadastros/estabelecimentos/:id/leitos-vigencias` | JWT | — → `LeitosVigencia[]` ordenado por `vigencia_inicio` |
+| POST | `/api/cadastros/estabelecimentos/:id/leitos-vigencias` | JWT + `requirePlanningStaff` | `{ vigencia_inicio, vigencia_fim, leitos, leitos_detalhe? }` → 201 com a linha criada |
+| PUT | `/api/cadastros/estabelecimentos/:id/leitos-vigencias/:vigenciaId` | JWT + `requirePlanningStaff` | idem POST → linha atualizada |
+| DELETE | `/api/cadastros/estabelecimentos/:id/leitos-vigencias/:vigenciaId` | JWT + `requirePlanningStaff` | — → `{ ok: true }` |
+
+- `vigencia_inicio`/`vigencia_fim`: string `YYYYMM`; `999999` em `vigencia_fim` = vigência aberta.
+- `leitos`: objeto resumo com as 6 chaves de `LEITOS_RESUMO_KEYS` (`clinico`, `cirurgico`, `obstetrico`, `pediatrico`, `uti_adulto`, `uti_neonatal`), inteiros ≥ 0.
+- `leitos_detalhe` (opcional): objeto por código do catálogo CNES fixo (`75`, `81`, `03`, `13`, `33`, `10`, `43`, `47`, `68`, `45`); soma por grupo deve casar com `leitos` quando o grupo tem algum código informado (consistência lenient).
+- **400:** `vigencia_inicio`/`vigencia_fim` inválidos, `vigencia_inicio > vigencia_fim`, chave/código desconhecido, valor não-inteiro, inconsistência resumo×detalhe, ou sobreposição de vigência existente.
+- **404:** estabelecimento inexistente (POST/PUT/DELETE) ou vigência não pertence ao estabelecimento (PUT/DELETE).
+- Mutações auditam `estabelecimento_leitos_vigencia_update` (recurso `estabelecimentos`) e espelham a vigência aberta (`vigencia_fim = '999999'`) em `enriquecimento_hospitalar.leitos` / `enriquecimento_misto.leitos` conforme o `perfil` do estabelecimento.
+- `GET /api/cadastros/estabelecimentos/:id` inclui `leitos_vigencias: LeitosVigencia[]` no corpo do detalhe (agregado via `estabelecimentosService.getEstabelecimentoById`).
 
 Query GET `formas`: `q`, `grupo` (2 chars), `subgrupo` (4 chars), `status` (`ativo`|`inativo`|`all`, default `ativo`), `page`, `limit` (max 200).
 
