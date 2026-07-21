@@ -8,6 +8,7 @@ import {
   canEditEnrichment,
   canViewEnrichment,
   formatCatalogCount,
+  formatLeitosSummary,
   formValuesToEnrichment,
   validateEnrichmentForm,
   enrichmentToFormValues,
@@ -114,5 +115,20 @@ describe('enrichmentView', () => {
       habilitacoes: [],
       notas: '',
     });
+  });
+
+  it('formatLeitosSummary shows UTI Adulto for legacy uti', () => {
+    expect(formatLeitosSummary({ uti: 3 })).toMatch(/uti_adulto|UTI Adulto/i);
+  });
+
+  it('formatLeitosSummary keeps non-legacy keys as-is (backward compatible with existing screens)', () => {
+    expect(formatLeitosSummary({ clinico: 10, desconhecido: 2 })).toBe(
+      'clinico: 10 · desconhecido: 2',
+    );
+  });
+
+  it('formatLeitosSummary returns em dash for empty/undefined leitos', () => {
+    expect(formatLeitosSummary(undefined)).toBe('—');
+    expect(formatLeitosSummary({})).toBe('—');
   });
 });

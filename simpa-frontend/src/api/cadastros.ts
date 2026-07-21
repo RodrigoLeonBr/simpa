@@ -12,6 +12,8 @@ import type {
   EstabelecimentoPerfil,
   EstabelecimentosListResponse,
   FormasListResponse,
+  LeitosVigencia,
+  LeitosVigenciaInput,
   ProcedimentosListResponse,
 } from '../types/cadastros';
 import { apiFetch } from './client';
@@ -210,4 +212,39 @@ export function updateMetaOciPar(id: number, body: Partial<MetaOciPar>): Promise
 
 export function inactivateMetaOciPar(id: number): Promise<void> {
   return apiFetch<void>(`/api/cadastros/metas-oci-par/${id}`, { method: 'DELETE' });
+}
+
+export function fetchLeitosVigencias(id: number): Promise<LeitosVigencia[]> {
+  return apiFetch<LeitosVigencia[]>(`/api/cadastros/estabelecimentos/${id}/leitos-vigencias`);
+}
+
+export function createLeitosVigencia(
+  id: number,
+  body: LeitosVigenciaInput,
+): Promise<LeitosVigencia> {
+  return apiFetch<LeitosVigencia>(`/api/cadastros/estabelecimentos/${id}/leitos-vigencias`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateLeitosVigencia(
+  id: number,
+  vigenciaId: number,
+  body: LeitosVigenciaInput,
+): Promise<LeitosVigencia> {
+  return apiFetch<LeitosVigencia>(
+    `/api/cadastros/estabelecimentos/${id}/leitos-vigencias/${vigenciaId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export function deleteLeitosVigencia(id: number, vigenciaId: number): Promise<void> {
+  return apiFetch<void>(
+    `/api/cadastros/estabelecimentos/${id}/leitos-vigencias/${vigenciaId}`,
+    { method: 'DELETE' },
+  );
 }

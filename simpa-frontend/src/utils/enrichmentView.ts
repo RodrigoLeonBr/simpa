@@ -1,6 +1,7 @@
 import type { EstabelecimentoEnriquecimento } from '../types/cadastros';
 
 import type { EstabelecimentoPerfil } from '../types/cadastros';
+import { LEITO_RESUMO_LABELS } from './leitosCatalog';
 
 export const LEITOS_KEYS = ['clinico', 'cirurgico', 'obstetrico', 'pediatrico', 'uti'] as const;
 
@@ -125,9 +126,14 @@ export function formatCatalogCount(shown: number, total: number): string {
   return `${shown} de ${total}`;
 }
 
+function leitoLabel(key: string): string {
+  if (key === 'uti') return LEITO_RESUMO_LABELS.uti_adulto;
+  return key;
+}
+
 export function formatLeitosSummary(leitos?: Record<string, number>): string {
   if (!leitos || Object.keys(leitos).length === 0) return '—';
   return Object.entries(leitos)
-    .map(([key, value]) => `${key}: ${value}`)
+    .map(([key, value]) => `${leitoLabel(key)}: ${value}`)
     .join(' · ');
 }

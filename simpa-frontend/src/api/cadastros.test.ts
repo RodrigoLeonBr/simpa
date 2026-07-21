@@ -1,14 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createCadastro,
+  createLeitosVigencia,
+  deleteLeitosVigencia,
   fetchCadastroList,
   fetchEquipes,
   fetchEstabelecimentosAps,
+  fetchLeitosVigencias,
   fetchUltimaCadastroSync,
   inactivateCadastro,
   sincronizarCadastros,
   updateCadastro,
   updateEnrichmentBySlug,
+  updateLeitosVigencia,
   updatePerfil,
 } from './cadastros';
 import { apiFetch } from './client';
@@ -181,6 +185,63 @@ describe('cadastros api', () => {
       3,
       '/api/cadastros/estabelecimentos/1/enriquecimento',
       expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+
+  it('fetchLeitosVigencias calls the leitos-vigencias list endpoint', async () => {
+    vi.clearAllMocks();
+    vi.mocked(apiFetch).mockResolvedValueOnce([]);
+
+    await fetchLeitosVigencias(1);
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/cadastros/estabelecimentos/1/leitos-vigencias');
+  });
+
+  it('createLeitosVigencia posts a new vigencia with JSON body', async () => {
+    vi.clearAllMocks();
+    const body = {
+      vigencia_inicio: '202401',
+      vigencia_fim: '999999',
+      leitos: { clinico: 10 },
+      leitos_detalhe: { '33': 10 },
+    };
+    vi.mocked(apiFetch).mockResolvedValueOnce({ id: 1, estabelecimento_id: 1, ...body });
+
+    await createLeitosVigencia(1, body);
+
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/cadastros/estabelecimentos/1/leitos-vigencias',
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  });
+
+  it('updateLeitosVigencia puts to the specific vigencia endpoint', async () => {
+    vi.clearAllMocks();
+    const body = {
+      vigencia_inicio: '202401',
+      vigencia_fim: '202412',
+      leitos: { clinico: 5 },
+      leitos_detalhe: {},
+    };
+    vi.mocked(apiFetch).mockResolvedValueOnce({ id: 2, estabelecimento_id: 1, ...body });
+
+    await updateLeitosVigencia(1, 2, body);
+
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/cadastros/estabelecimentos/1/leitos-vigencias/2',
+      { method: 'PUT', body: JSON.stringify(body) },
+    );
+  });
+
+  it('deleteLeitosVigencia deletes the specific vigencia endpoint', async () => {
+    vi.clearAllMocks();
+    vi.mocked(apiFetch).mockResolvedValueOnce(undefined);
+
+    await deleteLeitosVigencia(1, 2);
+
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/cadastros/estabelecimentos/1/leitos-vigencias/2',
+      { method: 'DELETE' },
     );
   });
 });

@@ -29,6 +29,29 @@ export interface CadastroSyncRecord {
 
 export type EstabelecimentoPerfil = 'APS' | 'MAC' | 'Hospitalar' | 'Misto' | 'Outro';
 
+export type LeitoResumoKey =
+  | 'clinico'
+  | 'cirurgico'
+  | 'obstetrico'
+  | 'pediatrico'
+  | 'uti_adulto'
+  | 'uti_neonatal';
+
+export interface LeitosVigencia {
+  id: number;
+  estabelecimento_id: number;
+  vigencia_inicio: string;
+  vigencia_fim: string;
+  leitos: Record<string, number>;
+  leitos_detalhe: Record<string, number>;
+  atualizado_em?: string;
+}
+
+export type LeitosVigenciaInput = Pick<
+  LeitosVigencia,
+  'vigencia_inicio' | 'vigencia_fim' | 'leitos' | 'leitos_detalhe'
+>;
+
 export type EnrichmentSlug = 'aps' | 'mac' | 'hospitalar' | 'misto' | 'outro';
 
 export interface EnrichmentAps {
@@ -104,6 +127,7 @@ export interface Estabelecimento {
   enrichment?: EstabelecimentoEnrichment;
   /** @deprecated Use `enrichment` — legacy hospital JSONB shape */
   enriquecimento?: EstabelecimentoEnriquecimento;
+  leitos_vigencias?: LeitosVigencia[];
 }
 
 export interface Procedimento {
