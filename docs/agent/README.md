@@ -18,6 +18,7 @@
 | [database.md](database.md) | Migrations, schema, queries |
 | [etl-python.md](etl-python.md) | Scripts Python, sync MySQL |
 | [docker-env.md](docker-env.md) | Compose, variáveis, portas |
+| [restore-backup-e-release-docker.md](restore-backup-e-release-docker.md) | Restaurar `.sql`, migrations pós-restore, gerar/atualizar release Docker sem build no destino |
 | [auth-roles.md](auth-roles.md) | Login, JWT, perfis, admin |
 | [testing-ci.md](testing-ci.md) | Jest, Vitest, pytest, Playwright, CI |
 | [compozy.md](compozy.md) | Workflows PRD/TechSpec/tasks |
@@ -28,6 +29,7 @@
 | [sia-atualizacao-cadastro-dicionario-dados.md](sia-atualizacao-cadastro-dicionario-dados.md) | Tabelas estabelecimentos, procedimentos, formas/cbo |
 | [sia-importacao-producao-regras.md](sia-importacao-producao-regras.md) | Sync produção SIA, gate 409, status |
 | [sia-importacao-producao-dicionario-dados.md](sia-importacao-producao-dicionario-dados.md) | `sia_producao`, sincronizações, enriquecimento |
+| [sihd-internacao-dicionario-dados.md](sihd-internacao-dicionario-dados.md) | `sih_aih`, `sih_internacoes`, `sih_procedimentos` — grãos, campos e SQL para Indicadores do Painel |
 | [sia-painel-indicadores-proposta.md](sia-painel-indicadores-proposta.md) | Indicadores SIA/OCI/PATE no Painel MAC, metas e periodicidades |
 
 ## Manutenção

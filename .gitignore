@@ -15,3 +15,7 @@ release/
 # Test/coverage artifacts (gerados por Jest/Vitest/Playwright)
 coverage/
 test-results/
+.pytest_cache/
+
+# Graphify output/cache (gerado por ferramenta, não versionar)
+graphify-out/
