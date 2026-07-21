@@ -32,6 +32,8 @@ services:
       - ./migration_022_procedimentos_esus_sigtap.sql:/docker-entrypoint-initdb.d/22-migration_022_procedimentos_esus_sigtap.sql:ro
       - ./migration_023_sih_aih_campos.sql:/docker-entrypoint-initdb.d/23-migration_023_sih_aih_campos.sql:ro
       - ./migration_024_sih_aih_widgets.sql:/docker-entrypoint-initdb.d/24-migration_024_sih_aih_widgets.sql:ro
+      - ./migration_025_sih_proc_qtd_linhas.sql:/docker-entrypoint-initdb.d/25-migration_025_sih_proc_qtd_linhas.sql:ro
+      - ./migration_026_leitos_vigencia.sql:/docker-entrypoint-initdb.d/26-migration_026_leitos_vigencia.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:
