@@ -11,6 +11,7 @@ const {
   sincronizar,
   getSyncProgress,
   getCompetenciaImportada,
+  listSincronizacoes,
 } = require('../src/services/sih');
 const { runConsolidation } = require('../src/services/consolidator');
 const { listInternacoes, listProcedimentos } = require('../src/services/sihProducaoService');
@@ -31,6 +32,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   query.mockResolvedValue({ rows: [] });
   getCompetenciaImportada.mockResolvedValue({ exists: false });
+  listSincronizacoes.mockResolvedValue([]);
   sincronizar.mockResolvedValue(defaultSyncResult);
   runConsolidation.mockResolvedValue({ ok: true, result: { status: 'ok' } });
   listInternacoes.mockResolvedValue([]);
@@ -267,13 +269,27 @@ describe('GET /api/sih/sincronizacoes', () => {
     expect(res.status).toBe(401);
   });
 
-  it('200 with history array', async () => {
-    query.mockResolvedValueOnce({
-      rows: [{
-        id: 1, competencia: '2025-01-01', status: 'ok',
-        qtd_internacoes: 50, qtd_procedimentos: 120,
-      }],
-    });
+  it('200 with history array including qtd_aih and por_cnes', async () => {
+    listSincronizacoes.mockResolvedValueOnce([{
+      id: 1,
+      competencia: '2025-01-01',
+      status: 'ok',
+      qtd_aih: 801,
+      qtd_internacoes: 496,
+      qtd_procedimentos: 839,
+      orphan_cnes: 0,
+      erros: 0,
+      sincronizado_em: '2025-02-01T10:00:00Z',
+      por_cnes: [
+        {
+          cnes: '2058790',
+          unidade: 'HOSPITAL MUNICIPAL',
+          qtd_aih: 779,
+          qtd_internacoes: 480,
+          qtd_procedimentos: 820,
+        },
+      ],
+    }]);
 
     const res = await request(app)
       .get('/api/sih/sincronizacoes')
@@ -282,6 +298,10 @@ describe('GET /api/sih/sincronizacoes', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].status).toBe('ok');
+    expect(res.body[0].qtd_aih).toBe(801);
+    expect(res.body[0].por_cnes).toHaveLength(1);
+    expect(res.body[0].por_cnes[0].cnes).toBe('2058790');
+    expect(listSincronizacoes).toHaveBeenCalled();
   });
 });
 

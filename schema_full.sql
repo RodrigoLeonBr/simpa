@@ -286,7 +286,8 @@ CREATE TABLE IF NOT EXISTS sih_procedimentos (
     financiamento_detalhe VARCHAR(2),
     qtd_aih_distintas     INT           NOT NULL DEFAULT 0,
     total_quantidade      INT           NOT NULL DEFAULT 0,
-    total_valor_item      NUMERIC(15,2) NOT NULL DEFAULT 0
+    total_valor_item      NUMERIC(15,2) NOT NULL DEFAULT 0,
+    qtd_linhas            INT           NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_sih_proc_cns_cmp

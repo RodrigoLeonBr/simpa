@@ -1,11 +1,11 @@
 'use strict';
 
 const express = require('express');
-const { query } = require('../services/db');
 const {
   sincronizar,
   getSyncProgress,
   getCompetenciaImportada,
+  listSincronizacoes,
 } = require('../services/sih');
 const { runConsolidation } = require('../services/consolidator');
 const { listInternacoes, listProcedimentos } = require('../services/sihProducaoService');
@@ -38,6 +38,7 @@ router.post('/sincronizar', requirePlanningStaff, async (req, res, next) => {
         code: 'SIH_COMPETENCIA_JA_IMPORTADA',
         competencia,
         sincronizado_em: existe.sincronizado_em,
+        qtd_aih: existe.qtd_aih,
         qtd_internacoes: existe.qtd_internacoes,
         qtd_procedimentos: existe.qtd_procedimentos,
       });
@@ -99,12 +100,7 @@ router.get('/sincronizacoes/existe', async (req, res, next) => {
 // GET /api/sih/sincronizacoes
 router.get('/sincronizacoes', async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `SELECT id, competencia, status, qtd_internacoes, qtd_procedimentos,
-              orphan_cnes, erros, sincronizado_em
-       FROM sih_sincronizacoes
-       ORDER BY competencia DESC`
-    );
+    const rows = await listSincronizacoes();
     return res.json(rows);
   } catch (err) {
     return next(err);

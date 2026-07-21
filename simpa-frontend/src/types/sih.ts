@@ -1,20 +1,31 @@
 // Types for the SIHD (hospitalar) import module.
 
+export interface SihSincronizacaoPorCnes {
+  cnes: string;
+  unidade: string;
+  qtd_aih: number;
+  qtd_internacoes: number;
+  qtd_procedimentos: number;
+}
+
 export interface SihSincronizacao {
   id: number;
   competencia: string;
   status: 'ok' | 'parcial' | 'erro' | 'pendente';
+  qtd_aih: number;
   qtd_internacoes: number;
   qtd_procedimentos: number;
   orphan_cnes: number;
   erros: number;
   sincronizado_em: string;
+  por_cnes?: SihSincronizacaoPorCnes[];
 }
 
 export interface SihImportResult {
   sincronizacao_id?: number;
   competencia: string;
   status: 'ok' | 'parcial' | 'erro';
+  qtd_aih?: number;
   qtd_internacoes: number;
   qtd_procedimentos: number;
   orphan_cnes: number;
@@ -32,6 +43,7 @@ export interface SihConflictErrorBody {
   code: 'SIH_COMPETENCIA_JA_IMPORTADA';
   competencia: string;
   sincronizado_em?: string;
+  qtd_aih?: number;
   qtd_internacoes: number;
   qtd_procedimentos: number;
 }
@@ -40,6 +52,7 @@ export interface SihSyncExistsResponse {
   competencia: string;
   exists: boolean;
   status: 'ok' | 'parcial' | 'erro' | null;
+  qtd_aih?: number;
   qtd_internacoes: number;
   qtd_procedimentos: number;
   sincronizado_em?: string | null;
@@ -69,6 +82,7 @@ export interface SihProgress {
   stage: string;
   summary?: {
     status: string;
+    qtd_aih?: number;
     qtd_internacoes: number;
     qtd_procedimentos: number;
     orphan_cnes: number;

@@ -13,10 +13,52 @@ import type {
   SihImportResult,
   SihProgress,
   SihSincronizacao,
+  SihSincronizacaoPorCnes,
   SihSyncExistsResponse,
   SihSyncProgressEvent,
 } from '../../types/sih';
 import { formatImportDate } from '../../utils/importacaoView';
+
+type SihHistoryRow = {
+  key: string;
+  competencia: string;
+  status: string;
+  cnes: string;
+  unidade: string;
+  qtd_aih: number;
+  qtd_internacoes: number;
+  qtd_procedimentos: number;
+  sincronizado_em: string | null;
+};
+
+function flattenHistoryRows(history: SihSincronizacao[]): SihHistoryRow[] {
+  const rows: SihHistoryRow[] = [];
+  for (const item of history) {
+    const porCnes: SihSincronizacaoPorCnes[] = item.por_cnes?.length
+      ? item.por_cnes
+      : [{
+          cnes: '—',
+          unidade: '—',
+          qtd_aih: item.qtd_aih ?? 0,
+          qtd_internacoes: item.qtd_internacoes,
+          qtd_procedimentos: item.qtd_procedimentos,
+        }];
+    for (const c of porCnes) {
+      rows.push({
+        key: `${item.id}-${c.cnes}`,
+        competencia: item.competencia.slice(0, 7),
+        status: item.status,
+        cnes: c.cnes,
+        unidade: c.unidade,
+        qtd_aih: c.qtd_aih,
+        qtd_internacoes: c.qtd_internacoes,
+        qtd_procedimentos: c.qtd_procedimentos,
+        sincronizado_em: item.sincronizado_em ?? null,
+      });
+    }
+  }
+  return rows;
+}
 
 function defaultCompetencia(): string {
   const now = new Date();
@@ -35,6 +77,7 @@ function buildSihExecutionId(competencia: string): string {
 
 function formatSihToast(result: SihImportResult): string {
   const parts = [
+    `${result.qtd_aih ?? 0} AIH`,
     `${result.qtd_internacoes ?? 0} internações`,
     `${result.qtd_procedimentos ?? 0} procedimentos`,
   ];
@@ -181,6 +224,7 @@ export function SihImportSection() {
 
   const recentEvents = useMemo(() => progress?.events?.slice(-8).reverse() ?? [], [progress]);
   const pct = useMemo(() => stagePercent(progress?.stage, progress?.events), [progress]);
+  const historyRows = useMemo(() => flattenHistoryRows(history), [history]);
 
   const runSync = async (reimportar: boolean) => {
     const execId = buildSihExecutionId(competencia);
@@ -291,8 +335,8 @@ export function SihImportSection() {
             {existeInfo.sincronizado_em
               ? formatImportDate(existeInfo.sincronizado_em)
               : 'data não informada'}{' '}
-            · {existeInfo.qtd_internacoes} internações · {existeInfo.qtd_procedimentos}{' '}
-            procedimentos
+            · {existeInfo.qtd_aih ?? 0} AIH · {existeInfo.qtd_internacoes} internações ·{' '}
+            {existeInfo.qtd_procedimentos} procedimentos
           </p>
         ) : null}
 
@@ -321,6 +365,7 @@ export function SihImportSection() {
             </p>
             {progress?.summary ? (
               <p className="mono" data-testid="sih-import-progress-summary">
+                {progress.summary.qtd_aih != null ? `${progress.summary.qtd_aih} AIH · ` : ''}
                 {progress.summary.qtd_internacoes} internações ·{' '}
                 {progress.summary.qtd_procedimentos} procedimentos
                 {progress.summary.orphan_cnes > 0
@@ -350,28 +395,34 @@ export function SihImportSection() {
         <div className="cadastro-sync-meta" data-testid="sih-history-table">
           {historyLoading ? (
             <span>Carregando histórico SIHD…</span>
-          ) : history.length === 0 ? (
+          ) : historyRows.length === 0 ? (
             <span>Nenhuma importação SIHD registrada.</span>
           ) : (
             <table className="cadastro-table">
               <thead>
                 <tr>
                   <th>Competência</th>
+                  <th>CNES</th>
+                  <th>Unidade</th>
                   <th>Status</th>
+                  <th>AIH</th>
                   <th>Internações</th>
                   <th>Procedimentos</th>
                   <th>Importado em</th>
                 </tr>
               </thead>
               <tbody>
-                {history.map((item) => (
-                  <tr key={item.id}>
-                    <td className="mono">{item.competencia.slice(0, 7)}</td>
-                    <td>{statusLabel(item.status)}</td>
-                    <td>{item.qtd_internacoes}</td>
-                    <td>{item.qtd_procedimentos}</td>
+                {historyRows.map((row) => (
+                  <tr key={row.key}>
+                    <td className="mono">{row.competencia}</td>
+                    <td className="mono">{row.cnes}</td>
+                    <td>{row.unidade}</td>
+                    <td>{statusLabel(row.status)}</td>
+                    <td>{row.qtd_aih}</td>
+                    <td>{row.qtd_internacoes}</td>
+                    <td>{row.qtd_procedimentos}</td>
                     <td className="mono">
-                      {item.sincronizado_em ? formatImportDate(item.sincronizado_em) : '—'}
+                      {row.sincronizado_em ? formatImportDate(row.sincronizado_em) : '—'}
                     </td>
                   </tr>
                 ))}
@@ -387,7 +438,7 @@ export function SihImportSection() {
           title="Competência já importada"
           message={
             conflictInfo
-              ? `A competência ${conflictInfo.competencia} já foi importada (${conflictInfo.qtd_internacoes} internações). Substituir os dados atuais?`
+              ? `A competência ${conflictInfo.competencia} já foi importada (${conflictInfo.qtd_aih} AIH · ${conflictInfo.qtd_internacoes} internações). Substituir os dados atuais?`
               : `A competência ${competencia} já foi importada. Substituir os dados atuais?`
           }
           confirmLabel="Reimportar"

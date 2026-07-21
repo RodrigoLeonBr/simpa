@@ -31,11 +31,28 @@ const defaultHistory = [
     id: 1,
     competencia: '2025-01-01',
     status: 'ok' as const,
+    qtd_aih: 801,
     qtd_internacoes: 120,
     qtd_procedimentos: 380,
     orphan_cnes: 2,
     erros: 0,
     sincronizado_em: '2025-02-01T10:00:00Z',
+    por_cnes: [
+      {
+        cnes: '2058790',
+        unidade: 'HOSPITAL MUNICIPAL DR WALDEMAR TEBA',
+                      qtd_aih: 779,
+                      qtd_internacoes: 100,
+                      qtd_procedimentos: 13917,
+                    },
+                    {
+                      cnes: '2082179',
+                      unidade: 'HOSPITAL SAO FRANCISCO',
+                      qtd_aih: 22,
+                      qtd_internacoes: 20,
+                      qtd_procedimentos: 202,
+                    },
+    ],
   },
 ];
 
@@ -43,6 +60,7 @@ const defaultSyncResult = {
   sincronizacao_id: 1,
   competencia: '2025-01-01',
   status: 'ok' as const,
+  qtd_aih: 42,
   qtd_internacoes: 42,
   qtd_procedimentos: 110,
   orphan_cnes: 1,
@@ -57,6 +75,7 @@ beforeEach(() => {
     competencia: '',
     exists: false,
     status: null,
+    qtd_aih: 0,
     qtd_internacoes: 0,
     qtd_procedimentos: 0,
   });
@@ -90,11 +109,19 @@ describe('SihImportSection rendering', () => {
     });
   });
 
-  it('renders history rows with competencia, status, qtd_internacoes', async () => {
+  it('renders history rows with competencia, CNES, AIH and qtd_internacoes', async () => {
     render(<SihImportSection />);
     await waitFor(() => {
-      expect(screen.getByTestId('sih-history-table')).toHaveTextContent('2025-01');
-      expect(screen.getByTestId('sih-history-table')).toHaveTextContent('120');
+      const table = screen.getByTestId('sih-history-table');
+      expect(table).toHaveTextContent('2025-01');
+      expect(table).toHaveTextContent('2058790');
+      expect(table).toHaveTextContent('HOSPITAL MUNICIPAL DR WALDEMAR TEBA');
+      expect(table).toHaveTextContent('779');
+      expect(table).toHaveTextContent('13917');
+      expect(table).toHaveTextContent('2082179');
+      expect(table).toHaveTextContent('22');
+      expect(table).toHaveTextContent('202');
+      expect(table).toHaveTextContent('AIH');
     });
   });
 
@@ -103,6 +130,7 @@ describe('SihImportSection rendering', () => {
       competencia: '2025-01',
       exists: true,
       status: 'ok',
+      qtd_aih: 801,
       qtd_internacoes: 120,
       qtd_procedimentos: 380,
       sincronizado_em: '2025-02-01T10:00:00Z',
@@ -111,6 +139,7 @@ describe('SihImportSection rendering', () => {
     await waitFor(() => {
       expect(screen.getByTestId('sih-import-badge-importada')).toBeInTheDocument();
       expect(screen.getByTestId('sih-import-badge-importada')).toHaveTextContent('Já importada');
+      expect(screen.getByTestId('sih-import-badge-importada')).toHaveTextContent('801 AIH');
     });
   });
 });
@@ -153,7 +182,7 @@ describe('SihImportSection import action', () => {
     await waitFor(() => expect(screen.getByTestId('sih-import-btn')).not.toBeDisabled());
   });
 
-  it('shows toast with qtd_internacoes, qtd_procedimentos, orphan_cnes on success', async () => {
+  it('shows toast with qtd_aih, qtd_internacoes, qtd_procedimentos, orphan_cnes on success', async () => {
     const user = userEvent.setup();
     render(<SihImportSection />);
 
@@ -162,6 +191,7 @@ describe('SihImportSection import action', () => {
     await waitFor(() => {
       const toast = document.querySelector('[data-testid="toast-banner"]');
       expect(toast).toBeInTheDocument();
+      expect(toast?.textContent).toMatch(/42 AIH/);
       expect(toast?.textContent).toMatch(/42 internações/);
       expect(toast?.textContent).toMatch(/110 procedimentos/);
       expect(toast?.textContent).toMatch(/1 CNES sem match/);
@@ -181,13 +211,19 @@ describe('SihImportSection 409 ConfirmDialog', () => {
     const comp = input.value;
 
     mockSincronizarSih.mockRejectedValueOnce(
-      new SihConflictError({ competencia: comp, qtd_internacoes: 99, qtd_procedimentos: 250 }),
+      new SihConflictError({
+        competencia: comp,
+        qtd_aih: 801,
+        qtd_internacoes: 99,
+        qtd_procedimentos: 250,
+      }),
     );
 
     await user.click(screen.getByTestId('sih-import-btn'));
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByRole('dialog').textContent).toMatch(/801 AIH/);
       expect(screen.getByRole('dialog').textContent).toMatch(/99 internações/);
     });
   });

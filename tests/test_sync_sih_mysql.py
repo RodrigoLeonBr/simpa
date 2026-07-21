@@ -93,6 +93,8 @@ def test_build_sih_query_procedimentos_group_by():
     query = sync_sih_mysql.build_sih_query_procedimentos()
     normalized = "".join(query.split())
     assert "GROUPBY" in normalized
+    assert "COUNT(*)" in normalized
+    assert "qtd_linhas" in query
     assert "sp.PROC_DETALHADO" in query
     assert "sp.CBO_PROFISSIONAL" in query
     assert "sp.FINANCIAMENTO_DETALHE" in query
@@ -381,7 +383,7 @@ def test_sincronizar_dry_run_no_pg_write(monkeypatch):
          "total_diarias_uti": 2, "total_valor": 5000.0},
     ])
     df_proc_sample = pd.DataFrame([
-        {"cnes": "1234567", "proc_detalhado": "0301010010", "total_quantidade": 5},
+        {"cnes": "1234567", "proc_detalhado": "0301010010", "total_quantidade": 5, "qtd_linhas": 12},
     ])
     monkeypatch.setattr(sync_sih_mysql, "extrair_sih_internacoes", lambda *_: df_int_sample)
     monkeypatch.setattr(sync_sih_mysql, "extrair_sih_aih", lambda *_: pd.DataFrame([
@@ -396,7 +398,7 @@ def test_sincronizar_dry_run_no_pg_write(monkeypatch):
 
     assert result["status"] == "ok"
     assert result["qtd_internacoes"] == 1
-    assert result["qtd_procedimentos"] == 1
+    assert result["qtd_procedimentos"] == 12
     assert result["qtd_aih"] == 1
     assert "preview_aih" in result
     assert pg_connect_called["called"] is False

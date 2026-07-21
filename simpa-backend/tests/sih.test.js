@@ -12,6 +12,7 @@ const {
   parseSyncOutput,
   getSyncProgress,
   getCompetenciaImportada,
+  listSincronizacoes,
 } = require('../src/services/sih');
 
 function mockSpawn({ code = 0, stdout = '', stderr = '' } = {}) {
@@ -191,6 +192,7 @@ describe('getCompetenciaImportada', () => {
     query.mockResolvedValueOnce({
       rows: [{
         status: 'ok',
+        qtd_aih: 801,
         qtd_internacoes: 120,
         qtd_procedimentos: 380,
         sincronizado_em: '2025-02-01T10:00:00Z',
@@ -198,6 +200,7 @@ describe('getCompetenciaImportada', () => {
     });
     const result = await getCompetenciaImportada('2025-01');
     expect(result.exists).toBe(true);
+    expect(result.qtd_aih).toBe(801);
     expect(result.qtd_internacoes).toBe(120);
     expect(result.qtd_procedimentos).toBe(380);
   });
@@ -218,5 +221,62 @@ describe('getCompetenciaImportada', () => {
       expect.stringContaining('sia_sincronizacoes'),
       expect.any(Array)
     );
+  });
+});
+
+describe('listSincronizacoes', () => {
+  it('returns empty array when no syncs', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    const result = await listSincronizacoes();
+    expect(result).toEqual([]);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('attaches por_cnes breakdown to each sync', async () => {
+    query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 3,
+          competencia: '2026-03-01',
+          status: 'ok',
+          qtd_aih: 801,
+          qtd_internacoes: 496,
+          qtd_procedimentos: 839,
+          orphan_cnes: 0,
+          erros: 0,
+          sincronizado_em: '2026-07-21T14:59:36Z',
+        }],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            sincronizacao_id: 3,
+            cnes: '2058790',
+            unidade: 'HOSPITAL MUNICIPAL DR WALDEMAR TEBA',
+            qtd_aih: 779,
+            qtd_internacoes: 480,
+            qtd_procedimentos: 13917,
+          },
+          {
+            sincronizacao_id: 3,
+            cnes: '2082179',
+            unidade: 'HOSPITAL SAO FRANCISCO',
+            qtd_aih: 22,
+            qtd_internacoes: 16,
+            qtd_procedimentos: 202,
+          },
+        ],
+      });
+
+    const result = await listSincronizacoes();
+    expect(result).toHaveLength(1);
+    expect(result[0].qtd_aih).toBe(801);
+    expect(result[0].qtd_procedimentos).toBe(14119);
+    expect(result[0].por_cnes).toHaveLength(2);
+    expect(result[0].por_cnes[0].cnes).toBe('2058790');
+    expect(result[0].por_cnes[0].qtd_aih).toBe(779);
+    expect(result[0].por_cnes[0].qtd_procedimentos).toBe(13917);
+    expect(result[0].por_cnes[1].qtd_aih).toBe(22);
+    expect(query.mock.calls[1][0]).toMatch(/qtd_linhas/);
   });
 });

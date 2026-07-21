@@ -16,12 +16,14 @@ export class SihConflictError extends Error {
   readonly code = 'SIH_COMPETENCIA_JA_IMPORTADA' as const;
   competencia: string;
   sincronizado_em?: string;
+  qtd_aih: number;
   qtd_internacoes: number;
   qtd_procedimentos: number;
 
   constructor(data: {
     competencia: string;
     sincronizado_em?: string;
+    qtd_aih?: number;
     qtd_internacoes?: number;
     qtd_procedimentos?: number;
   }) {
@@ -29,6 +31,7 @@ export class SihConflictError extends Error {
     this.name = 'SihConflictError';
     this.competencia = data.competencia;
     this.sincronizado_em = data.sincronizado_em;
+    this.qtd_aih = data.qtd_aih ?? 0;
     this.qtd_internacoes = data.qtd_internacoes ?? 0;
     this.qtd_procedimentos = data.qtd_procedimentos ?? 0;
   }

@@ -64,6 +64,15 @@ def _clean_str(value) -> str | None:
     return s if s not in ("", "None", "nan") else None
 
 
+def _total_proc_linhas(df_proc: pd.DataFrame) -> int:
+    """Total de linhas brutas HPA (s_aih_pa), não o nº de grupos agregados."""
+    if df_proc is None or df_proc.empty:
+        return 0
+    if "qtd_linhas" in df_proc.columns:
+        return int(df_proc["qtd_linhas"].fillna(0).sum())
+    return int(len(df_proc))
+
+
 def _parse_yyyymmdd(value) -> date | None:
     """AAAAMMDD (s_aih.DT_INT/DT_SAIDA) -> date, ou None se vazio/inválido."""
     s = _clean_str(value)
@@ -201,6 +210,7 @@ def build_sih_query_procedimentos() -> str:
             sp.CBO_PROFISSIONAL                                AS cbo_profissional,
             sp.FINANCIAMENTO_DETALHE                           AS financiamento_detalhe,
             COUNT(DISTINCT sp.AIH)                             AS qtd_aih_distintas,
+            COUNT(*)                                           AS qtd_linhas,
             SUM(sp.QUANTIDADE)                                 AS total_quantidade,
             SUM(sp.VALOR_ITEM)                                 AS total_valor_item
         FROM {table_pa} sp
@@ -506,14 +516,15 @@ def gravar_sih_pg(
                     int(row.get("qtd_aih_distintas") or 0),
                     int(row.get("total_quantidade") or 0),
                     float(row.get("total_valor_item") or 0),
+                    int(row.get("qtd_linhas") or 0),
                 ))
 
             insert_proc_sql = """
                 INSERT INTO sih_procedimentos (
                     sincronizacao_id, competencia, cnes, estabelecimento_id,
                     proc_detalhado, cbo_profissional, financiamento_detalhe,
-                    qtd_aih_distintas, total_quantidade, total_valor_item
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    qtd_aih_distintas, total_quantidade, total_valor_item, qtd_linhas
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT DO NOTHING
             """
 
@@ -582,7 +593,7 @@ def gravar_sih_pg(
                     sincronizado_em   = now()
                 WHERE id = %s
                 """,
-                (status, len(df_int), len(df_proc), len(df_aih), orphan_cnes, erros, sinc_id),
+                (status, len(df_int), _total_proc_linhas(df_proc), len(df_aih), orphan_cnes, erros, sinc_id),
             )
 
     result: dict = {
@@ -591,7 +602,7 @@ def gravar_sih_pg(
         "status": status,
         "qtd_aih": len(df_aih),
         "qtd_internacoes": len(df_int),
-        "qtd_procedimentos": len(df_proc),
+        "qtd_procedimentos": _total_proc_linhas(df_proc),
         "orphan_cnes": orphan_cnes,
         "erros": erros,
     }
@@ -689,7 +700,7 @@ def sincronizar(
             "status": "ok" if (len(df_int) or len(df_proc) or len(df_aih)) else "parcial",
             "qtd_aih": len(df_aih),
             "qtd_internacoes": len(df_int),
-            "qtd_procedimentos": len(df_proc),
+            "qtd_procedimentos": _total_proc_linhas(df_proc),
             "orphan_cnes": 0,
             "erros": 0,
             "linhas_mysql_raw": len(df_int) + len(df_proc) + len(df_aih),
@@ -776,7 +787,7 @@ def sincronizar(
             message="Iniciando gravação no PostgreSQL",
             qtd_aih=len(df_aih),
             qtd_internacoes=len(df_int),
-            qtd_procedimentos=len(df_proc),
+            qtd_procedimentos=_total_proc_linhas(df_proc),
         )
         result = gravar_sih_pg(
             conn_pg,

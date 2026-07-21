@@ -158,11 +158,16 @@ async function getCompetenciaImportada(competencia) {
   if (!competenciaDate) return null;
 
   const { rows } = await query(
-    `SELECT status, qtd_aih, qtd_internacoes, qtd_procedimentos, sincronizado_em
-     FROM sih_sincronizacoes
-     WHERE competencia = $1
-       AND status IN ('ok', 'parcial')
-     ORDER BY sincronizado_em DESC
+    `SELECT s.status, s.qtd_aih, s.qtd_internacoes, s.sincronizado_em,
+            COALESCE((
+              SELECT SUM(p.qtd_linhas)::int
+              FROM sih_procedimentos p
+              WHERE p.sincronizacao_id = s.id
+            ), s.qtd_procedimentos, 0) AS qtd_procedimentos
+     FROM sih_sincronizacoes s
+     WHERE s.competencia = $1
+       AND s.status IN ('ok', 'parcial')
+     ORDER BY s.sincronizado_em DESC
      LIMIT 1`,
     [competenciaDate]
   );
@@ -186,6 +191,95 @@ async function getCompetenciaImportada(competencia) {
     qtd_procedimentos: Number(rows[0].qtd_procedimentos || 0),
     sincronizado_em: rows[0].sincronizado_em,
   };
+}
+
+/**
+ * Lista histórico de sync SIHD com totais e detalhe por CNES
+ * (AIH brutas + linhas agregadas de internações/procedimentos).
+ */
+async function listSincronizacoes() {
+  const { rows: syncRows } = await query(
+    `SELECT id, competencia, status, qtd_aih, qtd_internacoes, qtd_procedimentos,
+            orphan_cnes, erros, sincronizado_em
+     FROM sih_sincronizacoes
+     ORDER BY competencia DESC`
+  );
+
+  if (!syncRows.length) return [];
+
+  const { rows: cnesRows } = await query(
+    `WITH cnes_keys AS (
+       SELECT sincronizacao_id, cnes FROM sih_aih
+       UNION
+       SELECT sincronizacao_id, cnes FROM sih_internacoes
+       UNION
+       SELECT sincronizacao_id, cnes FROM sih_procedimentos
+     ),
+     aih AS (
+       SELECT sincronizacao_id, cnes, COUNT(*)::int AS qtd_aih
+       FROM sih_aih
+       GROUP BY sincronizacao_id, cnes
+     ),
+     ints AS (
+       SELECT sincronizacao_id, cnes, COUNT(*)::int AS qtd_internacoes
+       FROM sih_internacoes
+       GROUP BY sincronizacao_id, cnes
+     ),
+     procs AS (
+       SELECT sincronizacao_id, cnes,
+              COALESCE(SUM(qtd_linhas), 0)::int AS qtd_procedimentos
+       FROM sih_procedimentos
+       GROUP BY sincronizacao_id, cnes
+     )
+     SELECT
+       k.sincronizacao_id,
+       k.cnes,
+       COALESCE(e.nome, k.cnes) AS unidade,
+       COALESCE(a.qtd_aih, 0)::int AS qtd_aih,
+       COALESCE(i.qtd_internacoes, 0)::int AS qtd_internacoes,
+       COALESCE(p.qtd_procedimentos, 0)::int AS qtd_procedimentos
+     FROM cnes_keys k
+     LEFT JOIN aih a
+       ON a.sincronizacao_id = k.sincronizacao_id AND a.cnes = k.cnes
+     LEFT JOIN ints i
+       ON i.sincronizacao_id = k.sincronizacao_id AND i.cnes = k.cnes
+     LEFT JOIN procs p
+       ON p.sincronizacao_id = k.sincronizacao_id AND p.cnes = k.cnes
+     LEFT JOIN estabelecimentos e ON e.codigo_externo = k.cnes
+     ORDER BY k.sincronizacao_id, a.qtd_aih DESC NULLS LAST, k.cnes`
+  );
+
+  const bySync = new Map();
+  for (const row of cnesRows) {
+    const id = Number(row.sincronizacao_id);
+    if (!bySync.has(id)) bySync.set(id, []);
+    bySync.get(id).push({
+      cnes: row.cnes,
+      unidade: row.unidade,
+      qtd_aih: Number(row.qtd_aih || 0),
+      qtd_internacoes: Number(row.qtd_internacoes || 0),
+      qtd_procedimentos: Number(row.qtd_procedimentos || 0),
+    });
+  }
+
+  return syncRows.map((row) => {
+    const porCnes = bySync.get(Number(row.id)) || [];
+    const qtdProcedimentos = porCnes.length
+      ? porCnes.reduce((acc, c) => acc + Number(c.qtd_procedimentos || 0), 0)
+      : Number(row.qtd_procedimentos || 0);
+    return {
+      id: row.id,
+      competencia: row.competencia,
+      status: row.status,
+      qtd_aih: Number(row.qtd_aih || 0),
+      qtd_internacoes: Number(row.qtd_internacoes || 0),
+      qtd_procedimentos: qtdProcedimentos,
+      orphan_cnes: Number(row.orphan_cnes || 0),
+      erros: Number(row.erros || 0),
+      sincronizado_em: row.sincronizado_em,
+      por_cnes: porCnes,
+    };
+  });
 }
 
 function sincronizar(competencia, options = {}) {
@@ -287,6 +381,7 @@ module.exports = {
   sincronizar,
   getSyncProgress,
   getCompetenciaImportada,
+  listSincronizacoes,
   scriptPath,
   pythonBin,
   parseSyncOutput,
