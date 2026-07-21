@@ -21,6 +21,12 @@ const {
   PERFIL_TO_SLUG,
 } = require('../services/estabelecimentosService');
 const {
+  listLeitosVigencias,
+  createLeitosVigencia,
+  updateLeitosVigencia,
+  deleteLeitosVigencia,
+} = require('../services/leitosVigenciaService');
+const {
   listProcedimentos,
   getProcedimentoById,
 } = require('../services/procedimentosService');
@@ -188,6 +194,81 @@ router.put(
       });
 
       return res.json(row);
+    } catch (err) {
+      return next(err);
+    }
+  }
+);
+
+router.get('/estabelecimentos/:id/leitos-vigencias', async (req, res, next) => {
+  try {
+    const rows = await listLeitosVigencias(req.params.id);
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post(
+  '/estabelecimentos/:id/leitos-vigencias',
+  requirePlanningStaff,
+  async (req, res, next) => {
+    try {
+      const row = await createLeitosVigencia(req.params.id, req.body);
+
+      await logAudit({
+        usuarioId: req.user?.id ?? null,
+        acao: 'estabelecimento_leitos_vigencia_update',
+        recurso: 'estabelecimentos',
+        detalhes: JSON.stringify({ estabelecimento_id: Number(req.params.id) }),
+        ip: req.ip,
+      });
+
+      return res.status(201).json(row);
+    } catch (err) {
+      return next(err);
+    }
+  }
+);
+
+router.put(
+  '/estabelecimentos/:id/leitos-vigencias/:vigenciaId',
+  requirePlanningStaff,
+  async (req, res, next) => {
+    try {
+      const row = await updateLeitosVigencia(req.params.id, req.params.vigenciaId, req.body);
+
+      await logAudit({
+        usuarioId: req.user?.id ?? null,
+        acao: 'estabelecimento_leitos_vigencia_update',
+        recurso: 'estabelecimentos',
+        detalhes: JSON.stringify({ estabelecimento_id: Number(req.params.id) }),
+        ip: req.ip,
+      });
+
+      return res.json(row);
+    } catch (err) {
+      return next(err);
+    }
+  }
+);
+
+router.delete(
+  '/estabelecimentos/:id/leitos-vigencias/:vigenciaId',
+  requirePlanningStaff,
+  async (req, res, next) => {
+    try {
+      const result = await deleteLeitosVigencia(req.params.id, req.params.vigenciaId);
+
+      await logAudit({
+        usuarioId: req.user?.id ?? null,
+        acao: 'estabelecimento_leitos_vigencia_update',
+        recurso: 'estabelecimentos',
+        detalhes: JSON.stringify({ estabelecimento_id: Number(req.params.id) }),
+        ip: req.ip,
+      });
+
+      return res.json(result);
     } catch (err) {
       return next(err);
     }
