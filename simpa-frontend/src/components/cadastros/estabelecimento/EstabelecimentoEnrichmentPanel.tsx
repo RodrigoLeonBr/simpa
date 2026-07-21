@@ -1,6 +1,11 @@
+import { LeitosVigenciasPanel } from '../leitos/LeitosVigenciasPanel';
 import { EnrichmentFormByPerfil, enrichmentSectionTitle } from '../EnrichmentFormByPerfil';
 import type { EnrichmentFormPayload } from '../../../utils/enrichmentByPerfil';
-import type { EstabelecimentoEnrichment, EstabelecimentoPerfil } from '../../../types/cadastros';
+import type {
+  EstabelecimentoEnrichment,
+  EstabelecimentoPerfil,
+  LeitosVigencia,
+} from '../../../types/cadastros';
 import { formatLeitosSummary } from '../../../utils/enrichmentView';
 
 interface EstabelecimentoEnrichmentPanelProps {
@@ -9,6 +14,9 @@ interface EstabelecimentoEnrichmentPanelProps {
   showEnrichment: boolean;
   canEditEnrichmentForm: boolean;
   leitosSummary: string | null;
+  estabelecimentoId: number;
+  leitosVigencias: LeitosVigencia[];
+  onVigenciasChanged: () => void;
   onSubmit: (payload: EnrichmentFormPayload) => Promise<void>;
 }
 
@@ -18,6 +26,9 @@ export function EstabelecimentoEnrichmentPanel({
   showEnrichment,
   canEditEnrichmentForm,
   leitosSummary,
+  estabelecimentoId,
+  leitosVigencias,
+  onVigenciasChanged,
   onSubmit,
 }: EstabelecimentoEnrichmentPanelProps) {
   if (!showEnrichment) {
@@ -28,10 +39,20 @@ export function EstabelecimentoEnrichmentPanel({
     );
   }
 
+  const showLeitosVigencias = perfil === 'Hospitalar' || perfil === 'Misto';
+
   return (
     <section className="cadastro-detail-section">
       <h4>{enrichmentSectionTitle(perfil)}</h4>
       {leitosSummary ? <p className="cadastro-detail-hint">Leitos atuais: {leitosSummary}</p> : null}
+      {showLeitosVigencias ? (
+        <LeitosVigenciasPanel
+          estabelecimentoId={estabelecimentoId}
+          vigencias={leitosVigencias}
+          readOnly={!canEditEnrichmentForm}
+          onChanged={onVigenciasChanged}
+        />
+      ) : null}
       <EnrichmentFormByPerfil
         perfil={perfil}
         enrichment={enrichment}

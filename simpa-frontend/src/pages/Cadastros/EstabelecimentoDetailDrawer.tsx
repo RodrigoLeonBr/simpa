@@ -1,5 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { updateEnrichmentBySlug, updateIdentidade, updatePerfil } from '../../api/cadastros';
+import {
+  fetchEstabelecimentoById,
+  updateEnrichmentBySlug,
+  updateIdentidade,
+  updatePerfil,
+} from '../../api/cadastros';
 import { EstabelecimentoDrawerChrome } from '../../components/cadastros/estabelecimento/EstabelecimentoDrawerChrome';
 import { EstabelecimentoIdentidadeEditor } from '../../components/cadastros/estabelecimento/EstabelecimentoIdentidadeEditor';
 import {
@@ -104,6 +109,16 @@ export function EstabelecimentoDetailDrawer({
     }
   }
 
+  async function handleVigenciasChanged() {
+    try {
+      const updated = await fetchEstabelecimentoById(estabelecimento.id);
+      onSaved(updated);
+      showToast('Leitos por vigência atualizados');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha ao atualizar leitos por vigência');
+    }
+  }
+
   return (
     <EstabelecimentoDrawerChrome
       title={estabelecimento.nome}
@@ -143,6 +158,9 @@ export function EstabelecimentoDetailDrawer({
         showEnrichment={showEnrichment}
         canEditEnrichmentForm={canEditEnrichmentForm}
         leitosSummary={leitosSummary}
+        estabelecimentoId={estabelecimento.id}
+        leitosVigencias={estabelecimento.leitos_vigencias ?? []}
+        onVigenciasChanged={() => void handleVigenciasChanged()}
         onSubmit={async (payload) => {
           const slug = enrichmentSlugForPerfil(enrichmentPerfil);
           const updated = await updateEnrichmentBySlug(estabelecimento.id, slug, payload);

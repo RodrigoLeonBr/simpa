@@ -2,15 +2,6 @@ import type { FormEvent, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import type { EstabelecimentoEnrichment } from '../../../types/cadastros';
 import type { EnrichmentFormPayload } from '../../../utils/enrichmentByPerfil';
-import { LEITOS_KEYS } from '../../../utils/enrichmentView';
-
-export const LEITO_LABELS: Record<(typeof LEITOS_KEYS)[number], string> = {
-  clinico: 'Clínico',
-  cirurgico: 'Cirúrgico',
-  obstetrico: 'Obstétrico',
-  pediatrico: 'Pediátrico',
-  uti: 'UTI',
-};
 
 export interface EnrichmentPerfilFormProps {
   enrichment?: EstabelecimentoEnrichment;
@@ -46,44 +37,6 @@ export function FormShell({
         </button>
       </div>
     </form>
-  );
-}
-
-export function LeitosFields({
-  values,
-  errors,
-  onChange,
-}: {
-  values: Record<(typeof LEITOS_KEYS)[number], string>;
-  errors: Record<string, string>;
-  onChange: (next: Record<(typeof LEITOS_KEYS)[number], string>) => void;
-}) {
-  return (
-    <fieldset className="cadastro-enrichment-fieldset">
-      <legend>Leitos</legend>
-      <div className="cadastro-enrichment-leitos">
-        {LEITOS_KEYS.map((key) => (
-          <label key={key} className="cadastro-field">
-            <span>{LEITO_LABELS[key]}</span>
-            <input
-              type="number"
-              min={0}
-              step={1}
-              value={values[key]}
-              onChange={(event) =>
-                onChange({
-                  ...values,
-                  [key]: event.target.value,
-                })
-              }
-            />
-            {errors[`leitos.${key}`] ? (
-              <span className="cadastro-field-error">{errors[`leitos.${key}`]}</span>
-            ) : null}
-          </label>
-        ))}
-      </div>
-    </fieldset>
   );
 }
 

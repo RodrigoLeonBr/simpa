@@ -26,39 +26,25 @@ describe('enrichmentByPerfil', () => {
     expect(resolveEstabelecimentoEnrichment(row)).toEqual({ notas: 'novo' });
   });
 
-  it('rejects negative leito values in hospital form', () => {
+  it('hospital form has no leitos validation (managed via vigencias)', () => {
     const errors = validateHospitalEnrichmentForm({
-      leitos: {
-        clinico: '-1',
-        cirurgico: '',
-        obstetrico: '',
-        pediatrico: '',
-        uti: '',
-      },
       especialidades: '',
       habilitacoes: '',
       capacidade_notas: '',
       notas: '',
     });
 
-    expect(errors['leitos.clinico']).toMatch(/inteiro/i);
+    expect(errors).toEqual({});
   });
 
-  it('rejects negative leito values in misto form', () => {
+  it('misto form has no leitos validation (managed via vigencias)', () => {
     const errors = validateMistoEnrichmentForm({
-      leitos: {
-        clinico: '-3',
-        cirurgico: '',
-        obstetrico: '',
-        pediatrico: '',
-        uti: '',
-      },
       capacidades_ambulatoriais: '',
       notas_mac: '',
       notas: '',
     });
 
-    expect(errors['leitos.clinico']).toMatch(/inteiro/i);
+    expect(errors).toEqual({});
   });
 
   it('builds APS payload from form values', () => {
@@ -79,23 +65,15 @@ describe('enrichmentByPerfil', () => {
     });
   });
 
-  it('builds hospital payload including capacidade_notas', () => {
+  it('builds hospital payload including capacidade_notas, without leitos', () => {
     expect(
       hospitalFormValuesToPayload({
-        leitos: {
-          clinico: '10',
-          cirurgico: '',
-          obstetrico: '',
-          pediatrico: '',
-          uti: '',
-        },
         especialidades: 'Cardio\nNeuro',
         habilitacoes: '',
         capacidade_notas: 'Ampliada',
         notas: 'Ok',
       }),
     ).toEqual({
-      leitos: { clinico: 10 },
       especialidades: ['Cardio', 'Neuro'],
       habilitacoes: [],
       capacidade_notas: 'Ampliada',

@@ -10,7 +10,7 @@ import type {
   EstabelecimentoEnrichment,
   EstabelecimentoPerfil,
 } from '../types/cadastros';
-import { LEITOS_KEYS, parseListField, type LeitoKey } from './enrichmentView';
+import { parseListField } from './enrichmentView';
 
 export const PERFIL_TO_SLUG: Record<EstabelecimentoPerfil, EnrichmentSlug> = {
   APS: 'aps',
@@ -29,7 +29,6 @@ export const ESTABELECIMENTO_PERFIS: EstabelecimentoPerfil[] = [
 ];
 
 export interface HospitalEnrichmentFormValues {
-  leitos: Record<LeitoKey, string>;
   especialidades: string;
   habilitacoes: string;
   capacidade_notas: string;
@@ -37,7 +36,6 @@ export interface HospitalEnrichmentFormValues {
 }
 
 export interface MistoEnrichmentFormValues {
-  leitos: Record<LeitoKey, string>;
   capacidades_ambulatoriais: string;
   notas_mac: string;
   notas: string;
@@ -75,14 +73,7 @@ export function enrichmentSlugForPerfil(perfil: EstabelecimentoPerfil): Enrichme
 export function hospitalEnrichmentToFormValues(
   enrichment: EnrichmentHospitalar = {},
 ): HospitalEnrichmentFormValues {
-  const leitos = {} as Record<LeitoKey, string>;
-  for (const key of LEITOS_KEYS) {
-    const value = enrichment.leitos?.[key];
-    leitos[key] = value === undefined ? '' : String(value);
-  }
-
   return {
-    leitos,
     especialidades: (enrichment.especialidades ?? []).join('\n'),
     habilitacoes: (enrichment.habilitacoes ?? []).join('\n'),
     capacidade_notas: enrichment.capacidade_notas ?? '',
@@ -93,14 +84,7 @@ export function hospitalEnrichmentToFormValues(
 export function mistoEnrichmentToFormValues(
   enrichment: EnrichmentMisto = {},
 ): MistoEnrichmentFormValues {
-  const leitos = {} as Record<LeitoKey, string>;
-  for (const key of LEITOS_KEYS) {
-    const value = enrichment.leitos?.[key];
-    leitos[key] = value === undefined ? '' : String(value);
-  }
-
   return {
-    leitos,
     capacidades_ambulatoriais: (enrichment.capacidades_ambulatoriais ?? []).join('\n'),
     notas_mac: enrichment.notas_mac ?? '',
     notas: enrichment.notas ?? '',
@@ -134,21 +118,10 @@ export function outroEnrichmentToFormValues(
   };
 }
 
-function parseLeitos(values: Record<LeitoKey, string>): Record<string, number> {
-  const leitos: Record<string, number> = {};
-  for (const key of LEITOS_KEYS) {
-    const raw = values[key].trim();
-    if (!raw) continue;
-    leitos[key] = Number(raw);
-  }
-  return leitos;
-}
-
 export function hospitalFormValuesToPayload(
   values: HospitalEnrichmentFormValues,
 ): Partial<EnrichmentHospitalar> {
   return {
-    leitos: parseLeitos(values.leitos),
     especialidades: parseListField(values.especialidades),
     habilitacoes: parseListField(values.habilitacoes),
     capacidade_notas: values.capacidade_notas.trim(),
@@ -160,7 +133,6 @@ export function mistoFormValuesToPayload(
   values: MistoEnrichmentFormValues,
 ): Partial<EnrichmentMisto> {
   return {
-    leitos: parseLeitos(values.leitos),
     capacidades_ambulatoriais: parseListField(values.capacidades_ambulatoriais),
     notas_mac: values.notas_mac.trim(),
     notas: values.notas.trim(),
@@ -194,34 +166,18 @@ export function outroFormValuesToPayload(
   };
 }
 
-export function validateLeitosFields(
-  leitos: Record<LeitoKey, string>,
-  prefix = 'leitos',
-): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  for (const key of LEITOS_KEYS) {
-    const raw = leitos[key].trim();
-    if (!raw) continue;
-    const num = Number(raw);
-    if (Number.isNaN(num) || num < 0 || !Number.isInteger(num)) {
-      errors[`${prefix}.${key}`] = 'Deve ser número inteiro ≥ 0';
-    }
-  }
-
-  return errors;
-}
-
 export function validateHospitalEnrichmentForm(
   values: HospitalEnrichmentFormValues,
 ): Record<string, string> {
-  return validateLeitosFields(values.leitos);
+  void values;
+  return {};
 }
 
 export function validateMistoEnrichmentForm(
   values: MistoEnrichmentFormValues,
 ): Record<string, string> {
-  return validateLeitosFields(values.leitos);
+  void values;
+  return {};
 }
 
 export function enrichmentSectionTitle(perfil: EstabelecimentoPerfil): string {

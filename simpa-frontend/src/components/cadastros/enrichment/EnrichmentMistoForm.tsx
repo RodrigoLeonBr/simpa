@@ -8,7 +8,6 @@ import {
 } from '../../../utils/enrichmentByPerfil';
 import {
   FormShell,
-  LeitosFields,
   ReadonlyFieldList,
   type EnrichmentPerfilFormProps,
 } from './enrichmentShared';
@@ -72,11 +71,6 @@ export function EnrichmentMistoForm({
       submitting={submitting}
       onSubmit={(event) => void handleSubmit(event)}
     >
-      <LeitosFields
-        values={values.leitos}
-        errors={errors}
-        onChange={(leitos) => setValues((current) => ({ ...current, leitos }))}
-      />
       <label className="cadastro-field">
         <span>Capacidades ambulatoriais (uma por linha)</span>
         <textarea

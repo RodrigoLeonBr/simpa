@@ -36,17 +36,11 @@ describe('EnrichmentFormByPerfil', () => {
     expect(screen.getByTestId('enrichment-form-mac')).toBeInTheDocument();
   });
 
-  it('validates misto leitos before submit', async () => {
-    const onSubmit = vi.fn();
-    const user = userEvent.setup();
+  it('renders misto form without leitos field', () => {
+    render(<EnrichmentFormByPerfil perfil="Misto" onSubmit={vi.fn()} />);
 
-    render(<EnrichmentFormByPerfil perfil="Misto" onSubmit={onSubmit} />);
-
-    await user.type(screen.getByLabelText(/Clínico/i), '-1');
-    await user.click(screen.getByRole('button', { name: /Salvar enriquecimento/i }));
-
-    expect(await screen.findByText(/inteiro/i)).toBeInTheDocument();
-    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByTestId('enrichment-form-misto')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Clínico/i)).not.toBeInTheDocument();
   });
 
   it('renders Outro form', async () => {

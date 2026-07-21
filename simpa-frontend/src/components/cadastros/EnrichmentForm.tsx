@@ -5,20 +5,11 @@ import {
   hospitalFormValuesToPayload,
   validateHospitalEnrichmentForm,
 } from '../../utils/enrichmentByPerfil';
-import { LEITOS_KEYS } from '../../utils/enrichmentView';
 
 interface EnrichmentFormProps {
   initialEnrichment?: EnrichmentHospitalar;
   onSubmit: (payload: EnrichmentHospitalar) => Promise<void>;
 }
-
-const LEITO_LABELS: Record<(typeof LEITOS_KEYS)[number], string> = {
-  clinico: 'Clínico',
-  cirurgico: 'Cirúrgico',
-  obstetrico: 'Obstétrico',
-  pediatrico: 'Pediátrico',
-  uti: 'UTI',
-};
 
 export function EnrichmentForm({ initialEnrichment, onSubmit }: EnrichmentFormProps) {
   const [values, setValues] = useState(() => hospitalEnrichmentToFormValues(initialEnrichment));
@@ -56,32 +47,6 @@ export function EnrichmentForm({ initialEnrichment, onSubmit }: EnrichmentFormPr
       noValidate
       onSubmit={(event) => void handleSubmit(event)}
     >
-      <fieldset className="cadastro-enrichment-fieldset">
-        <legend>Leitos</legend>
-        <div className="cadastro-enrichment-leitos">
-          {LEITOS_KEYS.map((key) => (
-            <label key={key} className="cadastro-field">
-              <span>{LEITO_LABELS[key]}</span>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={values.leitos[key]}
-                onChange={(event) =>
-                  setValues((current) => ({
-                    ...current,
-                    leitos: { ...current.leitos, [key]: event.target.value },
-                  }))
-                }
-              />
-              {errors[`leitos.${key}`] ? (
-                <span className="cadastro-field-error">{errors[`leitos.${key}`]}</span>
-              ) : null}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
       <label className="cadastro-field">
         <span>Especialidades (uma por linha)</span>
         <textarea

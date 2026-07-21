@@ -128,10 +128,10 @@ describe('EstabelecimentosPage', () => {
     expect(screen.getByTestId('estabelecimentos-pagination')).toBeInTheDocument();
   });
 
-  it('shows locked synced fields and saves enrichment via slug API', async () => {
+  it('shows locked synced fields and saves enrichment via slug API without touching leitos', async () => {
     vi.mocked(updateEnrichmentBySlug).mockResolvedValue({
       ...hospital,
-      enrichment: { leitos: { clinico: 20 } },
+      enrichment: { leitos: { clinico: 5 }, notas: 'Nova nota' },
     });
 
     const user = userEvent.setup();
@@ -143,21 +143,20 @@ describe('EstabelecimentosPage', () => {
     expect(await screen.findByTestId('estabelecimento-detail-drawer')).toBeInTheDocument();
     expect(screen.getByTestId('estabelecimento-nome-input')).toBeEnabled();
     expect(screen.getByTestId('enrichment-form')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Clínico/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Leitos atuais: clinico: 5/i)).toBeInTheDocument();
 
-    const clinicoInput = screen.getByLabelText(/Clínico/i);
-    await user.clear(clinicoInput);
-    await user.type(clinicoInput, '20');
+    await user.type(screen.getByLabelText(/^Notas$/i), 'Nova nota');
     await user.click(screen.getByRole('button', { name: /Salvar enriquecimento/i }));
 
     await waitFor(() => {
       expect(updateEnrichmentBySlug).toHaveBeenCalledWith(1, 'hospitalar', {
-        leitos: { clinico: 20 },
         especialidades: [],
         habilitacoes: [],
         capacidade_notas: '',
-        notas: '',
+        notas: 'Nova nota',
       });
-      expect(screen.getByText(/Leitos atuais: clinico: 20/i)).toBeInTheDocument();
+      expect(screen.getByText(/Leitos atuais: clinico: 5/i)).toBeInTheDocument();
     });
   });
 
