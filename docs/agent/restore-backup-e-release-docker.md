@@ -71,11 +71,15 @@ Exemplo: backup até ~migration 012 tem `populacao_cadastrada`, mas **não** tem
 
 ---
 
-## Aplicar migrations pendentes (013 → 024)
+## Aplicar migrations pendentes (013 → 027)
 
-Na raiz `E:\xampp\htdocs\simpa` (ou pasta do clone):
+Na raiz `E:\xampp\htdocs\simpa` (ou pasta do clone).
+
+**UTF-8 no Windows:** não use `Get-Content | docker exec` — corrompe acentos. Use `docker cp` + `psql -f` (ver bloco abaixo e `docs/agent/database.md`).
 
 ```powershell
+# Ajuste o nome do container se necessário: docker ps --format "{{.Names}}"
+$container = "simpa-postgres-1"
 $files = @(
   "migration_013_sih_tabelas.sql",
   "migration_014_sia_painel_indicadores.sql",
@@ -88,12 +92,17 @@ $files = @(
   "migration_021_fix_painel_metricas_utf8.sql",
   "migration_022_procedimentos_esus_sigtap.sql",
   "migration_023_sih_aih_campos.sql",
-  "migration_024_sih_aih_widgets.sql"
+  "migration_024_sih_aih_widgets.sql",
+  "migration_025_sih_proc_qtd_linhas.sql",
+  "migration_026_leitos_vigencia.sql",
+  "migration_027_fix_sih_metricas_utf8.sql"
 )
 
 foreach ($f in $files) {
   Write-Host "`n==> $f"
-  Get-Content -Raw $f | docker compose --env-file .env.docker exec -T postgres psql -U postgres -d simpa -v ON_ERROR_STOP=1
+  docker cp $f "${container}:/tmp/$f"
+  if ($LASTEXITCODE -ne 0) { Write-Host "FALHOU cp $f"; break }
+  docker exec $container psql -U postgres -d simpa -v ON_ERROR_STOP=1 -f "/tmp/$f"
   if ($LASTEXITCODE -ne 0) {
     Write-Host "FALHOU em $f — pare aqui e analise o erro."
     break
@@ -110,12 +119,15 @@ foreach ($f in $files) {
 | 018 | `status_editado` em estabelecimentos |
 | 019 | `sql_override` em widgets |
 | 020 | `sih_aih` |
-| 021 | UTF-8 métricas |
+| 021 | UTF-8 métricas e-SUS/SIA/PATE |
 | 022 | `procedimentos_esus_sigtap` |
 | 023 | campos extras em `sih_aih` |
 | 024 | widgets SIH AIH |
+| 025 | `sih_procedimentos.qtd_linhas` |
+| 026 | leitos por vigência |
+| 027 | UTF-8 métricas SIH + formas “Atenção…” |
 
-A maioria usa `IF NOT EXISTS` / `ON CONFLICT`. Se falhar, **não pule a ordem** — retome a partir do arquivo que quebrou.
+A maioria usa `IF NOT EXISTS` / `ON CONFLICT` / `UPDATE` idempotente. Se falhar, **não pule a ordem** — retome a partir do arquivo que quebrou.
 
 ### Conferir depois
 

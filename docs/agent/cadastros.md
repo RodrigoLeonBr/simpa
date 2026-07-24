@@ -239,9 +239,11 @@ migration_008 (catálogo + widgets seed)
 | Ação | Quem | Detalhe |
 |------|------|---------|
 | Listar widgets APS/A | JWT | Tabela ordenada por `ordem` |
-| Criar/editar/inativar | Planning staff | `FormDialog` + picker métricas (`fetchPainelMetricas`) |
-| Pré-visualizar | Planning staff | `WidgetPreviewModal` → POST preview; SQL read-only em `<details>` |
+| Criar/editar/inativar | Planning staff | `WidgetEditDrawer` + picker métricas (`fetchPainelMetricas`) |
+| Pré-visualizar | Planning staff | Teste no drawer (competência/unidade) + `WidgetPreviewModal`; SQL override opcional |
 | Atualizar catálogo | Planning staff | `discoverPainelMetricas()` → toast inserted/updated |
+
+**Manual campo a campo (função + impacto no Painel):** [manual-editar-widget-painel.md](manual-editar-widget-painel.md).
 
 Grid: card `cadastro-card-indicadores-painel`. Diferente de `/indicadores` (drill-down qualidade).
 

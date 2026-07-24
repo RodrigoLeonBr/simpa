@@ -6,10 +6,11 @@ import type { CadastroFieldDef } from '../../config/cadastroEntities';
 import type { Estabelecimento } from '../../types/cadastros';
 import type { PainelMetricaCatalogo, PainelWidgetConfig, ResolvedPainelWidget } from '../../types/painelWidgets';
 import { activeEstabelecimentos } from '../../utils/estabelecimentosView';
-import { EM_DASH } from '../../utils/kpi';
 import {
   mapWidgetFormPayload,
+  type PainelWidgetLayout,
   type PainelWidgetPerfil,
+  formatPainelWidgetLayoutLabel,
   WIDGET_FIELDS,
   WIDGET_FORMATO_SELECT_OPTIONS,
   WIDGET_TIPO_SELECT_OPTIONS,
@@ -19,6 +20,7 @@ import { PAINEL_SQL_EXAMPLE_GROUPS, type PainelSqlExample } from '../../utils/pa
 import { validateCadastroForm } from '../../utils/cadastroView';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ModalPortal } from './ModalPortal';
+import { WidgetPreviewResult } from './WidgetPreviewResult';
 
 export interface WidgetEditSubmitPayload extends Partial<PainelWidgetConfig> {
   sql_override?: string | null;
@@ -29,6 +31,7 @@ interface WidgetEditDrawerProps {
   open: boolean;
   title: string;
   perfil: PainelWidgetPerfil;
+  layout: PainelWidgetLayout;
   editingRow: PainelWidgetConfig | null;
   onClose: () => void;
   onSubmit: (payload: WidgetEditSubmitPayload, editing: PainelWidgetConfig | null) => Promise<void>;
@@ -147,6 +150,7 @@ export function WidgetEditDrawer({
   open,
   title,
   perfil,
+  layout,
   editingRow,
   onClose,
   onSubmit,
@@ -329,22 +333,23 @@ export function WidgetEditDrawer({
   const estabelecimentoOptions = activeEstabelecimentos(estabelecimentos);
 
   const previewPayload = useMemo((): WidgetEditSubmitPayload => {
-    const base = mapWidgetFormPayload(values, perfil);
+    const base = mapWidgetFormPayload(values, perfil, layout);
     return {
       ...base,
       sql_override: useCustomMain ? sqlMain.trim() || null : null,
       spark_sql_override: useCustomSpark ? sqlSpark.trim() || null : null,
       sql_preview: useCustomMain ? sqlMain.trim() || null : mainCatalog?.sql_template || null,
     };
-  }, [values, perfil, useCustomMain, useCustomSpark, sqlMain, sqlSpark, mainCatalog]);
+  }, [values, perfil, layout, useCustomMain, useCustomSpark, sqlMain, sqlSpark, mainCatalog]);
 
   async function handlePreview() {
     setPreviewBusy(true);
     setPreviewResult(null);
     try {
+      // Always send the on-screen draft — never only widgetId (that ignores unsaved edits).
+      const draft = editingRow ? { ...editingRow, ...previewPayload } : previewPayload;
       const result = await previewPainelWidget({
-        widgetId: editingRow?.id,
-        widget: editingRow ? { ...editingRow, ...previewPayload } : previewPayload,
+        widget: draft,
         scope: {
           competencia,
           estabelecimentoId: estabelecimentoId ? Number(estabelecimentoId) : undefined,
@@ -405,8 +410,9 @@ export function WidgetEditDrawer({
             <div>
               <h3 id="widget-edit-title">{title}</h3>
               <p className="widget-edit-subtitle">
-                SQL customizado por widget · placeholders{' '}
-                <code>:competencia</code>, <code>:estabelecimento_id</code>, <code>:equipe_id</code>
+                Perfil {perfil} · {formatPainelWidgetLayoutLabel(layout)} · SQL customizado ·
+                placeholders <code>:competencia</code>, <code>:estabelecimento_id</code>,{' '}
+                <code>:equipe_id</code>
               </p>
             </div>
             <button type="button" className="cadastro-dialog-close" onClick={onClose} aria-label="Fechar">
@@ -596,18 +602,11 @@ export function WidgetEditDrawer({
                   </div>
                   {previewResult ? (
                     <div className="widget-edit-preview-result" data-testid="widget-edit-preview-result">
-                      <p className="widget-preview-value mono">{previewResult.valueLabel || EM_DASH}</p>
-                      {previewResult.sparkSeries?.length ? (
-                        <p className="cadastro-field-hint">
-                          Sparkline: {previewResult.sparkSeries.length} pontos · último{' '}
-                          {previewResult.sparkSeries[previewResult.sparkSeries.length - 1]}
-                        </p>
-                      ) : null}
-                      {previewResult.series?.length ? (
-                        <p className="cadastro-field-hint">
-                          Série: {previewResult.series.length} competências
-                        </p>
-                      ) : null}
+                      <WidgetPreviewResult
+                        result={previewResult}
+                        testIdPrefix="widget-edit-preview"
+                        seriesLimit={6}
+                      />
                     </div>
                   ) : null}
                 </section>

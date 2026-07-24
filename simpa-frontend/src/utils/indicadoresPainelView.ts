@@ -66,9 +66,22 @@ export const PAINEL_WIDGET_PERFIS = ['APS', 'MAC', 'Hospitalar'] as const;
 
 export type PainelWidgetPerfil = (typeof PAINEL_WIDGET_PERFIS)[number];
 
+export const PAINEL_WIDGET_LAYOUTS = [
+  { id: 'A', label: 'A · Cards' },
+  { id: 'B', label: 'B · Foco' },
+  { id: 'C', label: 'C · Tabela' },
+] as const;
+
+export type PainelWidgetLayout = (typeof PAINEL_WIDGET_LAYOUTS)[number]['id'];
+
+export function formatPainelWidgetLayoutLabel(layout: PainelWidgetLayout): string {
+  return PAINEL_WIDGET_LAYOUTS.find((item) => item.id === layout)?.label ?? `Layout ${layout}`;
+}
+
 export function mapWidgetFormPayload(
   values: Record<string, string>,
   perfil: PainelWidgetPerfil = 'APS',
+  layout: PainelWidgetLayout = 'A',
 ): Partial<PainelWidgetConfig> {
   return {
     slug: values.slug.trim(),
@@ -79,15 +92,37 @@ export function mapWidgetFormPayload(
     metrica_id: values.metrica_id ? Number(values.metrica_id) : null,
     spark_metrica_id: values.spark_metrica_id ? Number(values.spark_metrica_id) : null,
     perfil,
-    layout: 'A',
+    layout,
   };
 }
 
+export async function fetchPainelWidgetsByPerfilLayout(
+  perfil: PainelWidgetPerfil,
+  layout: PainelWidgetLayout,
+): Promise<PainelWidgetConfig[]> {
+  const data = await fetchPainelWidgets({ perfil, layout, includeInactive: true });
+  return [...data].sort((a, b) => a.ordem - b.ordem || a.id - b.id);
+}
+
+/** @deprecated Use fetchPainelWidgetsByPerfilLayout(perfil, 'A') */
 export async function fetchPainelWidgetsByPerfilLayoutA(
   perfil: PainelWidgetPerfil,
 ): Promise<PainelWidgetConfig[]> {
-  const data = await fetchPainelWidgets({ perfil, layout: 'A' });
-  return [...data].sort((a, b) => a.ordem - b.ordem);
+  return fetchPainelWidgetsByPerfilLayout(perfil, 'A');
+}
+
+export function swapWidgetOrderIds(
+  rows: PainelWidgetConfig[],
+  index: number,
+  direction: 'up' | 'down',
+): number[] {
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= rows.length) {
+    return rows.map((row) => row.id);
+  }
+  const ids = rows.map((row) => row.id);
+  [ids[index], ids[targetIndex]] = [ids[targetIndex], ids[index]];
+  return ids;
 }
 
 /** @deprecated Use fetchPainelWidgetsByPerfilLayoutA('APS') */
@@ -99,8 +134,31 @@ export function mapWidgetForTable(row: PainelWidgetConfig): Record<string, unkno
   return row as unknown as Record<string, unknown>;
 }
 
+export function formatDiscoverCatalogToast(result: {
+  inserted: number;
+  updated: number;
+  sources?: {
+    esus_raw?: { inserted: number; updated: number };
+    sia?: { inserted: number; updated: number };
+    sih?: { inserted: number; updated: number };
+  };
+}): string {
+  const base = `Catálogo atualizado — ${result.inserted} inseridas, ${result.updated} atualizadas`;
+  const parts = [
+    result.sources?.esus_raw
+      ? `e-SUS: ${result.sources.esus_raw.inserted}/${result.sources.esus_raw.updated}`
+      : null,
+    result.sources?.sia ? `SIA: ${result.sources.sia.inserted}/${result.sources.sia.updated}` : null,
+    result.sources?.sih ? `SIHD: ${result.sources.sih.inserted}/${result.sources.sih.updated}` : null,
+  ].filter(Boolean);
+
+  return parts.length ? `${base} (${parts.join(' · ')})` : base;
+}
+
 export const WIDGET_CRUD_MESSAGES = {
   created: 'Widget criado com sucesso',
   updated: 'Widget atualizado com sucesso',
   inactivated: 'Widget inativado com sucesso',
+  reactivated: 'Widget reativado com sucesso',
+  reordered: 'Ordem dos widgets atualizada',
 };

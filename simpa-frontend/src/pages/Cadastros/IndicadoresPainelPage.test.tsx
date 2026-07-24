@@ -10,6 +10,7 @@ vi.mock('../../api/painelWidgets', () => ({
   updatePainelWidget: vi.fn(),
   createPainelWidget: vi.fn(),
   inactivatePainelWidget: vi.fn(),
+  reorderPainelWidgets: vi.fn(),
   previewPainelWidget: vi.fn(),
   discoverPainelMetricas: vi.fn(),
 }));
@@ -30,6 +31,7 @@ import {
   fetchPainelMetricas,
   inactivatePainelWidget,
   previewPainelWidget,
+  reorderPainelWidgets,
   updatePainelWidget,
 } from '../../api/painelWidgets';
 import { fetchEstabelecimentosAps } from '../../api/cadastros';
@@ -163,6 +165,108 @@ describe('IndicadoresPainelPage', () => {
       });
     });
 
+    it('listagem solicita widgets ativos e inativos', async () => {
+      mockPlanningUser();
+      vi.mocked(fetchPainelWidgets).mockResolvedValue(buildWidgets(1) as never);
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(fetchPainelWidgets).toHaveBeenCalledWith(
+          expect.objectContaining({ perfil: 'APS', layout: 'A', includeInactive: true }),
+        );
+      });
+    });
+
+    it('troca de layout recarrega widgets do layout selecionado', async () => {
+      mockPlanningUser();
+      vi.mocked(fetchPainelWidgets).mockResolvedValue([] as never);
+
+      renderPage();
+
+      await waitFor(() => expect(fetchPainelWidgets).toHaveBeenCalledTimes(1));
+
+      fireEvent.change(screen.getByTestId('indicadores-painel-layout-select'), {
+        target: { value: 'B' },
+      });
+
+      await waitFor(() => {
+        expect(fetchPainelWidgets).toHaveBeenLastCalledWith(
+          expect.objectContaining({ perfil: 'APS', layout: 'B', includeInactive: true }),
+        );
+        expect(screen.getByText('Widgets APS · B · Foco')).toBeInTheDocument();
+      });
+    });
+
+    it('exibe contagem de ativos e inativos', async () => {
+      mockPlanningUser();
+      vi.mocked(fetchPainelWidgets).mockResolvedValue([
+        buildWidgets(1)[0],
+        { ...buildWidgets(1)[0], id: 2, slug: 'inativo', titulo: 'Widget inativo', status: 'inativo', ordem: 2 },
+      ] as never);
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('widget-count-summary')).toHaveTextContent('1 ativos · 1 inativos');
+      });
+    });
+
+    it('linha inativa exibe Reativar e oculta Inativar', async () => {
+      mockPlanningUser();
+      vi.mocked(fetchPainelWidgets).mockResolvedValue([
+        { ...buildWidgets(1)[0], id: 9, status: 'inativo', titulo: 'Widget inativo' },
+      ] as never);
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('widget-reactivate-9')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Inativar' })).not.toBeInTheDocument();
+      });
+    });
+
+    it('Reativar chama updatePainelWidget com status ativo', async () => {
+      mockPlanningUser();
+      vi.mocked(fetchPainelWidgets)
+        .mockResolvedValueOnce([
+          { ...buildWidgets(1)[0], id: 9, status: 'inativo', titulo: 'Widget inativo' },
+        ] as never)
+        .mockResolvedValueOnce(buildWidgets(1) as never);
+      vi.mocked(updatePainelWidget).mockResolvedValue(buildWidgets(1)[0] as never);
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getByTestId('widget-reactivate-9')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('widget-reactivate-9'));
+
+      await waitFor(() => {
+        expect(updatePainelWidget).toHaveBeenCalledWith(9, { status: 'ativo' });
+      });
+    });
+
+    it('move down chama reorder com ids trocados', async () => {
+      mockPlanningUser();
+      const widgets = buildWidgets(2);
+      vi.mocked(fetchPainelWidgets)
+        .mockResolvedValueOnce(widgets as never)
+        .mockResolvedValueOnce(widgets as never);
+      vi.mocked(reorderPainelWidgets).mockResolvedValue(widgets as never);
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getByTestId('widget-move-down-1')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('widget-move-down-1'));
+
+      await waitFor(() => {
+        expect(reorderPainelWidgets).toHaveBeenCalledWith({
+          perfil: 'APS',
+          layout: 'A',
+          orderedIds: [2, 1],
+        });
+      });
+    });
+
     it('mostra estado vazio quando lista de widgets vem vazia', async () => {
       mockPlanningUser();
       vi.mocked(fetchPainelWidgets).mockResolvedValue([] as never);
@@ -170,7 +274,7 @@ describe('IndicadoresPainelPage', () => {
       renderPage();
 
       await waitFor(() => {
-        expect(screen.getByText('Nenhum widget encontrado para APS/Layout A.')).toBeInTheDocument();
+        expect(screen.getByText('Nenhum widget encontrado para APS/A · Cards.')).toBeInTheDocument();
       });
     });
 
@@ -268,6 +372,53 @@ describe('IndicadoresPainelPage', () => {
       await waitFor(() => {
         expect(updatePainelWidget).toHaveBeenCalled();
         expect(screen.queryByTestId('widget-edit-drawer')).not.toBeInTheDocument();
+      });
+    });
+
+    it('Executar teste no drawer envia rascunho da tela sem widgetId', async () => {
+      mockPlanningUser();
+      vi.mocked(fetchPainelWidgets).mockResolvedValue(buildWidgets(1) as never);
+      vi.mocked(fetchPainelMetricas).mockResolvedValue({
+        data: [buildWidgets(1)[0].metrica],
+        pagination: { page: 1, limit: 20, total: 1, pages: 1 },
+      } as never);
+      vi.mocked(previewPainelWidget).mockResolvedValue({
+        slug: 'widget-1',
+        ordem: 1,
+        tipo: 'card',
+        titulo: 'Título em rascunho',
+        subtitulo: null,
+        formato: 'numero',
+        value: 99,
+        valueLabel: '99',
+        isNull: false,
+      } as never);
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getAllByRole('button', { name: 'Editar' }).length).toBe(1));
+      fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+
+      const tituloInput = await screen.findByLabelText('Título');
+      fireEvent.change(tituloInput, { target: { value: 'Título em rascunho' } });
+      fireEvent.click(screen.getByTestId('widget-edit-preview-run'));
+
+      await waitFor(() => {
+        expect(previewPainelWidget).toHaveBeenCalledWith(
+          expect.objectContaining({
+            widget: expect.objectContaining({
+              titulo: 'Título em rascunho',
+              metrica_id: 1,
+            }),
+            scope: expect.objectContaining({ competencia: '2026-05' }),
+          }),
+        );
+        const arg = vi.mocked(previewPainelWidget).mock.calls[0][0] as {
+          widgetId?: number;
+          widget?: { titulo?: string };
+        };
+        expect(arg.widgetId).toBeUndefined();
+        expect(screen.getByTestId('widget-edit-preview-result')).toHaveTextContent('99');
       });
     });
 
@@ -389,6 +540,84 @@ describe('IndicadoresPainelPage', () => {
       });
     });
 
+    it('preview exibe ranking para widget grafico_ranking', async () => {
+      mockPlanningUser();
+      const rankingWidget = {
+        ...buildWidgets(8)[7],
+        id: 8,
+        tipo: 'grafico_ranking' as const,
+        titulo: 'Ranking unidades',
+      };
+      vi.mocked(fetchPainelWidgets).mockResolvedValue([rankingWidget] as never);
+      vi.mocked(previewPainelWidget).mockResolvedValue({
+        slug: 'widget-8',
+        ordem: 8,
+        tipo: 'grafico_ranking',
+        titulo: 'Ranking unidades',
+        subtitulo: null,
+        formato: 'numero',
+        value: null,
+        valueLabel: '—',
+        isNull: false,
+        ranking: [
+          { label: 'UBS A', valor: 30, valueLabel: '30' },
+          { label: 'UBS B', valor: 20, valueLabel: '20' },
+        ],
+      } as never);
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Pré-visualizar' })).toBeInTheDocument());
+      fireEvent.click(screen.getAllByRole('button', { name: 'Pré-visualizar' })[0]);
+      fireEvent.click(await screen.findByTestId('preview-run-button'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('preview-ranking')).toBeInTheDocument();
+        expect(screen.getByText('UBS A')).toBeInTheDocument();
+        expect(screen.getByText('UBS B')).toBeInTheDocument();
+        expect(screen.queryByTestId('preview-value')).not.toBeInTheDocument();
+      });
+    });
+
+    it('preview exibe série para widget grafico_linha', async () => {
+      mockPlanningUser();
+      const lineWidget = {
+        ...buildWidgets(8)[6],
+        id: 7,
+        tipo: 'grafico_linha' as const,
+        titulo: 'Tendência',
+      };
+      vi.mocked(fetchPainelWidgets).mockResolvedValue([lineWidget] as never);
+      vi.mocked(previewPainelWidget).mockResolvedValue({
+        slug: 'widget-7',
+        ordem: 7,
+        tipo: 'grafico_linha',
+        titulo: 'Tendência',
+        subtitulo: null,
+        formato: 'numero',
+        value: null,
+        valueLabel: '—',
+        isNull: false,
+        series: [
+          { competencia: '2026-04', valor: 10 },
+          { competencia: '2026-05', valor: 15 },
+        ],
+      } as never);
+
+      renderPage();
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Pré-visualizar' })).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: 'Pré-visualizar' }));
+      fireEvent.click(await screen.findByTestId('preview-run-button'));
+
+      await waitFor(() => {
+        const seriesList = screen.getByTestId('preview-series');
+        expect(seriesList).toBeInTheDocument();
+        expect(seriesList).toHaveTextContent('2026-05');
+        expect(seriesList).toHaveTextContent('15');
+      });
+    });
+
     it('painel SQL renderiza sql_preview quando expandido', async () => {
       mockPlanningUser();
       const widget = {
@@ -496,7 +725,15 @@ describe('IndicadoresPainelPage', () => {
     it('click em Atualizar catálogo chama discoverPainelMetricas uma vez', async () => {
       mockPlanningUser();
       vi.mocked(fetchPainelWidgets).mockResolvedValue(buildWidgets(1) as never);
-      vi.mocked(discoverPainelMetricas).mockResolvedValue({ inserted: 3, updated: 7 });
+      vi.mocked(discoverPainelMetricas).mockResolvedValue({
+        inserted: 3,
+        updated: 7,
+        sources: {
+          esus_raw: { inserted: 2, updated: 4 },
+          sia: { inserted: 1, updated: 2 },
+          sih: { inserted: 0, updated: 1 },
+        },
+      });
 
       renderPage();
 
@@ -506,7 +743,7 @@ describe('IndicadoresPainelPage', () => {
       await waitFor(() => {
         expect(discoverPainelMetricas).toHaveBeenCalledTimes(1);
         expect(screen.getByTestId('toast-banner')).toHaveTextContent(
-          'Catálogo atualizado — 3 inseridas, 7 atualizadas',
+          'Catálogo atualizado — 3 inseridas, 7 atualizadas (e-SUS: 2/4 · SIA: 1/2 · SIHD: 0/1)',
         );
       });
     });

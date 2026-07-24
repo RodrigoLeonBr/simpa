@@ -182,6 +182,253 @@ WHERE c.competencia = :competencia::date
 LIMIT 1`;
 }
 
+const RELATIONAL_NUMERIC_TYPES = [
+  'integer',
+  'bigint',
+  'smallint',
+  'numeric',
+  'double precision',
+  'real',
+];
+
+const RELATIONAL_EXCLUDE_COLUMNS = ['id', 'sincronizacao_id', 'estabelecimento_id'];
+
+const RELATIONAL_DISCOVERY_SOURCES = [
+  {
+    fonteTipo: 'sia',
+    tableName: 'sia_producao',
+    tableAlias: 'sp',
+    syncTable: 'sia_sincronizacoes',
+    keyPrefix: 'sia.col',
+    labelPrefix: 'SIA · sia_producao',
+    descricaoPrefix: 'Descoberta automática a partir de sia_producao (SIA importado)',
+  },
+  {
+    fonteTipo: 'sih',
+    tableName: 'sih_internacoes',
+    tableAlias: 'si',
+    syncTable: 'sih_sincronizacoes',
+    keyPrefix: 'sih.internacoes',
+    labelPrefix: 'SIHD · internações',
+    descricaoPrefix: 'Descoberta automática a partir de sih_internacoes (SIHD importado)',
+  },
+  {
+    fonteTipo: 'sih',
+    tableName: 'sih_procedimentos',
+    tableAlias: 'sp',
+    syncTable: 'sih_sincronizacoes',
+    keyPrefix: 'sih.procedimentos',
+    labelPrefix: 'SIHD · procedimentos',
+    descricaoPrefix: 'Descoberta automática a partir de sih_procedimentos (SIHD importado)',
+  },
+  {
+    fonteTipo: 'sih',
+    tableName: 'sih_aih',
+    tableAlias: 'sa',
+    syncTable: 'sih_sincronizacoes',
+    keyPrefix: 'sih.aih',
+    labelPrefix: 'SIHD · AIH',
+    descricaoPrefix: 'Descoberta automática a partir de sih_aih (SIHD importado)',
+  },
+];
+
+async function upsertDiscoveredMetric(entry) {
+  const upsert = await query(
+    `INSERT INTO painel_metricas_catalogo (
+       chave, fonte_tipo, label, descricao, tipo_relatorio, secao, descricao_linha, campo_json,
+       agregacao, sql_template, ocorrencias, ultima_carga_em, descoberto_em, status
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6, $7, $8,
+       $9, $10, $11, $12, now(), 'ativo'
+     )
+     ON CONFLICT (chave) DO UPDATE SET
+       label = EXCLUDED.label,
+       descricao = EXCLUDED.descricao,
+       tipo_relatorio = EXCLUDED.tipo_relatorio,
+       secao = EXCLUDED.secao,
+       descricao_linha = EXCLUDED.descricao_linha,
+       campo_json = EXCLUDED.campo_json,
+       agregacao = EXCLUDED.agregacao,
+       ultima_carga_em = EXCLUDED.ultima_carga_em,
+       ocorrencias = painel_metricas_catalogo.ocorrencias + EXCLUDED.ocorrencias,
+       sql_template = CASE
+         WHEN painel_metricas_catalogo.status = 'ativo'
+          AND COALESCE(BTRIM(painel_metricas_catalogo.sql_template), '') <> ''
+         THEN painel_metricas_catalogo.sql_template
+         ELSE EXCLUDED.sql_template
+       END
+     RETURNING (xmax = 0) AS inserted`,
+    [
+      entry.chave,
+      entry.fonte_tipo,
+      entry.label,
+      entry.descricao,
+      entry.tipo_relatorio ?? null,
+      entry.secao ?? null,
+      entry.descricao_linha ?? null,
+      entry.campo_json,
+      entry.agregacao,
+      entry.sql_template,
+      entry.ocorrencias,
+      entry.ultima_carga_em,
+    ]
+  );
+
+  return upsert.rows[0]?.inserted ? 'inserted' : 'updated';
+}
+
+function buildRelationalMetricKey(prefix, columnName) {
+  const base = `${prefix}.${slugifySegment(columnName)}`;
+  if (base.length <= METRIC_KEY_MAX) {
+    return base;
+  }
+  return base.slice(0, METRIC_KEY_MAX);
+}
+
+function buildRelationalSumSqlTemplate({ tableName, tableAlias, columnName }) {
+  const column = String(columnName).replace(/[^a-zA-Z0-9_]/g, '');
+  if (!column) {
+    throw new InvalidMetricTemplateError('coluna relacional inválida');
+  }
+
+  return `SELECT COALESCE(SUM(${tableAlias}.${column}), 0) AS valor
+FROM ${tableName} ${tableAlias}
+WHERE ${tableAlias}.competencia = :competencia::date
+  AND (:estabelecimento_id::bigint IS NULL
+       OR ${tableAlias}.estabelecimento_id = :estabelecimento_id::bigint)`;
+}
+
+/**
+ * Descobre colunas numéricas em tabelas SIA/SIHD importadas e faz UPSERT no catálogo.
+ */
+async function discoverMetricsFromRelationalSource(source) {
+  const statsResult = await query(
+    `SELECT COUNT(*)::int AS ocorrencias,
+            MAX(s.sincronizado_em) AS ultima_carga_em
+     FROM ${source.tableName} t
+     JOIN ${source.syncTable} s ON s.id = t.sincronizacao_id`
+  );
+
+  const stats = statsResult.rows[0];
+  if (!stats?.ocorrencias) {
+    return { inserted: 0, updated: 0 };
+  }
+
+  const columnsResult = await query(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = $1
+       AND data_type = ANY($2::text[])
+       AND NOT (column_name = ANY($3::text[]))
+     ORDER BY ordinal_position`,
+    [source.tableName, RELATIONAL_NUMERIC_TYPES, RELATIONAL_EXCLUDE_COLUMNS]
+  );
+
+  if (!columnsResult.rows.length) {
+    return { inserted: 0, updated: 0 };
+  }
+
+  let inserted = 0;
+  let updated = 0;
+
+  for (const row of columnsResult.rows) {
+    const action = await upsertDiscoveredMetric({
+      chave: buildRelationalMetricKey(source.keyPrefix, row.column_name),
+      fonte_tipo: source.fonteTipo,
+      label: `${source.labelPrefix} · ${row.column_name}`.slice(0, 200),
+      descricao: `${source.descricaoPrefix} · coluna ${row.column_name}`,
+      campo_json: row.column_name,
+      agregacao: 'sum',
+      sql_template: buildRelationalSumSqlTemplate({
+        tableName: source.tableName,
+        tableAlias: source.tableAlias,
+        columnName: row.column_name,
+      }),
+      ocorrencias: stats.ocorrencias,
+      ultima_carga_em: stats.ultima_carga_em,
+    });
+
+    if (action === 'inserted') {
+      inserted += 1;
+    } else {
+      updated += 1;
+    }
+  }
+
+  return { inserted, updated };
+}
+
+async function refreshCuratedMetricsSyncMetadata({ fonteTipo, tableName, syncTable }) {
+  const autoKeyFilters =
+    fonteTipo === 'sia'
+      ? [`m.chave NOT LIKE 'sia.col.%'`]
+      : [
+          `m.chave NOT LIKE 'sih.internacoes.%'`,
+          `m.chave NOT LIKE 'sih.procedimentos.%'`,
+          `m.chave NOT LIKE 'sih.aih.%'`,
+        ];
+
+  const result = await query(
+    `WITH stats AS (
+       SELECT MAX(s.sincronizado_em) AS ultima_carga_em
+       FROM ${tableName} t
+       JOIN ${syncTable} s ON s.id = t.sincronizacao_id
+     )
+     UPDATE painel_metricas_catalogo m
+     SET ultima_carga_em = GREATEST(
+           COALESCE(m.ultima_carga_em, '-infinity'::timestamp),
+           stats.ultima_carga_em
+         )
+     FROM stats
+     WHERE m.fonte_tipo = $1
+       AND m.status = 'ativo'
+       AND stats.ultima_carga_em IS NOT NULL
+       AND ${autoKeyFilters.join(' AND ')}
+     RETURNING m.id`,
+    [fonteTipo]
+  );
+
+  return { inserted: 0, updated: result.rows.length };
+}
+
+async function discoverMetricsFromSia() {
+  const auto = await discoverMetricsFromRelationalSource(RELATIONAL_DISCOVERY_SOURCES[0]);
+  const curated = await refreshCuratedMetricsSyncMetadata({
+    fonteTipo: 'sia',
+    tableName: 'sia_producao',
+    syncTable: 'sia_sincronizacoes',
+  });
+
+  return {
+    inserted: auto.inserted + curated.inserted,
+    updated: auto.updated + curated.updated,
+  };
+}
+
+async function discoverMetricsFromSih() {
+  const sources = RELATIONAL_DISCOVERY_SOURCES.filter((source) => source.fonteTipo === 'sih');
+  let inserted = 0;
+  let updated = 0;
+
+  for (const source of sources) {
+    const result = await discoverMetricsFromRelationalSource(source);
+    inserted += result.inserted;
+    updated += result.updated;
+  }
+
+  const curated = await refreshCuratedMetricsSyncMetadata({
+    fonteTipo: 'sih',
+    tableName: 'sih_internacoes',
+    syncTable: 'sih_sincronizacoes',
+  });
+
+  return {
+    inserted: inserted + curated.inserted,
+    updated: updated + curated.updated,
+  };
+}
+
 /**
  * Descobre métricas em `esus_indicadores_raw` e faz UPSERT no catálogo.
  *
@@ -221,46 +468,22 @@ async function discoverMetricsFromRaw() {
     const sqlTemplate = buildDiscoveredSqlTemplate(row);
     const label = `${row.secao} · ${row.descricao} (${row.campo_json})`.slice(0, 200);
 
-    const upsert = await query(
-      `INSERT INTO painel_metricas_catalogo (
-         chave, fonte_tipo, label, descricao, tipo_relatorio, secao, descricao_linha, campo_json,
-         agregacao, sql_template, ocorrencias, ultima_carga_em, descoberto_em, status
-       ) VALUES (
-         $1, 'esus_raw', $2, $3, $4, $5, $6, $7,
-         'valor_unico', $8, $9, $10, now(), 'ativo'
-       )
-       ON CONFLICT (chave) DO UPDATE SET
-         label = EXCLUDED.label,
-         descricao = EXCLUDED.descricao,
-         tipo_relatorio = EXCLUDED.tipo_relatorio,
-         secao = EXCLUDED.secao,
-         descricao_linha = EXCLUDED.descricao_linha,
-         campo_json = EXCLUDED.campo_json,
-         agregacao = EXCLUDED.agregacao,
-         ultima_carga_em = EXCLUDED.ultima_carga_em,
-         ocorrencias = painel_metricas_catalogo.ocorrencias + EXCLUDED.ocorrencias,
-         sql_template = CASE
-           WHEN painel_metricas_catalogo.status = 'ativo'
-            AND COALESCE(BTRIM(painel_metricas_catalogo.sql_template), '') <> ''
-           THEN painel_metricas_catalogo.sql_template
-           ELSE EXCLUDED.sql_template
-         END
-       RETURNING (xmax = 0) AS inserted`,
-      [
-        chave,
-        label,
-        `Descoberta automática de e-SUS (${row.tipo_relatorio})`,
-        row.tipo_relatorio,
-        row.secao,
-        row.descricao,
-        row.campo_json,
-        sqlTemplate,
-        row.ocorrencias,
-        row.ultima_carga_em,
-      ]
-    );
+    const action = await upsertDiscoveredMetric({
+      chave,
+      fonte_tipo: 'esus_raw',
+      label,
+      descricao: `Descoberta automática de e-SUS (${row.tipo_relatorio})`,
+      tipo_relatorio: row.tipo_relatorio,
+      secao: row.secao,
+      descricao_linha: row.descricao,
+      campo_json: row.campo_json,
+      agregacao: 'valor_unico',
+      sql_template: sqlTemplate,
+      ocorrencias: row.ocorrencias,
+      ultima_carga_em: row.ultima_carga_em,
+    });
 
-    if (upsert.rows[0]?.inserted) {
+    if (action === 'inserted') {
       inserted += 1;
     } else {
       updated += 1;
@@ -268,6 +491,18 @@ async function discoverMetricsFromRaw() {
   }
 
   return { inserted, updated };
+}
+
+async function discoverPainelMetricas() {
+  const esus_raw = await discoverMetricsFromRaw();
+  const sia = await discoverMetricsFromSia();
+  const sih = await discoverMetricsFromSih();
+
+  return {
+    inserted: esus_raw.inserted + sia.inserted + sih.inserted,
+    updated: esus_raw.updated + sia.updated + sih.updated,
+    sources: { esus_raw, sia, sih },
+  };
 }
 
 async function listMetricas({ q, fonte_tipo, page = 1, limit = 20 } = {}) {
@@ -380,7 +615,12 @@ module.exports = {
   slugifySegment,
   buildMetricKey,
   buildDiscoveredSqlTemplate,
+  buildRelationalMetricKey,
+  buildRelationalSumSqlTemplate,
   discoverMetricsFromRaw,
+  discoverMetricsFromSia,
+  discoverMetricsFromSih,
+  discoverPainelMetricas,
   listMetricas,
   getMetricaById,
 };

@@ -3,7 +3,7 @@ const { logAudit } = require('../services/auditService');
 const {
   listMetricas,
   getMetricaById,
-  discoverMetricsFromRaw,
+  discoverPainelMetricas,
 } = require('../services/painelMetricsService');
 
 function registerPainelMetricasCadastrosRoutes(router) {
@@ -32,7 +32,7 @@ function registerPainelMetricasCadastrosRoutes(router) {
 
   router.post('/painel-metricas/descobrir', requirePlanningStaff, async (req, res, next) => {
     try {
-      const result = await discoverMetricsFromRaw();
+      const result = await discoverPainelMetricas();
       const usuarioId = req.user.id;
 
       await logAudit({

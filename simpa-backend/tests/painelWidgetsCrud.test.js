@@ -166,6 +166,38 @@ describe('painelWidgetsService CRUD', () => {
     expect(reordered).toHaveLength(3);
   });
 
+  it('reorderWidgets aceita widgets inativos no orderedIds', async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    pool.connect.mockResolvedValueOnce(client);
+    client.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 1 }, { id: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] })
+      .mockResolvedValueOnce({});
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: 1, ordem: 1, perfil: 'APS', layout: 'A', status: 'ativo' },
+        { id: 2, ordem: 2, perfil: 'APS', layout: 'A', status: 'inativo' },
+      ],
+    });
+
+    const reordered = await reorderWidgets('APS', 'A', [2, 1]);
+
+    expect(client.query).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE perfil = $1'),
+      ['APS', 'A', [2, 1]]
+    );
+    expect(client.query).not.toHaveBeenCalledWith(
+      expect.stringContaining("status = 'ativo'"),
+      expect.anything()
+    );
+    expect(reordered).toHaveLength(2);
+  });
+
   it('inactivateWidget define status inativo sem hard delete', async () => {
     query.mockResolvedValueOnce({
       rows: [{ id: 7, status: 'inativo' }],

@@ -116,11 +116,24 @@ export function fetchPainelMetrica(id: number): Promise<PainelMetricaCatalogo> {
   return apiFetch<PainelMetricaCatalogo>(`/api/cadastros/painel-metricas/${id}`);
 }
 
-export function discoverPainelMetricas(): Promise<{ inserted: number; updated: number }> {
-  return apiFetch<{ inserted: number; updated: number }>(
-    '/api/cadastros/painel-metricas/descobrir',
-    {
-      method: 'POST',
-    }
-  );
+export function discoverPainelMetricas(): Promise<{
+  inserted: number;
+  updated: number;
+  sources?: {
+    esus_raw: { inserted: number; updated: number };
+    sia: { inserted: number; updated: number };
+    sih: { inserted: number; updated: number };
+  };
+}> {
+  return apiFetch<{
+    inserted: number;
+    updated: number;
+    sources?: {
+      esus_raw: { inserted: number; updated: number };
+      sia: { inserted: number; updated: number };
+      sih: { inserted: number; updated: number };
+    };
+  }>('/api/cadastros/painel-metricas/descobrir', {
+    method: 'POST',
+  });
 }

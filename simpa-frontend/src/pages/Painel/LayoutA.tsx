@@ -13,7 +13,7 @@ import {
   mapWidgetToKpi,
   mapWidgetToRanking,
   mapWidgetToTrendSeries,
-  splitPainelWidgetsByTipo,
+  pickLayoutSlotWidgets,
 } from '../../utils/painelWidgetsView';
 
 interface LayoutAProps {
@@ -27,16 +27,14 @@ export function LayoutA({ data, unidades }: LayoutAProps) {
   const useFallback = Boolean(layoutError) || !layout?.widgets?.length;
   const cardLimit = painelPerfil === 'APS' ? 6 : 9;
 
-  const sortedWidgets = [...(layout?.widgets ?? [])].sort((a, b) => a.ordem - b.ordem);
-  const split = splitPainelWidgetsByTipo(sortedWidgets);
-  const lineWidget = split.linhas[0];
-  const rankingWidget = split.rankings[0];
+  const sortedWidgets = [...(layout?.widgets ?? [])].sort((a, b) => a.ordem - b.ordem || a.slug.localeCompare(b.slug));
+  const { cards: cardWidgets, lineWidget, rankingWidget } = pickLayoutSlotWidgets(sortedWidgets);
 
   const kpis = useFallback
     ? data
       ? buildPainelKpis(data)
       : []
-    : split.cards.slice(0, cardLimit).map((widget) => mapWidgetToKpi(widget));
+    : cardWidgets.slice(0, cardLimit).map((widget) => mapWidgetToKpi(widget));
 
   const trend = useFallback
     ? data

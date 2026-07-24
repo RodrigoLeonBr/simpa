@@ -5,6 +5,7 @@ import {
   mapWidgetToRanking,
   mapWidgetToTrendSeries,
   splitPainelWidgetsByTipo,
+  pickLayoutSlotWidgets,
 } from './painelWidgetsView';
 import { EM_DASH } from './kpi';
 
@@ -124,7 +125,22 @@ describe('painelWidgetsView', () => {
 
     expect(split.cards).toHaveLength(1);
     expect(split.linhas).toHaveLength(1);
-    expect(split.rankings).toHaveLength(1);
-    expect(split.outros).toHaveLength(1);
+    expect(split.rankings).toHaveLength(2);
+    expect(split.outros).toHaveLength(0);
+  });
+
+  it('pickLayoutSlotWidgets escolhe primeiro line/ranking pela ordem global', () => {
+    const sorted = [
+      baseWidget({ slug: 'rank-a', ordem: 1, tipo: 'grafico_ranking', titulo: 'Rank A' }),
+      baseWidget({ slug: 'card-b', ordem: 2, tipo: 'card', titulo: 'Card B' }),
+      baseWidget({ slug: 'line-c', ordem: 8, tipo: 'grafico_linha', titulo: 'Line C' }),
+      baseWidget({ slug: 'rank-d', ordem: 9, tipo: 'grafico_ranking', titulo: 'Rank D' }),
+    ];
+
+    const slots = pickLayoutSlotWidgets(sorted);
+
+    expect(slots.cards.map((w) => w.slug)).toEqual(['card-b']);
+    expect(slots.lineWidget?.slug).toBe('line-c');
+    expect(slots.rankingWidget?.slug).toBe('rank-a');
   });
 });

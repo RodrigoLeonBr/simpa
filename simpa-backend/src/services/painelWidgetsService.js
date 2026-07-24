@@ -684,14 +684,13 @@ async function reorderWidgets(perfil, layout, orderedIds) {
        FROM painel_widgets
        WHERE perfil = $1
          AND layout = $2
-         AND id = ANY($3::bigint[])
-         AND status = 'ativo'`,
+         AND id = ANY($3::bigint[])`,
       [perfil, layout, ids]
     );
 
     if (check.rows.length !== ids.length) {
       throw createHttpError(
-        'orderedIds contém widget inexistente ou fora do escopo',
+        'orderedIds contém widget inexistente ou fora do escopo perfil/layout',
         400,
         'VALIDATION_ERROR'
       );

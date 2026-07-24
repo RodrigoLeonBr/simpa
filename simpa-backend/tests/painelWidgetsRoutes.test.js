@@ -209,6 +209,29 @@ describe('cadastros painel-widgets routes', () => {
     expect(previewWidget).toHaveBeenCalledWith(1, { competencia: '2026-05' });
   });
 
+  it('POST preview prioriza body.widget sobre widgetId (rascunho da tela)', async () => {
+    const draft = {
+      tipo: 'card',
+      titulo: 'Rascunho não salvo',
+      metrica_id: 99,
+      sql_override: 'SELECT 42 AS valor',
+      formato: 'numero',
+    };
+
+    const res = await request(app)
+      .post('/api/cadastros/painel-widgets/preview')
+      .set('Authorization', authHeader())
+      .send({
+        widgetId: 1,
+        widget: draft,
+        scope: { competencia: '2026-05' },
+      });
+
+    expect(res.status).toBe(200);
+    expect(previewWidget).toHaveBeenCalledWith(draft, { competencia: '2026-05' });
+    expect(previewWidget).not.toHaveBeenCalledWith(1, expect.anything());
+  });
+
   it('DELETE inativa e escreve audit', async () => {
     const res = await request(app)
       .delete('/api/cadastros/painel-widgets/2')

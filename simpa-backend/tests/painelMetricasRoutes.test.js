@@ -1,7 +1,7 @@
 jest.mock('../src/services/painelMetricsService', () => ({
   listMetricas: jest.fn(),
   getMetricaById: jest.fn(),
-  discoverMetricsFromRaw: jest.fn(),
+  discoverPainelMetricas: jest.fn(),
 }));
 
 jest.mock('../src/services/auditService', () => ({
@@ -13,7 +13,7 @@ const jwt = require('jsonwebtoken');
 const {
   listMetricas,
   getMetricaById,
-  discoverMetricsFromRaw,
+  discoverPainelMetricas,
 } = require('../src/services/painelMetricsService');
 const { logAudit } = require('../src/services/auditService');
 const { authHeader, gestorHeader } = require('./helpers/auth');
@@ -38,7 +38,15 @@ describe('cadastros painel-metricas routes', () => {
       pagination: { page: 1, limit: 20, total: 1, pages: 1 },
     });
     getMetricaById.mockResolvedValue({ id: 1, chave: 'esus.atendimento', sql_template: 'SELECT 1' });
-    discoverMetricsFromRaw.mockResolvedValue({ inserted: 1, updated: 2 });
+    discoverPainelMetricas.mockResolvedValue({
+      inserted: 1,
+      updated: 2,
+      sources: {
+        esus_raw: { inserted: 1, updated: 1 },
+        sia: { inserted: 0, updated: 1 },
+        sih: { inserted: 0, updated: 0 },
+      },
+    });
     logAudit.mockResolvedValue(undefined);
   });
 
@@ -76,7 +84,7 @@ describe('cadastros painel-metricas routes', () => {
       .set('Authorization', visualizadorHeader());
 
     expect(res.status).toBe(403);
-    expect(discoverMetricsFromRaw).not.toHaveBeenCalled();
+    expect(discoverPainelMetricas).not.toHaveBeenCalled();
   });
 
   it('POST descobrir retorna payload inserted/updated e audit', async () => {
@@ -85,7 +93,15 @@ describe('cadastros painel-metricas routes', () => {
       .set('Authorization', gestorHeader());
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ inserted: 1, updated: 2 });
+    expect(res.body).toEqual({
+      inserted: 1,
+      updated: 2,
+      sources: {
+        esus_raw: { inserted: 1, updated: 1 },
+        sia: { inserted: 0, updated: 1 },
+        sih: { inserted: 0, updated: 0 },
+      },
+    });
     expect(logAudit).toHaveBeenCalledWith(
       expect.objectContaining({ acao: 'painel_metricas_descobrir' })
     );

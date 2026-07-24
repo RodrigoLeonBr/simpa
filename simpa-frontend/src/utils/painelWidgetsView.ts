@@ -91,7 +91,7 @@ export function splitPainelWidgetsByTipo(widgets: ResolvedPainelWidget[]): Paine
         acc.cards.push(widget);
       } else if (widget.tipo === 'grafico_linha') {
         acc.linhas.push(widget);
-      } else if (widget.tipo === 'grafico_ranking') {
+      } else if (widget.tipo === 'grafico_ranking' || widget.tipo === 'grafico_barra') {
         acc.rankings.push(widget);
       } else {
         acc.outros.push(widget);
@@ -100,4 +100,14 @@ export function splitPainelWidgetsByTipo(widgets: ResolvedPainelWidget[]): Paine
     },
     { cards: [], linhas: [], rankings: [], outros: [] }
   );
+}
+
+/** Primeiro widget de cada família na ordem global (ordem ASC). */
+export function pickLayoutSlotWidgets(sortedWidgets: ResolvedPainelWidget[]) {
+  const split = splitPainelWidgetsByTipo(sortedWidgets);
+  return {
+    cards: split.cards,
+    lineWidget: split.linhas[0] ?? null,
+    rankingWidget: split.rankings[0] ?? null,
+  };
 }

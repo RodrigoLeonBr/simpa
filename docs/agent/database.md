@@ -21,9 +21,15 @@
 | `migration_022_procedimentos_esus_sigtap.sql` | `procedimentos_esus_sigtap` — de-para descrição e-SUS → código SIGTAP (relatórios de produção) |
 | `migration_023_sih_aih_campos.sql` | Campos extras em `sih_aih`: `carater_internacao`, `diag_secundario`, `cid_obito`, `dt_internacao`, `dt_saida` (DATE) |
 | `migration_024_sih_aih_widgets.sql` | Métricas `sih.permanencia_media_real`/`sih.pct_obito_cid`/`sih.internacoes_por_carater` + widgets Hospitalar Layout A (ordem 9–11) |
+| `migration_025_sih_proc_qtd_linhas.sql` | Coluna `sih_procedimentos.qtd_linhas` (COUNT(*) linhas brutas `s_aih_pa` por grupo); histórico de importação passa a usar `SUM(qtd_linhas)` |
 | `migration_026_leitos_vigencia.sql` | `enriquecimento_hospitalar_leitos_vigencia` — leitos hospitalares versionados por vigência (Hospitalar/Misto) |
+| `migration_027_fix_sih_metricas_utf8.sql` | Corrige UTF-8 em métricas `sih.*`, widgets Hospitalar 024 e 5 `formas_sia` (“Atenção…”) |
 
-Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `013` em `/docker-entrypoint-initdb.d/`.
+Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `027` em `/docker-entrypoint-initdb.d/`.
+
+### Correções UTF-8 (volumes já existentes)
+
+Migrations `016` / `017` / `021` / `027` só rodam no **primeiro** init com volume vazio. Em banco já populado: ver **[correcao-utf8-painel-metricas.md](correcao-utf8-painel-metricas.md)** (`docker cp` + `psql -f`; nunca `Get-Content | docker exec` no Windows).
 
 ## Tabelas por domínio
 
@@ -61,16 +67,24 @@ Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … 
 
 Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atuais). Runtime MVP: `painelWidgetsService.resolvePainelLayout` + cadastro CRUD — ver [cadastros.md#workflow-painel-widgets-dinamicos](cadastros.md#workflow-painel-widgets-dinamicos).
 
-### SIHD (migration 013)
+### SIHD (migration 013+)
 
 | Tabela | Uso |
 |--------|-----|
-| `sih_sincronizacoes` | Histórico por competência; status `ok/parcial/erro/pendente`; `UNIQUE(competencia)`; `qtd_aih` (migration 020) |
+| `sih_sincronizacoes` | Histórico por competência; status `ok/parcial/erro/pendente`; `UNIQUE(competencia)`; `qtd_aih` (migration 020). Após mig. 025, `qtd_procedimentos` grava/exibe **linhas brutas HPA** (`SUM(sih_procedimentos.qtd_linhas)`), não o nº de grupos |
 | `sih_aih` | Cabeçalho `s_aih` no grão **AIH × CNES × competência**; coluna `aih` (13 chars) para filtros analíticos (ex. `SUBSTRING(aih,5,1)`). Campos extras (mig. 023): `carater_internacao`, `diag_secundario`, `cid_obito`, `dt_internacao`/`dt_saida` (DATE) |
 | `sih_internacoes` | Cabeçalho AIH agregado por `(sincronizacao_id, cnes, proc_principal, diag_principal, complexidade, financiamento, motivo_saida, sexo)` |
-| `sih_procedimentos` | Itens `s_aih_pa` agregados por `(sincronizacao_id, cnes, proc_detalhado, cbo_profissional, financiamento_detalhe)` |
+| `sih_procedimentos` | Itens `s_aih_pa` agregados por `(sincronizacao_id, cnes, proc_detalhado, cbo_profissional, financiamento_detalhe)`. Coluna `qtd_linhas` (mig. 025): `COUNT(*)` linhas brutas do MySQL no grupo |
 
 FK: `sih_aih`, `sih_internacoes` e `sih_procedimentos.sincronizacao_id` → `sih_sincronizacoes(id) ON DELETE CASCADE`.
+
+**Semântica pós-025 (histórico `/importacao`):**
+
+| Precisa de… | Use |
+|-------------|-----|
+| Linhas HPA (comparável ao ConsultaSIA) | `SUM(sih_procedimentos.qtd_linhas)` / `sih_sincronizacoes.qtd_procedimentos` |
+| Volume produzido (qtd SUS) | `SUM(sih_procedimentos.total_quantidade)` |
+| Nº de grupos gerenciais | `COUNT(*)` em `sih_procedimentos` — evitar em KPI de negócio |
 
 **Dicionário de campos / SQL para Indicadores:** [sihd-internacao-dicionario-dados.md](sihd-internacao-dicionario-dados.md).
 
@@ -136,6 +150,16 @@ Novas importações devem gravar FKs (app layer); linhas legadas permanecem null
 - **`cadastros_sincronizacoes`:** colunas `forma_inseridos/atualizados/inativados`, `cbo_inseridos/atualizados/inativados`.
 
 Join analítico SIA: `left(trim(codigo_sigtap), 6)` → `formas_sia.codigo_forma`; CBO canônico 6 chars → `cbos_sia.codigo_cbo`. Detalhe: [cadastros.md#workflow-forma-cbo-sia-sih](cadastros.md#workflow-forma-cbo-sia-sih).
+
+## Migration 025 (aplicada)
+
+`migration_025_sih_proc_qtd_linhas.sql` — ordem Docker: `25-migration_025_sih_proc_qtd_linhas.sql`.
+
+- **`sih_procedimentos.qtd_linhas`:** `INT NOT NULL DEFAULT 0` — `COUNT(*)` de linhas brutas em `s_aih_pa` que formaram o grupo agregado.
+- **Sync:** `sync_sih_mysql.py` preenche `qtd_linhas` e grava `sih_sincronizacoes.qtd_procedimentos = SUM(qtd_linhas)` (antes era `len(df_proc)` = nº de grupos).
+- **API/histórico:** `GET /api/sih/sincronizacoes*` lê `COALESCE(SUM(qtd_linhas), qtd_procedimentos)` para competências já importadas.
+
+Detalhe e SQL para indicadores: [sihd-internacao-dicionario-dados.md](sihd-internacao-dicionario-dados.md).
 
 ## Migration 026 (aplicada)
 

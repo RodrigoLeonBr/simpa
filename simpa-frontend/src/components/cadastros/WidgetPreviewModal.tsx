@@ -5,20 +5,14 @@ import { DEFAULT_COMPETENCIAS } from '../../config/navigation';
 import type { Estabelecimento } from '../../types/cadastros';
 import type { PainelWidgetConfig, ResolvedPainelWidget } from '../../types/painelWidgets';
 import { activeEstabelecimentos } from '../../utils/estabelecimentosView';
-import { EM_DASH } from '../../utils/kpi';
 import { ModalPortal } from './ModalPortal';
+import { WidgetPreviewResult } from './WidgetPreviewResult';
 
 interface WidgetPreviewModalProps {
   open: boolean;
   widget: PainelWidgetConfig | null;
   onClose: () => void;
   onError: (message: string) => void;
-}
-
-function formatDeltaDirection(direction: 'up' | 'down' | 'flat'): string {
-  if (direction === 'up') return '↑';
-  if (direction === 'down') return '↓';
-  return '→';
 }
 
 export function WidgetPreviewModal({ open, widget, onClose, onError }: WidgetPreviewModalProps) {
@@ -167,20 +161,7 @@ export function WidgetPreviewModal({ open, widget, onClose, onError }: WidgetPre
             {previewResult ? (
               <section className="widget-preview-result" data-testid="widget-preview-result">
                 <h4>Resultado</h4>
-                <p
-                  className={`widget-preview-value mono${previewResult.isNull ? ' widget-preview-value-null' : ''}`}
-                  data-testid={previewResult.isNull ? 'preview-value-null' : 'preview-value'}
-                >
-                  {previewResult.valueLabel || EM_DASH}
-                </p>
-                {previewResult.isNull ? (
-                  <span className="kpi-null-badge">Não apurado</span>
-                ) : null}
-                {previewResult.delta ? (
-                  <p className="widget-preview-delta" data-testid="preview-delta">
-                    {formatDeltaDirection(previewResult.delta.direction)} {previewResult.delta.label}
-                  </p>
-                ) : null}
+                <WidgetPreviewResult result={previewResult} testIdPrefix="preview" />
               </section>
             ) : null}
 

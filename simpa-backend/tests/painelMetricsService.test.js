@@ -7,7 +7,11 @@ const {
   slugifySegment,
   buildMetricKey,
   buildDiscoveredSqlTemplate,
+  buildRelationalMetricKey,
+  buildRelationalSumSqlTemplate,
   discoverMetricsFromRaw,
+  discoverMetricsFromSia,
+  discoverPainelMetricas,
   listMetricas,
   getMetricaById,
   extractSingleValue,
@@ -19,6 +23,7 @@ const {
 describe('painelMetricsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    query.mockReset();
   });
 
   describe('bindTemplate', () => {
@@ -237,7 +242,7 @@ describe('painelMetricsService', () => {
       expect(query.mock.calls[1][1][0]).toContain(
         'esus.atendimento.individual.resumo.de.producao.registros.identificados.quantidade'
       );
-      expect(query.mock.calls[1][1][7]).toContain("NULLIF(r.valores->>'quantidade', '')::numeric");
+      expect(query.mock.calls[1][1][9]).toContain("NULLIF(r.valores->>'quantidade', '')::numeric");
     });
 
     it('atualiza chave seed existente sem sobrescrever sql_template curado', async () => {
@@ -293,6 +298,65 @@ describe('painelMetricsService', () => {
         campo_json: 'quantidade',
       });
       expect(key.length).toBe(160);
+    });
+  });
+
+  describe('discoverMetricsFromSia/Sih', () => {
+    it('buildRelationalMetricKey usa prefixo e coluna', () => {
+      expect(buildRelationalMetricKey('sia.col', 'quantidade')).toBe('sia.col.quantidade');
+      expect(buildRelationalSumSqlTemplate({
+        tableName: 'sia_producao',
+        tableAlias: 'sp',
+        columnName: 'quantidade',
+      })).toContain('SUM(sp.quantidade)');
+    });
+
+    it('discoverMetricsFromSia retorna zero sem produção importada', async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ ocorrencias: 0, ultima_carga_em: null }] })
+        .mockResolvedValueOnce({ rows: [] });
+      await expect(discoverMetricsFromSia()).resolves.toEqual({ inserted: 0, updated: 0 });
+    });
+
+    it('discoverMetricsFromSia upserta colunas numéricas e atualiza métricas curadas', async () => {
+      query
+        .mockResolvedValueOnce({
+          rows: [{ ocorrencias: 12, ultima_carga_em: '2026-06-01T12:00:00Z' }],
+        })
+        .mockResolvedValueOnce({
+          rows: [{ column_name: 'quantidade' }, { column_name: 'valor_aprovado' }],
+        })
+        .mockResolvedValueOnce({ rows: [{ inserted: true }] })
+        .mockResolvedValueOnce({ rows: [{ inserted: false }] })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }, { id: 2 }] });
+
+      const result = await discoverMetricsFromSia();
+
+      expect(result).toEqual({ inserted: 1, updated: 3 });
+      expect(query.mock.calls[2][1][0]).toBe('sia.col.quantidade');
+      expect(query.mock.calls[2][0]).toContain("fonte_tipo, label, descricao");
+      expect(query.mock.calls[4][0]).toContain("m.chave NOT LIKE 'sia.col.%'");
+    });
+
+    it('discoverPainelMetricas agrega e-SUS, SIA e SIHD', async () => {
+      query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ ocorrencias: 0, ultima_carga_em: null }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ ocorrencias: 0, ultima_carga_em: null }] })
+        .mockResolvedValueOnce({ rows: [{ ocorrencias: 0, ultima_carga_em: null }] })
+        .mockResolvedValueOnce({ rows: [{ ocorrencias: 0, ultima_carga_em: null }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      await expect(discoverPainelMetricas()).resolves.toEqual({
+        inserted: 0,
+        updated: 0,
+        sources: {
+          esus_raw: { inserted: 0, updated: 0 },
+          sia: { inserted: 0, updated: 0 },
+          sih: { inserted: 0, updated: 0 },
+        },
+      });
     });
   });
 

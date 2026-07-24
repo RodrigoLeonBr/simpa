@@ -383,6 +383,28 @@
   gap: 6px;
 }
 
+.cadastro-row-inactive td {
+  color: var(--text-secondary);
+}
+
+.widget-order-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget-order-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.widget-order-btn {
+  min-width: 32px;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+}
+
 .cadastro-action-btn,
 .cadastro-btn {
   border: 1px solid var(--border);
@@ -554,6 +576,29 @@
   margin: 8px 0 0;
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.widget-preview-ranking,
+.widget-preview-series {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.widget-preview-ranking-row,
+.widget-preview-series-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
 }
 
 .widget-sql-details {

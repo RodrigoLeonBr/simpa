@@ -4,6 +4,7 @@ import {
   createPainelWidget,
   discoverPainelMetricas,
   inactivatePainelWidget,
+  reorderPainelWidgets,
   updatePainelWidget,
 } from '../../api/painelWidgets';
 import { ConfirmDialog } from '../../components/cadastros/ConfirmDialog';
@@ -19,10 +20,15 @@ import { useEntityCrud } from '../../hooks/useEntityCrud';
 import type { PainelWidgetConfig } from '../../types/painelWidgets';
 import {
   canEditIndicadoresPainel,
-  fetchPainelWidgetsByPerfilLayoutA,
+  fetchPainelWidgetsByPerfilLayout,
+  formatPainelWidgetLayoutLabel,
+  type PainelWidgetLayout,
   type PainelWidgetPerfil,
   mapWidgetForTable,
+  swapWidgetOrderIds,
   WIDGET_CRUD_MESSAGES,
+  formatDiscoverCatalogToast,
+  PAINEL_WIDGET_LAYOUTS,
   PAINEL_WIDGET_PERFIS,
 } from '../../utils/indicadoresPainelView';
 
@@ -31,8 +37,9 @@ async function submitPainelWidget(
   editing: PainelWidgetConfig | null,
   rowCount: number,
   perfil: PainelWidgetPerfil,
+  layout: PainelWidgetLayout,
 ) {
-  const body = { ...payload, perfil, layout: 'A' as const };
+  const body = { ...payload, perfil, layout };
   if (!editing) {
     await createPainelWidget({ ...body, ordem: rowCount + 1 });
   } else {
@@ -45,20 +52,22 @@ export function IndicadoresPainelPage() {
   const canEdit = useMemo(() => canEditIndicadoresPainel(user?.perfil), [user?.perfil]);
   const rowCountRef = useRef(0);
   const [widgetPerfil, setWidgetPerfil] = useState<PainelWidgetPerfil>('APS');
+  const [widgetLayout, setWidgetLayout] = useState<PainelWidgetLayout>('A');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewRow, setPreviewRow] = useState<PainelWidgetConfig | null>(null);
   const [discoveryBusy, setDiscoveryBusy] = useState(false);
+  const [reorderBusy, setReorderBusy] = useState(false);
 
   const fetchWidgets = useCallback(
-    () => fetchPainelWidgetsByPerfilLayoutA(widgetPerfil),
-    [widgetPerfil],
+    () => fetchPainelWidgetsByPerfilLayout(widgetPerfil, widgetLayout),
+    [widgetPerfil, widgetLayout],
   );
 
   const handleWidgetSubmit = useCallback(
     async (payload: WidgetEditSubmitPayload, editing: PainelWidgetConfig | null) => {
-      await submitPainelWidget(payload, editing, rowCountRef.current, widgetPerfil);
+      await submitPainelWidget(payload, editing, rowCountRef.current, widgetPerfil, widgetLayout);
     },
-    [widgetPerfil],
+    [widgetPerfil, widgetLayout],
   );
 
   const {
@@ -109,13 +118,48 @@ export function IndicadoresPainelPage() {
     setDiscoveryBusy(true);
     try {
       const result = await discoverPainelMetricas();
-      showToast(`Catálogo atualizado — ${result.inserted} inseridas, ${result.updated} atualizadas`);
+      showToast(formatDiscoverCatalogToast(result));
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Falha ao atualizar catálogo');
     } finally {
       setDiscoveryBusy(false);
     }
   }
+
+  async function handleMove(index: number, direction: 'up' | 'down') {
+    if (reorderBusy || index < 0 || index >= rows.length) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= rows.length) return;
+
+    setReorderBusy(true);
+    try {
+      const orderedIds = swapWidgetOrderIds(rows, index, direction);
+      await reorderPainelWidgets({
+        perfil: widgetPerfil,
+        layout: widgetLayout,
+        orderedIds,
+      });
+      await carregar();
+      showToast(WIDGET_CRUD_MESSAGES.reordered);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha ao reordenar widgets');
+    } finally {
+      setReorderBusy(false);
+    }
+  }
+
+  async function handleReactivate(row: PainelWidgetConfig) {
+    try {
+      await updatePainelWidget(row.id, { status: 'ativo' });
+      await carregar();
+      showToast(WIDGET_CRUD_MESSAGES.reactivated);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha ao reativar widget');
+    }
+  }
+
+  const activeCount = rows.filter((row) => row.status === 'ativo').length;
+  const inactiveCount = rows.length - activeCount;
 
   return (
     <section className="cadastro-page simpa-rise" data-testid="indicadores-painel-page">
@@ -126,8 +170,9 @@ export function IndicadoresPainelPage() {
           </Link>
           <h2 className="analytics-title">Indicadores do Painel</h2>
           <p className="analytics-subtitle">
-            Cadastro dos widgets do Painel por perfil (APS, MAC, Hospitalar). Edite SQL customizado
-            por widget (principal e sparkline) com teste por competência e estabelecimento.
+            Cadastro dos widgets do Painel por perfil (APS, MAC, Hospitalar) e layout (A, B, C).
+            Edite SQL customizado por widget (principal e sparkline) com teste por competência e
+            estabelecimento.
           </p>
         </div>
         <div className="cadastro-head-actions">
@@ -141,6 +186,20 @@ export function IndicadoresPainelPage() {
               {PAINEL_WIDGET_PERFIS.map((perfil) => (
                 <option key={perfil} value={perfil}>
                   {perfil}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="cadastro-inline-field">
+            <span>Layout</span>
+            <select
+              value={widgetLayout}
+              onChange={(event) => setWidgetLayout(event.target.value as PainelWidgetLayout)}
+              data-testid="indicadores-painel-layout-select"
+            >
+              {PAINEL_WIDGET_LAYOUTS.map((layout) => (
+                <option key={layout.id} value={layout.id}>
+                  {layout.label}
                 </option>
               ))}
             </select>
@@ -166,8 +225,12 @@ export function IndicadoresPainelPage() {
 
       <section className="card cadastro-crud-card">
         <div className="cadastro-crud-card-head">
-          <h3>Widgets {widgetPerfil} · Layout A</h3>
-          <span className="mono cadastro-count">{rows.length}</span>
+          <h3>
+            Widgets {widgetPerfil} · {formatPainelWidgetLayoutLabel(widgetLayout)}
+          </h3>
+          <span className="mono cadastro-count" data-testid="widget-count-summary">
+            {activeCount} ativos · {inactiveCount} inativos
+          </span>
         </div>
 
         {loading ? (
@@ -175,14 +238,20 @@ export function IndicadoresPainelPage() {
         ) : error ? (
           <div className="analytics-state analytics-state-error">{error}</div>
         ) : rows.length === 0 ? (
-          <p className="analytics-empty">Nenhum widget encontrado para {widgetPerfil}/Layout A.</p>
+          <p className="analytics-empty">
+            Nenhum widget encontrado para {widgetPerfil}/{formatPainelWidgetLayoutLabel(widgetLayout)}.
+          </p>
         ) : (
           <IndicadoresPainelWidgetTable
             rows={rows}
             canEdit={canEdit}
+            reorderBusy={reorderBusy}
             onEdit={openEdit}
             onPreview={handleOpenPreview}
             onInactivate={openConfirm}
+            onReactivate={(row) => void handleReactivate(row)}
+            onMoveUp={(index) => void handleMove(index, 'up')}
+            onMoveDown={(index) => void handleMove(index, 'down')}
           />
         )}
       </section>
@@ -192,6 +261,7 @@ export function IndicadoresPainelPage() {
           open={formOpen}
           title={editingRow ? 'Editar widget do painel' : 'Novo widget do painel'}
           perfil={widgetPerfil}
+          layout={widgetLayout}
           editingRow={editingRow}
           onClose={closeForm}
           onSubmit={handleDrawerSubmit}

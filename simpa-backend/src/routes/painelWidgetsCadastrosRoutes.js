@@ -136,7 +136,9 @@ function registerPainelWidgetsCadastrosRoutes(router) {
   router.post('/painel-widgets/preview', requirePlanningStaff, async (req, res, next) => {
     try {
       const { widgetId, widget, scope } = req.body || {};
-      const payload = widgetId != null ? widgetId : widget;
+      // Prefer draft `widget` (unsaved form) over widgetId — otherwise edit-drawer
+      // preview always reloads the persisted row and ignores on-screen SQL/métricas.
+      const payload = widget != null ? widget : widgetId;
       const preview = await previewWidget(payload, scope || {});
       return res.json(preview);
     } catch (err) {
