@@ -1,6 +1,7 @@
 const express = require('express');
 const { query } = require('../services/db');
 const siaService = require('../services/sia');
+const { consolidarCompetencia } = require('../services/consolidador');
 
 const router = express.Router();
 
@@ -11,7 +12,14 @@ router.post('/sincronizar', async (req, res, next) => {
       return res.status(400).json({ error: 'competencia deve ser YYYY-MM' });
     }
     const resultado = await siaService.sincronizar(competencia);
-    res.status(201).json(resultado);
+    let consolidacao = null;
+    try {
+      consolidacao = await consolidarCompetencia(competencia);
+    } catch (err) {
+      console.error('[consolidador]', err.message);
+      consolidacao = { erro: err.message };
+    }
+    res.status(201).json({ ...resultado, consolidacao });
   } catch (err) { next(err); }
 });
 

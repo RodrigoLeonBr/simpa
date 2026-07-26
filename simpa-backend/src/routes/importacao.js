@@ -6,6 +6,17 @@ const fs      = require('fs');
 const { query } = require('../services/db');
 const { buildPath, moverArquivo, removerArquivo } = require('../services/storage');
 const { preview, processar } = require('../services/parser');
+const { consolidar } = require('../services/consolidador');
+
+async function tentarConsolidar(competencia, unidade, equipe) {
+  if (!equipe || equipe === 'Todas') return null;
+  try {
+    return await consolidar(competencia, unidade, equipe);
+  } catch (err) {
+    console.error('[consolidador]', err.message);
+    return { erro: err.message };
+  }
+}
 
 const router = express.Router();
 const upload = multer({ dest: os.tmpdir() });
@@ -51,6 +62,13 @@ router.post('/upload', upload.array('files'), async (req, res, next) => {
       );
 
       resultados.push({ arquivo: file.originalname, ...resultado[0] });
+
+      const consolidacao = await tentarConsolidar(
+        m.competencia, m.unidade, m.equipe_nome
+      );
+      if (consolidacao) {
+        resultados[resultados.length - 1].consolidacao = consolidacao;
+      }
     }
     res.status(201).json(resultados);
   } catch (err) { next(err); }
@@ -95,7 +113,10 @@ router.post('/:id/reprocessar', async (req, res, next) => {
       return res.status(400).json({ error: 'Arquivo físico não encontrado para esta carga' });
     }
     const resultado = await processar(carga.arquivo_path);
-    res.json(resultado[0]);
+    const consolidacao = await tentarConsolidar(
+      carga.competencia, carga.unidade, carga.equipe_nome
+    );
+    res.json({ ...resultado[0], consolidacao });
   } catch (err) { next(err); }
 });
 
@@ -122,7 +143,11 @@ router.put('/:id/substituir', upload.single('file'), async (req, res, next) => {
       [destPath, req.file.originalname, req.params.id]
     );
 
-    res.json({ ...resultado[0], arquivo_path: destPath });
+    const consolidacao = await tentarConsolidar(
+      carga.competencia, carga.unidade, carga.equipe_nome
+    );
+
+    res.json({ ...resultado[0], arquivo_path: destPath, consolidacao });
   } catch (err) { next(err); }
 });
 
@@ -133,10 +158,15 @@ router.delete('/:id', async (req, res, next) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Carga não encontrada' });
 
+    const carga = rows[0];
+    const { competencia, unidade, equipe_nome } = carga;
+
     if (rows[0].arquivo_path) removerArquivo(rows[0].arquivo_path);
     await query('DELETE FROM esus_cargas WHERE id=$1', [req.params.id]);
 
-    res.json({ deleted: true, id: parseInt(req.params.id) });
+    const consolidacao = await tentarConsolidar(competencia, unidade, equipe_nome);
+
+    res.json({ deleted: true, id: parseInt(req.params.id), consolidacao });
   } catch (err) { next(err); }
 });
 

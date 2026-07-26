@@ -14,7 +14,7 @@ Plataforma de BI governamental para a Secretaria de Saúde de Americana/SP. Unif
 ## Stack prevista
 
 - **PostgreSQL 15+** — staging + JSONB (`schema_full.sql`)
-- **Python** — ETL e-SUS e conector SIA (`parse_esus_csv.py`)
+- **Python** — ETL e-SUS, consolidação dashboard e conector SIA (`parse_esus_csv.py`, `consolidate_dashboard.py`)
 - **Node.js / Express** — API REST (Plano B)
 - **React + Vite + ECharts** — dashboards (Plano C)
 
@@ -40,12 +40,23 @@ copy .env.example .env
 ```powershell
 pip install -r requirements.txt
 python parse_esus_csv.py <arquivo.csv> --json-out   # preview JSON
-python parse_esus_csv.py <arquivo.csv> --pg-write   # grava no PostgreSQL
+python parse_esus_csv.py <arquivo.csv> --pg-write   # grava no PostgreSQL (esus_cargas + esus_indicadores_raw)
 python parse_esus_csv.py <pasta_csvs> seed.sql      # modo legado (gera SQL)
+python consolidate_dashboard.py --competencia 2026-05 --unidade "..." --equipe "..." --json-out  # preview Painel
+python consolidate_dashboard.py --competencia 2026-05 --unidade "..." --equipe "..." --pg-write  # grava dados_consolidados
+python consolidate_dashboard.py --all --pg-write    # backfill: todos os grupos com cargas e-SUS
 python sync_sia_mysql.py --competencia 2025-06      # sync SIA (requer MySQL)
 ```
 
 > **Nota:** exports e-SUS vêm em ISO-8859-1. Converta para UTF-8 antes do parse, ou use `iconv`.
+
+**Fluxo importação → Painel:** upload CSV (`POST /importacao/upload`) grava raw e dispara consolidação automaticamente. O Painel (`GET /api/v1/dashboard/planejamento`) lê `dados_consolidados`. Se você importou antes desta feature, rode o backfill:
+
+```powershell
+python consolidate_dashboard.py --all --pg-write
+# ou via API:
+curl -X POST "http://localhost:3001/api/v1/dashboard/consolidar?all=true"
+```
 
 ### 4. Backend API
 
@@ -88,6 +99,7 @@ Os arquivos `simpa_*.md` na raiz descrevem personas especializadas (ETL, DBA, ba
 
 - [x] PRD, design spec e planos de implementação
 - [x] Parser e-SUS (`parse_esus_csv.py`) + seed SQL de exemplo
+- [x] Consolidador dashboard (`consolidate_dashboard.py`) — raw e-SUS + SIA → `dados_consolidados` v3.1.0
 - [x] Schema PostgreSQL completo (`schema_full.sql` v3.1.0) aplicado no Docker
 - [x] Flags `--json-out` / `--pg-write` no parser (Plano A)
 - [x] `sync_sia_mysql.py` — conector SIA (`s_prd` + `prestador` + `procedimento`)

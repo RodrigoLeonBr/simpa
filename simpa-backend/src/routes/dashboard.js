@@ -1,7 +1,31 @@
 const express = require('express');
 const { query } = require('../services/db');
+const { consolidar, consolidarCompetencia, consolidarTodos } = require('../services/consolidador');
 
 const router = express.Router();
+
+router.post('/consolidar', async (req, res, next) => {
+  try {
+    const { competencia, unidade, equipe, all } = req.query;
+
+    if (all === 'true' || all === '1') {
+      const resultado = await consolidarTodos();
+      return res.json(resultado);
+    }
+
+    if (!competencia || !/^\d{4}-\d{2}$/.test(competencia)) {
+      return res.status(400).json({ error: 'competencia deve ser YYYY-MM' });
+    }
+
+    if (unidade && equipe) {
+      const resultado = await consolidar(competencia, unidade, equipe);
+      return res.json(resultado);
+    }
+
+    const resultado = await consolidarCompetencia(competencia);
+    res.json(resultado);
+  } catch (err) { next(err); }
+});
 
 router.get('/planejamento', async (req, res, next) => {
   try {
