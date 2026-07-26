@@ -30,11 +30,21 @@ export interface IndicadorFinanciamento {
   meta: number | null;
 }
 
+export interface ProcedimentoMapeado {
+  secao: string;
+  descricao_esus: string;
+  codigo_sigtap: string;
+  descricao_sigtap: string;
+  quantidade: number;
+}
+
 export interface ModuloAPS {
   distribuicao_turnos: DistribuicaoTurno[];
   temas_coletivos: TemaColetivo[];
   distribuicao_faixa_etaria: FaixaEtaria[];
   historico_mensal: HistoricoMensal[];
+  /** e-SUS → SIGTAP mapped APS procedures (contrato v3.2.0+) */
+  procedimentos_mapeados: ProcedimentoMapeado[];
 }
 
 export interface ModuloSIA {
@@ -108,4 +118,16 @@ export interface Equipe {
   unidade_id: number | null;
   unidade_nome?: string;
   status: string;
+}
+
+/** Joined e-SUS → SIGTAP map row from Cadastros API */
+export interface EsusProcedimentoMap {
+  id: number;
+  secao: string;
+  descricao_esus: string;
+  procedimento_id: number;
+  origem: string;
+  status: string;
+  codigo_sigtap: string;
+  descricao_sigtap: string;
 }

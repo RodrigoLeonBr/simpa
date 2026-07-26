@@ -4,7 +4,7 @@ SIMPA — Consolidação e-SUS + SIA → dados_consolidados
 ======================================================
 
 Agrega esus_indicadores_raw (e opcionalmente sia_producao) no contrato JSON
-v3.1.0 consumido por GET /api/v1/dashboard/planejamento.
+v3.2.0 consumido por GET /api/v1/dashboard/planejamento.
 
 Uso:
     python consolidate_dashboard.py --competencia 2026-05 \\
@@ -28,7 +28,7 @@ from typing import Any
 from dateutil.relativedelta import relativedelta
 from dotenv import load_dotenv
 
-VERSAO_SCHEMA = "3.1.0"
+VERSAO_SCHEMA = "3.2.0"
 TURNOS_ORDEM = ("Manhã", "Tarde", "Noite")
 FAIXAS_CONTRATO = (
     "0-4", "5-9", "10-14", "15-19", "20-29", "30-39",
@@ -243,6 +243,29 @@ def build_historico(cur, competencia: date, unidade: str, equipe: str) -> list[d
     return historico
 
 
+def fetch_procedimentos_mapeados(
+    cur, competencia: date, unidade: str, equipe: str
+) -> list[dict[str, Any]]:
+    """e-SUS → SIGTAP via shared SQL resolve_mapped_procedures (ADR-004 / task_04)."""
+    cur.execute(
+        """
+        SELECT secao, descricao_esus, codigo_sigtap, descricao_sigtap, quantidade
+        FROM resolve_mapped_procedures(%s::date, %s, %s)
+        """,
+        (competencia, unidade, equipe),
+    )
+    return [
+        {
+            "secao": row[0],
+            "descricao_esus": row[1],
+            "codigo_sigtap": row[2],
+            "descricao_sigtap": row[3],
+            "quantidade": int(row[4] or 0),
+        }
+        for row in cur.fetchall()
+    ]
+
+
 def build_sia_modulo(cur, competencia: date, unidade: str) -> dict:
     cur.execute(
         """
@@ -288,6 +311,9 @@ def build_payload(cur, competencia: date, unidade: str, equipe: str) -> dict[str
                 "temas_coletivos": build_temas(cur, competencia, unidade, equipe),
                 "distribuicao_faixa_etaria": build_piramide(cur, competencia, unidade, equipe),
                 "historico_mensal": build_historico(cur, competencia, unidade, equipe),
+                "procedimentos_mapeados": fetch_procedimentos_mapeados(
+                    cur, competencia, unidade, equipe
+                ),
             },
             "ambulatorial_sia": build_sia_modulo(cur, competencia, unidade),
             "hospitalar_sihd": {

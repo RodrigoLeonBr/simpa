@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Frontend export download + Painel mapped procedures
 type: frontend
 complexity: medium
@@ -32,15 +32,20 @@ Let operators download mapped procedures as CSV/JSON from the UI and optionally 
 </requirements>
 
 ## Subtasks
-- [ ] 8.1 Add export download client helper (blob/CSV handling)
-- [ ] 8.2 Add UI button(s) wired to active filters
-- [ ] 8.3 Add Painel table/section for `procedimentos_mapeados`
-- [ ] 8.4 Empty-state messaging for zero mapped rows
-- [ ] 8.5 Add component tests for download params and table render
+- [x] 8.1 Add export download client helper (blob/CSV handling)
+- [x] 8.2 Add UI button(s) wired to active filters
+- [x] 8.3 Add Painel table/section for `procedimentos_mapeados`
+- [x] 8.4 Empty-state messaging for zero mapped rows
+- [x] 8.5 Add component tests for download params and table render
 
 ## Implementation Details
 
 See TechSpec **Development Sequencing** steps 7–8 and ADR-004. Painel entry via `pages/Painel` / APS tab components. Reuse filter context from existing Painel if present.
+
+**Delivered:**
+- `api/procedimentosExport.ts` + buttons on Painel APS and Relatórios
+- `ProcedimentosMapeadosTable` in TabAPS (empty state + rows)
+- Mock sample mapped rows; Vitest **13** tests total (incl. task_07)
 
 ### Relevant Files
 - `simpa-frontend/src/pages/Painel/index.tsx` — compose APS views
@@ -62,12 +67,12 @@ See TechSpec **Development Sequencing** steps 7–8 and ADR-004. Painel entry vi
 
 ## Tests
 - Unit tests:
-  - [ ] Download helper requests `/api/procedimentos/export` with competencia and format=csv
-  - [ ] Table renders one row per mapped item with codigo_sigtap visible
-  - [ ] Empty array shows empty-state, not a crash
+  - [x] Download helper requests `/api/procedimentos/export` with competencia and format=csv
+  - [x] Table renders one row per mapped item with codigo_sigtap visible
+  - [x] Empty array shows empty-state, not a crash
 - Integration tests:
-  - [ ] Clicking export triggers blob download path (mocked fetch)
-  - [ ] Painel with mock payload containing procedimentos_mapeados shows the section
+  - [x] Clicking export triggers blob download path (mocked fetch)
+  - [x] Painel with mock payload containing procedimentos_mapeados shows the section
 - Test coverage target: >=80%
 - All tests must pass
 

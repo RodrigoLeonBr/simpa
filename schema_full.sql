@@ -1,5 +1,5 @@
 -- ============================================================================
--- SIMPA — Schema completo PostgreSQL v3.1.0
+-- SIMPA — Schema completo PostgreSQL v3.2.0
 -- Substitui schema_esus.sql (nunca foi aplicado ao banco)
 -- ============================================================================
 
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS dados_consolidados (
     municipio       VARCHAR(120) NOT NULL DEFAULT 'AMERICANA',
     unidade         VARCHAR(200) NOT NULL,
     equipe          VARCHAR(200) NOT NULL,
-    versao_schema   VARCHAR(20) NOT NULL DEFAULT '3.1.0',
+    versao_schema   VARCHAR(20) NOT NULL DEFAULT '3.2.0',
     dados_conteudo  JSONB NOT NULL,
     atualizado_em   TIMESTAMP NOT NULL DEFAULT now(),
     UNIQUE (competencia, unidade, equipe)

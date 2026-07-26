@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Repository guide docs/esus-sigtap-depara.md
 type: docs
 complexity: low
@@ -33,15 +33,20 @@ Write the repository how-to so operators and implementers understand the de-para
 </requirements>
 
 ## Subtasks
-- [ ] 9.1 Draft guide sections listed in requirements
-- [ ] 9.2 Add example export curl/CLI snippets matching task_05
-- [ ] 9.3 Link ADRs and schema/seed file paths
-- [ ] 9.4 Add readme pointer
-- [ ] 9.5 Run doc verification checklist (links, route paths, column names)
+- [x] 9.1 Draft guide sections listed in requirements
+- [x] 9.2 Add example export curl/CLI snippets matching task_05
+- [x] 9.3 Link ADRs and schema/seed file paths
+- [x] 9.4 Add readme pointer
+- [x] 9.5 Run doc verification checklist (links, route paths, column names)
 
 ## Implementation Details
 
 See TechSpec component `docs/esus-sigtap-depara.md` and PRD Core Features §4. Do not duplicate large TechSpec code blocks; reference sections by name.
+
+**Delivered:**
+- `docs/esus-sigtap-depara.md`
+- Pointer in `readme.md`
+- Verification: `tests/test_docs_esus_sigtap_depara.py` (8/8)
 
 ### Relevant Files
 - `readme.md` — add link
@@ -62,12 +67,12 @@ See TechSpec component `docs/esus-sigtap-depara.md` and PRD Core Features §4. D
 
 ## Tests
 - Unit tests:
-  - [ ] Doc checklist asserts export path `/api/procedimentos/export` appears in guide
-  - [ ] Doc checklist asserts CSV columns match TechSpec order
-  - [ ] Doc checklist asserts silent-skip is documented
+  - [x] Doc checklist asserts export path `/api/procedimentos/export` appears in guide
+  - [x] Doc checklist asserts CSV columns match TechSpec order
+  - [x] Doc checklist asserts silent-skip is documented
 - Integration tests:
-  - [ ] All relative links to ADRs/PRD/TechSpec/seed/schema resolve on disk
-  - [ ] Example curl matches mounted route in `app.js` after task_05
+  - [x] All relative links to ADRs/PRD/TechSpec/seed/schema resolve on disk
+  - [x] Example curl matches mounted route in `app.js` after task_05
 - Test coverage target: >=80%
 - All tests must pass
 

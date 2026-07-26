@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Consolidator procedimentos_mapeados + schema version bump
 type: backend
 complexity: medium
@@ -31,15 +31,20 @@ Enrich `consolidate_dashboard.py` so `dados_consolidados` includes mapped APS pr
 </requirements>
 
 ## Subtasks
-- [ ] 6.1 Call shared resolve inside build_payload / APS module builder
-- [ ] 6.2 Emit `procedimentos_mapeados` in JSON written to `dados_consolidados`
-- [ ] 6.3 Bump VERSAO_SCHEMA and align mocks/types
-- [ ] 6.4 Re-run consolidator against sample competencia and verify payload
-- [ ] 6.5 Add Python tests for enrichment behavior
+- [x] 6.1 Call shared resolve inside build_payload / APS module builder
+- [x] 6.2 Emit `procedimentos_mapeados` in JSON written to `dados_consolidados`
+- [x] 6.3 Bump VERSAO_SCHEMA and align mocks/types
+- [x] 6.4 Re-run consolidator against sample competencia and verify payload
+- [x] 6.5 Add Python tests for enrichment behavior
 
 ## Implementation Details
 
 See TechSpec **Impact Analysis**, **Development Sequencing** step 6, ADR-004. Touch `build_payload` / APS builders in `consolidate_dashboard.py`; backend `consolidador.js` only if version plumbing requires it.
+
+**Delivered:**
+- `fetch_procedimentos_mapeados` → `resolve_mapped_procedures` in `consolidate_dashboard.py`
+- `VERSAO_SCHEMA = "3.2.0"`; schema default + mock + readme + `contrato.ts`
+- Tests: `tests/test_consolidate_procedimentos_mapeados.py` (5), `test/dashboard-procedimentos-mapeados.test.js` (1)
 
 ### Relevant Files
 - `consolidate_dashboard.py` — primary change
@@ -61,12 +66,12 @@ See TechSpec **Impact Analysis**, **Development Sequencing** step 6, ADR-004. To
 
 ## Tests
 - Unit tests:
-  - [ ] build_payload includes `procedimentos_mapeados` key even when empty
-  - [ ] Mapped fixture rows appear with codigo_sigtap and quantidade
-  - [ ] Unmapped fixture labels absent from array
+  - [x] build_payload includes `procedimentos_mapeados` key even when empty
+  - [x] Mapped fixture rows appear with codigo_sigtap and quantidade
+  - [x] Unmapped fixture labels absent from array
 - Integration tests:
-  - [ ] `--pg-write` for a competencia persists JSON containing the new array
-  - [ ] GET `/api/v1/dashboard/planejamento` returns versao_schema 3.2.0 (or chosen bump) with the field
+  - [x] `--pg-write` for a competencia persists JSON containing the new array
+  - [x] GET `/api/v1/dashboard/planejamento` returns versao_schema 3.2.0 (or chosen bump) with the field
 - Test coverage target: >=80%
 - All tests must pass
 

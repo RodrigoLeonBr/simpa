@@ -3,7 +3,7 @@
     {
       "id": "2026-05_CAFI_EQ9",
       "plataforma": "SIMPA - Sistema Integrado de Monitoramento e Planejamento de Americana",
-      "versao_schema": "3.1.0",
+      "versao_schema": "3.2.0",
       "competencia": "2026-05",
       "municipio": "AMERICANA",
       "filtros_ativos": {
@@ -47,6 +47,22 @@
             { "competencia": "2026-03", "atendimentos": 530, "procedimentos": 1350, "meta": 600 },
             { "competencia": "2026-04", "atendimentos": 515, "procedimentos": 1320, "meta": 600 },
             { "competencia": "2026-05", "atendimentos": 540, "procedimentos": 1426, "meta": 600 }
+          ],
+          "procedimentos_mapeados": [
+            {
+              "secao": "Procedimentos - Teste rápido",
+              "descricao_esus": "Para HIV",
+              "codigo_sigtap": "0214010058",
+              "descricao_sigtap": "TESTE RAPIDO PARA DETECCAO DE INFECCAO PELO HIV",
+              "quantidade": 12
+            },
+            {
+              "secao": "Procedimentos / Pequenas cirurgias",
+              "descricao_esus": "Coleta de citopatológico de colo uterino",
+              "codigo_sigtap": "0201020033",
+              "descricao_sigtap": "COLETA DE MATERIAL CERVICO-VAGINAL",
+              "quantidade": 5
+            }
           ]
         },
         "ambulatorial_sia": {

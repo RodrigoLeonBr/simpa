@@ -1,6 +1,6 @@
 # SIMPA — Sistema Integrado de Monitoramento e Planejamento de Americana
 
-Plataforma de BI governamental para a Secretaria de Saúde de Americana/SP. Unifica dados do e-SUS APS, SIA/SUS e SIHD em painéis gerenciais com arquitetura spec-driven (contrato JSON v3.1.0).
+Plataforma de BI governamental para a Secretaria de Saúde de Americana/SP. Unifica dados do e-SUS APS, SIA/SUS e SIHD em painéis gerenciais com arquitetura spec-driven (contrato JSON v3.2.0).
 
 ## Documentação
 
@@ -8,6 +8,7 @@ Plataforma de BI governamental para a Secretaria de Saúde de Americana/SP. Unif
 |---|---|
 | [`prd-simpa.md`](prd-simpa.md) | PRD completo — visão, módulos, contrato API, roadmap |
 | [`estrutura_simpa.md`](estrutura_simpa.md) | Estrutura de menus (7 módulos CRM-like) |
+| [`docs/esus-sigtap-depara.md`](docs/esus-sigtap-depara.md) | De-para e-SUS ↔ SIGTAP — seed, CRUD, lookup, export e consolidator |
 | [`docs/superpowers/specs/`](docs/superpowers/specs/) | Design spec do frontend MVP |
 | [`docs/superpowers/plans/`](docs/superpowers/plans/) | Planos de implementação (A: ETL, B: Backend, C: Frontend) |
 
@@ -99,8 +100,8 @@ Os arquivos `simpa_*.md` na raiz descrevem personas especializadas (ETL, DBA, ba
 
 - [x] PRD, design spec e planos de implementação
 - [x] Parser e-SUS (`parse_esus_csv.py`) + seed SQL de exemplo
-- [x] Consolidador dashboard (`consolidate_dashboard.py`) — raw e-SUS + SIA → `dados_consolidados` v3.1.0
-- [x] Schema PostgreSQL completo (`schema_full.sql` v3.1.0) aplicado no Docker
+- [x] Consolidador dashboard (`consolidate_dashboard.py`) — raw e-SUS + SIA → `dados_consolidados` v3.2.0
+- [x] Schema PostgreSQL completo (`schema_full.sql` v3.2.0) aplicado no Docker
 - [x] Flags `--json-out` / `--pg-write` no parser (Plano A)
 - [x] `sync_sia_mysql.py` — conector SIA (`s_prd` + `prestador` + `procedimento`)
 - [x] Backend Express (`simpa-backend/`) — porta 3001

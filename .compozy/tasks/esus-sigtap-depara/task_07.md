@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Cadastros UI for de-para + in-app help
 type: frontend
 complexity: medium
@@ -32,16 +32,22 @@ Add a Cadastros screen for Planning/billing to list, create, edit, and inactivat
 </requirements>
 
 ## Subtasks
-- [ ] 7.1 Create Procedimentos/de-para page component
-- [ ] 7.2 Wire list filters and CRUD form to API
-- [ ] 7.3 Add inactivate action with confirmation consistent with Unidades
-- [ ] 7.4 Add in-app help panel/section
-- [ ] 7.5 Update router and Sidebar/nav labels
-- [ ] 7.6 Add frontend tests for form validation and render
+- [x] 7.1 Create Procedimentos/de-para page component
+- [x] 7.2 Wire list filters and CRUD form to API
+- [x] 7.3 Add inactivate action with confirmation consistent with Unidades
+- [x] 7.4 Add in-app help panel/section
+- [x] 7.5 Update router and Sidebar/nav labels
+- [x] 7.6 Add frontend tests for form validation and render
 
 ## Implementation Details
 
 See TechSpec **User Experience** (PRD) and Cadastros patterns. Reference `Unidades.tsx` for FilterBar + table + form layout. Types may extend `contrato.ts`.
+
+**Delivered:**
+- `/cadastros/procedimentos` — `Procedimentos.tsx` + layout tabs in `Cadastros/index.tsx`
+- Help panel with silent-skip; filters secao/q/status; CRUD + inativar
+- Vitest + RTL (`Procedimentos.test.tsx` — 7 tests)
+- Type `EsusProcedimentoMap` in `contrato.ts`
 
 ### Relevant Files
 - `simpa-frontend/src/pages/Cadastros/Unidades.tsx` — UX reference
@@ -64,12 +70,12 @@ See TechSpec **User Experience** (PRD) and Cadastros patterns. Reference `Unidad
 
 ## Tests
 - Unit tests:
-  - [ ] Submitting form without secao or descricao_esus shows validation error and does not POST
-  - [ ] Help text includes silent-skip wording
-  - [ ] Inativar calls DELETE endpoint and refreshes list omitting inactive by default
+  - [x] Submitting form without secao or descricao_esus shows validation error and does not POST
+  - [x] Help text includes silent-skip wording
+  - [x] Inativar calls DELETE endpoint and refreshes list omitting inactive by default
 - Integration tests:
-  - [ ] Page loads list from mocked GET `/api/cadastros/esus-procedimento-map`
-  - [ ] Creating a map with codigo_sigtap posts expected body
+  - [x] Page loads list from mocked GET `/api/cadastros/esus-procedimento-map`
+  - [x] Creating a map with codigo_sigtap posts expected body
 - Test coverage target: >=80%
 - All tests must pass
 
