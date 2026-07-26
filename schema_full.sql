@@ -122,6 +122,91 @@ COMMENT ON TABLE equipes IS
     'Cadastro de equipes. codigo = equipe_codigo do e-SUS.';
 
 -- ----------------------------------------------------------------------------
+-- 5b. procedimentos (mestre SIGTAP) + esus_procedimento_map (de-para e-SUS)
+--     Colocado após cadastros (unidades/equipes) e antes do bloco SIA.
+--     Ver TechSpec esus-sigtap-depara / ADR-002.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS procedimentos (
+    id                 BIGSERIAL PRIMARY KEY,
+    codigo_sigtap      VARCHAR(20) NOT NULL UNIQUE,
+    descricao          TEXT NOT NULL,
+    tipo               VARCHAR(40),
+    tabela_referencia  VARCHAR(40) NOT NULL DEFAULT 'SIGTAP',
+    status             VARCHAR(20) NOT NULL DEFAULT 'ativo',
+    fonte              VARCHAR(20) NOT NULL DEFAULT 'seed',
+    criado_em          TIMESTAMP NOT NULL DEFAULT now(),
+    atualizado_em      TIMESTAMP NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE procedimentos IS
+    'Catálogo mestre de procedimentos (SIGTAP / SUS Paulista). Soft-delete via status.';
+
+-- Upgrade path when procedimentos already existed (ex.: sync MySQL) without atualizado_em/fonte
+ALTER TABLE procedimentos ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMP DEFAULT now();
+ALTER TABLE procedimentos ADD COLUMN IF NOT EXISTS fonte VARCHAR(20) DEFAULT 'mysql_sync';
+
+CREATE TABLE IF NOT EXISTS esus_procedimento_map (
+    id               BIGSERIAL PRIMARY KEY,
+    secao            TEXT NOT NULL,
+    descricao_esus   TEXT NOT NULL,
+    procedimento_id  BIGINT NOT NULL REFERENCES procedimentos(id),
+    origem           VARCHAR(20) NOT NULL
+                     CHECK (origem IN ('seed', 'nativo_sigtap', 'manual')),
+    status           VARCHAR(20) NOT NULL DEFAULT 'ativo',
+    criado_em        TIMESTAMP NOT NULL DEFAULT now(),
+    atualizado_em    TIMESTAMP NOT NULL DEFAULT now(),
+    UNIQUE (secao, descricao_esus)
+);
+
+CREATE INDEX IF NOT EXISTS idx_esus_procedimento_map_status
+    ON esus_procedimento_map (status);
+
+COMMENT ON TABLE esus_procedimento_map IS
+    'De-para: label e-SUS (secao + descricao_esus exatos) → procedimentos.id. Soft-delete via status.';
+
+-- Shared resolve: e-SUS raw × active map × active procedimentos (silent skip unmapped)
+-- Used by Node export and Python consolidator (ADR-004).
+CREATE OR REPLACE FUNCTION resolve_mapped_procedures(
+    p_competencia date,
+    p_unidade text,
+    p_equipe text
+)
+RETURNS TABLE (
+    secao text,
+    descricao_esus text,
+    codigo_sigtap varchar,
+    descricao_sigtap text,
+    quantidade int
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        r.secao::text,
+        r.descricao::text AS descricao_esus,
+        p.codigo_sigtap,
+        p.descricao::text AS descricao_sigtap,
+        COALESCE(SUM((r.valores->>'quantidade')::int), 0)::int AS quantidade
+    FROM esus_indicadores_raw r
+    JOIN esus_cargas c ON c.id = r.carga_id
+    JOIN esus_procedimento_map m
+      ON m.secao = r.secao
+     AND m.descricao_esus = r.descricao
+     AND m.status = 'ativo'
+    JOIN procedimentos p
+      ON p.id = m.procedimento_id
+     AND p.status = 'ativo'
+    WHERE c.competencia = p_competencia
+      AND c.unidade = p_unidade
+      AND c.equipe_nome = p_equipe
+    GROUP BY r.secao, r.descricao, p.codigo_sigtap, p.descricao
+    ORDER BY r.secao, r.descricao;
+$$;
+
+COMMENT ON FUNCTION resolve_mapped_procedures(date, text, text) IS
+    'Shared e-SUS→SIGTAP resolve. Exact (secao, descricao); active maps only; silent skip unmapped.';
+
+-- ----------------------------------------------------------------------------
 -- 6. sia_sincronizacoes
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS sia_sincronizacoes (
