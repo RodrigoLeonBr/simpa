@@ -214,6 +214,29 @@ export function inactivateMetaOciPar(id: number): Promise<void> {
   return apiFetch<void>(`/api/cadastros/metas-oci-par/${id}`, { method: 'DELETE' });
 }
 
+export interface ProducaoSigtapRow {
+  competencia: string;
+  unidade: string;
+  tipo_relatorio: string;
+  bloco: string;
+  descricao_esus: string;
+  codigo_sigtap: string;
+  descricao_sigtap: string | null;
+  quantidade: number;
+}
+
+/** Competências (YYYY-MM) com produção e-SUS importada. */
+export function fetchProducaoSigtapCompetencias(): Promise<string[]> {
+  return apiFetch<string[]>('/api/cadastros/procedimentos-sigtap/competencias');
+}
+
+/** Produção e-SUS da competência filtrada pelos procedimentos com de-para SIGTAP. */
+export function fetchProducaoSigtap(competencia: string): Promise<ProducaoSigtapRow[]> {
+  return apiFetch<ProducaoSigtapRow[]>(
+    `/api/cadastros/procedimentos-sigtap/producao?competencia=${encodeURIComponent(competencia)}`,
+  );
+}
+
 export function fetchLeitosVigencias(id: number): Promise<LeitosVigencia[]> {
   return apiFetch<LeitosVigencia[]>(`/api/cadastros/estabelecimentos/${id}/leitos-vigencias`);
 }

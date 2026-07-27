@@ -283,12 +283,30 @@ def _clean_str(value: Any, *, max_len: int | None = None) -> str | None:
 
 
 def repair_prestador_nome(nome: str) -> str:
-    if not nome or "?" not in nome:
-        return nome
-    repaired = nome
-    for old, new in _NOME_REPAIR_RULES:
-        repaired = repaired.replace(old, new)
-    return repaired
+    return _apply_repair(nome, _NOME_REPAIR_RULES)
+
+
+# Campos Title Case (relatorio de prestador, descrição de rubrica) corrompidos na
+# fonte MySQL: acentos viraram `?`. Reparo por substring; estender conforme surgir.
+_TEXT_REPAIR_RULES: tuple[tuple[str, str], ...] = (
+    ("Aten??o", "Atenção"),
+    ("B?si", "Bási"),
+    ("Pol?tica", "Política"),
+    ("Redesigna??o", "Redesignação"),
+)
+
+
+def _apply_repair(value: str | None, rules: tuple[tuple[str, str], ...]) -> str | None:
+    if not value or "?" not in value:
+        return value
+    for old, new in rules:
+        value = value.replace(old, new)
+    return value
+
+
+def repair_text(value: str | None) -> str | None:
+    """Repara acentos corrompidos (`?`) em campos Title Case vindos do MySQL."""
+    return _apply_repair(value, _TEXT_REPAIR_RULES)
 
 
 def normalize_prestador_row(
@@ -321,7 +339,7 @@ def normalize_prestador_row(
         "tipouni": tipouni,
         "perfil": derive_perfil(tipouni, perfil_map),
         "area": area,
-        "relatorio": _clean_str(row.get("relatorio"), max_len=40),
+        "relatorio": repair_text(_clean_str(row.get("relatorio"), max_len=40)),
         "status": map_ativo_to_status(row.get("ativo")),
         "sincronizado_em": sync_ts,
     }
@@ -420,7 +438,7 @@ def normalize_rubrica_row(
 ) -> dict[str, Any]:
     sync_ts = sync_ts or datetime.now(timezone.utc)
     codigo_raw = _clean_str(row.get("codigo_rubrica"), max_len=8)
-    descricao = _clean_str(row.get("descricao"), max_len=160)
+    descricao = repair_text(_clean_str(row.get("descricao"), max_len=160))
     if not codigo_raw or not descricao:
         raise ValueError("rubrica row missing codigo_rubrica or descricao")
 

@@ -8,7 +8,7 @@ import { buildMetasResumo, enrichIndicador } from '../../utils/indicadoresView';
 
 export default function MetasPage() {
   const { competencia } = useFilters();
-  const { data, loading, error } = useDashboard();
+  const { data, loading, error } = useDashboard({ forceConsolidated: true });
   const enriched = useMemo(
     () => (data?.indicadores_qualidade ?? []).map(enrichIndicador),
     [data?.indicadores_qualidade],

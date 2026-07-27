@@ -6,8 +6,11 @@
 --
 -- Manual apply (non-Docker Postgres):
 --   psql -h localhost -p 5433 -U postgres -d simpa -f migration_022_procedimentos_esus_sigtap.sql
--- Docker (existing container):
---   Get-Content migration_022_procedimentos_esus_sigtap.sql | docker exec -i simpa-postgres-1 psql -U postgres -d simpa
+-- Docker (existing container) — UTF-8 SAFE (copia o arquivo p/ dentro e aplica):
+--   docker cp migration_022_procedimentos_esus_sigtap.sql simpa-postgres-1:/tmp/m.sql
+--   docker exec simpa-postgres-1 psql -U postgres -d simpa -v ON_ERROR_STOP=1 -f /tmp/m.sql
+-- NÃO use `Get-Content ... | docker exec -i psql`: o pipe do PowerShell converte
+-- acentos (ç, ã, é…) em `?` e corrompe descricao_esus/descricao_sigtap.
 --
 -- Objetivo: relatórios de produção por unidade agregam quantidades de
 -- procedimentos por código SIGTAP. Os relatórios analíticos e-SUS

@@ -170,6 +170,18 @@ def test_repair_prestador_nome_fixes_common_corruption():
     assert sync.repair_prestador_nome("UBS CENTRO") == "UBS CENTRO"
 
 
+def test_repair_text_fixes_relatorio_and_rubrica_corruption():
+    assert sync.repair_text("Aten??o Ambulatorial") == "Atenção Ambulatorial"
+    assert sync.repair_text("Aten??o B?sica") == "Atenção Básica"
+    assert sync.repair_text("Pol?tica Nacional de Cirurgias Eletivas") == (
+        "Política Nacional de Cirurgias Eletivas"
+    )
+    assert sync.repair_text("Redesigna??o e Acompanhamento") == "Redesignação e Acompanhamento"
+    # sem `?` passa intacto; None passa intacto
+    assert sync.repair_text("Atenção Básica") == "Atenção Básica"
+    assert sync.repair_text(None) is None
+
+
 def test_normalize_prestador_row_repairs_corrupted_nome(perfil_map, sync_ts):
     row = sync.normalize_prestador_row(
         {

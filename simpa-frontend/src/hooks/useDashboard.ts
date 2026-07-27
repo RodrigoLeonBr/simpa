@@ -28,8 +28,11 @@ export function buildDashboardFilters(
   return { estabelecimentoId: unidadeId, equipeId };
 }
 
-export function useDashboard(options?: { layout?: PainelLayout }) {
+export function useDashboard(options?: { layout?: PainelLayout; forceConsolidated?: boolean }) {
   const layout = options?.layout ?? 'A';
+  // Painel usa layout A dinâmico (não busca dados_consolidados). Páginas analíticas
+  // (Relatórios/Indicadores/Metas/Situação) precisam do consolidado sempre.
+  const forceConsolidated = options?.forceConsolidated ?? false;
   const { competencia, unidadeId, equipeId, painelPerfil } = useFilters();
   const [data, setData] = useState<ContratoDashboard | null>(null);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
@@ -70,7 +73,7 @@ export function useDashboard(options?: { layout?: PainelLayout }) {
     let cancelled = false;
 
     async function loadDashboard() {
-      if (!needsConsolidatedDashboard(painelPerfil, layout)) {
+      if (!forceConsolidated && !needsConsolidatedDashboard(painelPerfil, layout)) {
         if (!cancelled) {
           setData(null);
           setError(null);
@@ -106,7 +109,7 @@ export function useDashboard(options?: { layout?: PainelLayout }) {
     return () => {
       cancelled = true;
     };
-  }, [filterKey, competencia, unidadeId, equipeId, painelPerfil, layout]);
+  }, [filterKey, competencia, unidadeId, equipeId, painelPerfil, layout, forceConsolidated]);
 
   return { data, unidades, loading, error };
 }

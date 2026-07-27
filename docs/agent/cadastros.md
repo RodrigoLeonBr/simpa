@@ -314,6 +314,44 @@ CRUD genérico (`mode: 'crud'`), mesmo motor de Equipes/Emendas — sem código 
 
 **Ceiling:** writes usam só `verifyJWT` (padrão do `registerResource`, igual Equipes/Emendas), sem `requirePlanningStaff`. Se precisar restringir a planning staff, é preciso guard por-entidade no `registerResource` — hoje não existe.
 
+### Exportar CSV
+
+Botão **⤓ Exportar CSV** no cabeçalho da `CadastroCrudPage` (ao lado de "Novo") — genérico, vale para toda entidade `mode: 'crud'` (Equipes, Emendas, Procedimentos e-SUS → SIGTAP).
+
+| Item | Comportamento |
+|------|---------------|
+| Fonte | `rows` já carregadas via `fetchCadastroList(config.key)` — **todas** as ativas (sem paginação), não só a página visível |
+| Colunas | `config.columns` (ordem e labels da tabela). Procedimentos-SIGTAP exporta os 6: `tipo_relatorio, bloco, descricao_esus, codigo_sigtap, descricao_sigtap, status` |
+| Formato | CSV separador `;` (padrão Excel BR), BOM UTF-8 (acentos), aspas-escape em campos com `;`/`"`/quebra |
+| Arquivo | `{route}.csv` (ex.: `procedimentos-sigtap.csv`) |
+| Implementação | `utils/csv.ts` → `downloadCsv(filename, columns, rows)` · client-side (Blob), **sem endpoint backend** |
+| Desabilitado | quando `rows.length === 0` |
+
+Só de-para **ativo** entra no arquivo (soft-delete `status != 'inativo'` já filtra no list). Para dump incluindo inativos, seria preciso rota backend dedicada — não existe hoje.
+
+> Este botão exporta o **catálogo** (as regras de-para). Para exportar a **produção importada** casada com o de-para, use o painel abaixo.
+
+### Exportar produção e-SUS → SIGTAP (por competência)
+
+Painel **"Exportar produção e-SUS → SIGTAP"** exclusivo da página `/cadastros/procedimentos-sigtap` (`CadastroCrudPage` renderiza `ProducaoSigtapExport` quando `config.key === 'procedimentos_esus_sigtap'`). Diferente do catálogo: exporta a **quantidade produzida** que veio dos CSVs e-SUS (`esus_indicadores_raw`), só para procedimentos que **casam com o de-para ativo**, na competência escolhida.
+
+| Item | Comportamento |
+|------|---------------|
+| Fonte | `esus_indicadores_raw` JOIN `esus_cargas` JOIN `procedimentos_esus_sigtap` em `(tipo_relatorio, descricao_esus = descricao)`, `status='ativo'` |
+| Filtro | competência (`<select>` populado por `GET …/procedimentos-sigtap/competencias`); só linhas com de-para; `HAVING quantidade > 0` (descarta zeros) |
+| Agregação | soma `valores->>'quantidade'` por `(competência, unidade, tipo_relatorio, bloco, descricao_esus, codigo_sigtap, descricao_sigtap)` |
+| Unidade | `COALESCE(estabelecimentos.nome, esus_cargas.unidade)` |
+| Colunas CSV | Competência, Unidade, Relatório, Bloco, Descrição e-SUS, SIGTAP, Descrição SIGTAP, Quantidade |
+| Arquivo | `producao-sigtap-{YYYY-MM}.csv` |
+| Backend | `producaoSigtapService.js` (`listCompetencias`, `exportProducao`) · rotas em `routes/cadastros.js` (path com hífen, antes do loop `registerResource`) |
+| Frontend | `ProducaoSigtapExport.tsx` + `fetchProducaoSigtap` / `fetchProducaoSigtapCompetencias` (`api/cadastros.ts`) |
+
+**Endpoints** (JWT):
+- `GET /api/cadastros/procedimentos-sigtap/competencias` → `["2026-06","2026-05",…]`
+- `GET /api/cadastros/procedimentos-sigtap/producao?competencia=YYYY-MM` → linhas agregadas
+
+Blocos com **código inline** ("Outros procedimentos (SIGTAP)") NÃO entram — não passam pelo de-para. Se virar requisito, unir com a 2ª query de [Produção por unidade + SIGTAP](#) (extração `LEFT(regexp_replace(descricao,'\D','','g'),10)`).
+
 ---
 
 ## Workflow: leitos-hospitalares-vigencia {#workflow-leitos-hospitalares-vigencia}

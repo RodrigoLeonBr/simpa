@@ -45,7 +45,15 @@ describe('Relatorios page', () => {
     });
   });
 
-  it('shows toast when export button is clicked', async () => {
+  it('exports CSV and shows toast when Excel button is clicked', async () => {
+    const createUrl = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {});
+
     render(
       <MemoryRouter>
         <RelatoriosPage />
@@ -53,10 +61,12 @@ describe('Relatorios page', () => {
     );
 
     await userEvent.click(screen.getByRole('button', { name: '⤓ Excel' }));
-    expect(screen.getByTestId('toast-banner')).toHaveTextContent('Em breve');
+    expect(createUrl).toHaveBeenCalledTimes(1);
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('toast-banner')).toHaveTextContent('Exportando Excel');
 
-    await userEvent.click(screen.getByRole('button', { name: '⤓ PDF' }));
-    expect(screen.getByTestId('toast-banner')).toHaveTextContent('Em breve');
+    createUrl.mockRestore();
+    click.mockRestore();
   });
 
   it('shows loading and error states', () => {

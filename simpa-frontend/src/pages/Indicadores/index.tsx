@@ -10,7 +10,7 @@ import {
 } from '../../utils/indicadoresView';
 
 export default function IndicadoresPage() {
-  const { data, unidades, loading, error } = useDashboard();
+  const { data, unidades, loading, error } = useDashboard({ forceConsolidated: true });
   const [selectedCod, setSelectedCod] = useState<string | null>(null);
 
   const indicadores = data?.indicadores_qualidade ?? [];

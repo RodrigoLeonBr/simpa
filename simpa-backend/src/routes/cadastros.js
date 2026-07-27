@@ -33,6 +33,10 @@ const {
 const { listFormas } = require('../services/formasService');
 const { listCbos } = require('../services/cbosService');
 const {
+  listCompetencias: listProducaoCompetencias,
+  exportProducao: exportProducaoSigtap,
+} = require('../services/producaoSigtapService');
+const {
   listMetasOciPar,
   createMetaOciPar,
   updateMetaOciPar,
@@ -339,6 +343,24 @@ router.get('/cbos', async (req, res, next) => {
 router.post('/cbos', createReadOnlyWriteHandler('CBOs'));
 router.put('/cbos/:id', createReadOnlyWriteHandler('CBOs'));
 router.delete('/cbos/:id', createReadOnlyWriteHandler('CBOs'));
+
+// Produção e-SUS filtrada pelo de-para SIGTAP (path com hífen — não colide com
+// o resource genérico `procedimentos_esus_sigtap` do registry).
+router.get('/procedimentos-sigtap/competencias', async (_req, res, next) => {
+  try {
+    return res.json(await listProducaoCompetencias());
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/procedimentos-sigtap/producao', async (req, res, next) => {
+  try {
+    return res.json(await exportProducaoSigtap(req.query.competencia));
+  } catch (err) {
+    return next(err);
+  }
+});
 
 function registerResource(pathKey) {
   router.get(`/${pathKey}`, async (req, res, next) => {

@@ -18,3 +18,10 @@ export { buildHistoricoSeries, buildUnitComparison } from './indicadores/qualida
 
 export type { BenchmarkRow, MapPin, RelatSinteseRow } from './relatorios/comparativoView';
 export { buildBenchmarkRows, buildMapPins, buildRelatSintese } from './relatorios/comparativoView';
+
+export type { RelatorioMeta } from './relatorios/exportRelatorio';
+export {
+  buildRelatorioCsv,
+  downloadRelatorioCsv,
+  printRelatorioPdf,
+} from './relatorios/exportRelatorio';

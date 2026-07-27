@@ -87,13 +87,15 @@ Mapa completo de endpoints: **[docs/agent/backend-api.md](docs/agent/backend-api
 | Dev manual | `:5173` (Vite) | `:3001` | `:5433` (host) | `.env` |
 | Docker | `:8080` (nginx) | proxy `/api` | `:5433` publish | `.env.docker` |
 
-Detalhes, scripts `.bat` e refresh: **[docs/agent/docker-env.md](docs/agent/docker-env.md)**.
+Detalhes e refresh: **[docs/agent/docker-env.md](docs/agent/docker-env.md)**.  
+Release (build local → destino sem `--build`, `--migrate`, restore): **[docs/agent/restore-backup-e-release-docker.md](docs/agent/restore-backup-e-release-docker.md)**.
 
 ---
 
 ## Banco de dados
 
-- Init Docker: `schema_full.sql` + `migration_002` … `013` em `docker-compose.yml`.
+- Init Docker: `schema_full.sql` + `migration_002` … `027` em `docker-compose.yml`.
+- Volume já existente / destino: `scripts/apply-migrations.*` + tabela `simpa_schema_migrations`.
 - Tabelas-chave: `estabelecimentos`, `procedimentos`, `formas_sia`, `cbos_sia`, `enriquecimento_*`, `esus_cargas`, `dados_consolidados`, `usuarios`.
 - Contrato dashboard lido de `dados_consolidados.dados_conteudo` (JSONB).
 
@@ -282,8 +284,11 @@ Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md`
 | Como cadastro de widgets do Painel? | `IndicadoresPainelPage.tsx` · `painelWidgetsService.js` |
 | Extensão SIH forma/cbo? | `cadastroReferenciaService.js` → `resolveFormaDescricao` / `resolveCboDescricao` |
 | De-para procedimento e-SUS→SIGTAP? | `cadastroRegistry.js` (`procedimentos_esus_sigtap`) + tabela homônima (migration 022) · UI `/cadastros/procedimentos-sigtap` |
+| Exportar cadastro CRUD em CSV? | botão ⤓ em `CadastroCrudPage` → `utils/csv.ts` `downloadCsv` (client-side, todas as linhas ativas) · [cadastros.md](docs/agent/cadastros.md#exportar-csv) |
+| Exportar produção e-SUS casada com de-para SIGTAP? | `producaoSigtapService.js` + `GET /api/cadastros/procedimentos-sigtap/producao?competencia=` · UI `ProducaoSigtapExport.tsx` · [cadastros.md](docs/agent/cadastros.md) |
 | Enriquecimento por perfil? | `PUT …/enriquecimento/:slug` + tabelas `enriquecimento_*` |
 | Como cadastra leitos por vigência? | `leitosVigenciaService.js` / `LeitosVigenciasPanel.tsx` |
+| Deploy release sem build no destino? | `npm run docker:release:export` → `deploy-release.sh --recreate --migrate` · [restore-backup-e-release-docker.md](docs/agent/restore-backup-e-release-docker.md) |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |
 | Roles de usuário | `requirePlanningStaff.js`, `admin.js` |
 
@@ -299,11 +304,12 @@ Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md`
 | [cadastros.md](docs/agent/cadastros.md) | Estabelecimentos, procedimentos, formas/cbo, sync, SIA/SIH |
 | [database.md](docs/agent/database.md) | Tabelas, migrations, FKs |
 | [etl-python.md](docs/agent/etl-python.md) | Scripts ETL e fluxo de dados |
-| [docker-env.md](docs/agent/docker-env.md) | Compose, env, scripts refresh |
+| [docker-env.md](docs/agent/docker-env.md) | Compose, env, release export |
+| [restore-backup-e-release-docker.md](docs/agent/restore-backup-e-release-docker.md) | Restore `.sql`, baseline/migrate, deploy sem build |
 | [auth-roles.md](docs/agent/auth-roles.md) | JWT, perfis, auditoria |
 | [testing-ci.md](docs/agent/testing-ci.md) | Testes e pipeline |
 | [compozy.md](docs/agent/compozy.md) | PRD → TechSpec → tasks |
 
 ---
 
-*Última atualização: 2026-06-25 · Manter CLAUDE.md ≤300 linhas; detalhes novos vão em `docs/agent/`.*
+*Última atualização: 2026-07-24 · Manter CLAUDE.md ≤300 linhas; detalhes novos vão em `docs/agent/`.*

@@ -8,10 +8,12 @@ import {
   inactivateCadastro,
   updateCadastro,
 } from '../../api/cadastros';
+import { downloadCsv } from '../../utils/csv';
 import { ToastBanner, useToast } from '../shared/Toast';
 import { ConfirmDialog } from './ConfirmDialog';
 import { DataTable } from './DataTable';
 import { FormDialog, type SelectOption } from './FormDialog';
+import { ProducaoSigtapExport } from './ProducaoSigtapExport';
 
 type ConfirmAction = 'inactivate' | 'delete';
 
@@ -193,10 +195,22 @@ export function CadastroCrudPage({ config }: CadastroCrudPageProps) {
           <h2 className="analytics-title">{config.title}</h2>
           <p className="analytics-subtitle">{config.description}</p>
         </div>
-        <button type="button" className="cadastro-btn primary" onClick={openCreate}>
-          Novo
-        </button>
+        <div className="cadastro-head-actions">
+          <button
+            type="button"
+            className="cadastro-btn"
+            onClick={() => downloadCsv(`${config.route}.csv`, config.columns, rows)}
+            disabled={rows.length === 0}
+          >
+            ⤓ Exportar CSV
+          </button>
+          <button type="button" className="cadastro-btn primary" onClick={openCreate}>
+            Novo
+          </button>
+        </div>
       </div>
+
+      {config.key === 'procedimentos_esus_sigtap' && <ProducaoSigtapExport />}
 
       <section className="card cadastro-crud-card">
         <div className="cadastro-crud-card-head">

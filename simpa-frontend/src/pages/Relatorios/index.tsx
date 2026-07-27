@@ -8,12 +8,14 @@ import {
   buildBenchmarkRows,
   buildMapPins,
   buildRelatSintese,
+  downloadRelatorioCsv,
   enrichIndicador,
+  printRelatorioPdf,
 } from '../../utils/indicadoresView';
 
 export default function RelatoriosPage() {
   const { competencia } = useFilters();
-  const { data, unidades, loading, error } = useDashboard();
+  const { data, unidades, loading, error } = useDashboard({ forceConsolidated: true });
   const { toast, showToast } = useToast();
   const indicadores = data?.indicadores_qualidade ?? [];
   const enriched = useMemo(() => indicadores.map(enrichIndicador), [indicadores]);
@@ -51,13 +53,35 @@ export default function RelatoriosPage() {
           </p>
         </div>
         <div className="relatorios-actions">
-          <button type="button" className="relatorios-export-btn" onClick={() => showToast('Em breve')}>
+          <button
+            type="button"
+            className="relatorios-export-btn"
+            onClick={() => {
+              const meta = {
+                cod: selected.indicador.cod,
+                nomeCurto: selected.indicador.nomeCurto,
+                competencia,
+              };
+              downloadRelatorioCsv(meta, benchmarkRows, sintese);
+              showToast('Exportando Excel…');
+            }}
+          >
             ⤓ Excel
           </button>
           <button
             type="button"
             className="relatorios-export-btn primary"
-            onClick={() => showToast('Em breve')}
+            onClick={() =>
+              printRelatorioPdf(
+                {
+                  cod: selected.indicador.cod,
+                  nomeCurto: selected.indicador.nomeCurto,
+                  competencia,
+                },
+                benchmarkRows,
+                sintese,
+              )
+            }
           >
             ⤓ PDF
           </button>

@@ -23,7 +23,7 @@ function deltaClass(direction: PainelKpi['delta']['direction']): string {
 export function SituacaoOverlay() {
   const { closeSituacao } = useApp();
   const { competencia } = useFilters();
-  const { data, loading, error } = useDashboard();
+  const { data, loading, error } = useDashboard({ forceConsolidated: true });
   const liveLabel = useMemo(() => formatLiveTimestamp(new Date()), []);
 
   const kpis = data ? buildPainelKpis(data).slice(0, 4) : [];
