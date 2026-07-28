@@ -15,6 +15,9 @@ import type {
   LeitosVigencia,
   LeitosVigenciaInput,
   ProcedimentosListResponse,
+  SyncPlano,
+  SyncPlanoAplicarItem,
+  SyncPlanoAplicarResult,
 } from '../types/cadastros';
 import { apiFetch } from './client';
 import { ESTABELECIMENTOS_APS_QUERY } from '../utils/estabelecimentosView';
@@ -270,4 +273,17 @@ export function deleteLeitosVigencia(id: number, vigenciaId: number): Promise<vo
     `/api/cadastros/estabelecimentos/${id}/leitos-vigencias/${vigenciaId}`,
     { method: 'DELETE' },
   );
+}
+
+export function computarSyncPlano(): Promise<SyncPlano> {
+  return apiFetch<SyncPlano>('/api/cadastros/sync-plano', { method: 'POST' });
+}
+
+export function aplicarSyncPlano(
+  itens: SyncPlanoAplicarItem[],
+): Promise<SyncPlanoAplicarResult> {
+  return apiFetch<SyncPlanoAplicarResult>('/api/cadastros/sync-plano/aplicar', {
+    method: 'POST',
+    body: JSON.stringify({ itens }),
+  });
 }

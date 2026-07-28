@@ -202,3 +202,38 @@ export type FormasListResponse = PaginatedResponse<Forma>;
 export type CbosListResponse = PaginatedResponse<Cbo>;
 
 export type EstabelecimentoPerfilFilter = '' | EstabelecimentoPerfil;
+
+export type SyncPlanoTipo = 'novo' | 'alterado' | 'sumiu';
+
+export interface SyncPlanoCampoDiff {
+  simpa?: unknown;
+  mysql?: unknown;
+}
+
+export interface SyncPlanoItem {
+  chave: string;
+  tipo: SyncPlanoTipo;
+  diff: Record<string, SyncPlanoCampoDiff>;
+}
+
+export interface SyncPlanoResumo {
+  novo: number;
+  alterado: number;
+  sumiu: number;
+}
+
+export interface SyncPlano {
+  estabelecimentos: SyncPlanoItem[];
+  procedimentos: SyncPlanoItem[];
+  resumo: { estabelecimentos: SyncPlanoResumo; procedimentos: SyncPlanoResumo };
+  sincronizado_em: string;
+}
+
+export interface SyncPlanoAplicarItem extends SyncPlanoItem {
+  entidade: 'estabelecimento' | 'procedimento';
+}
+
+export interface SyncPlanoAplicarResult {
+  aplicados: number;
+  pulados: number;
+}
