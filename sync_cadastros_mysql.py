@@ -1049,6 +1049,8 @@ def _fetch_pg_rows(
 def sincronizar(*, pg_write: bool = False, dry_run: bool = False, plan: bool = False) -> dict[str, Any]:
     if pg_write and dry_run:
         raise ValueError("Use apenas --pg-write ou --dry-run, não ambos")
+    if plan and (pg_write or dry_run):
+        raise ValueError("Use --plan sozinho (incompatível com --pg-write e --dry-run)")
 
     if not mysql_configured():
         result = _error_result("MySQL_XAMPP_UNAVAILABLE")
