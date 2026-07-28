@@ -5,6 +5,7 @@ import {
   fetchUltimaCadastroSync,
   computarSyncPlano,
   aplicarSyncPlano,
+  sincronizarCadastros,
 } from '../../api/cadastros';
 import { CadastroSyncBanner } from './CadastroSyncBanner';
 
@@ -15,6 +16,7 @@ vi.mock('../../api/cadastros', async () => {
     fetchUltimaCadastroSync: vi.fn(),
     computarSyncPlano: vi.fn(),
     aplicarSyncPlano: vi.fn(),
+    sincronizarCadastros: vi.fn(),
   };
 });
 
@@ -148,6 +150,29 @@ describe('CadastroSyncBanner', () => {
     await waitFor(() => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Falha timeout API/i);
+    });
+  });
+
+  it('refs button calls sincronizarCadastros and refreshes badge', async () => {
+    vi.mocked(sincronizarCadastros).mockResolvedValue({
+      status: 'ok',
+      estabelecimentos: { inserted: 0, updated: 0, inactivated: 0 },
+      procedimentos: { inserted: 0, updated: 0, inactivated: 0 },
+      formas: { inserted: 3, updated: 1, inactivated: 0 },
+      cbos: { inserted: 2, updated: 0, inactivated: 0 },
+      rubricas: { inserted: 0, updated: 1, inactivated: 0 },
+      sincronizado_em: '2026-07-28T12:00:00Z',
+    });
+
+    const user = userEvent.setup();
+    render(<CadastroSyncBanner />);
+
+    await user.click(screen.getByTestId('cadastro-sync-refs-button'));
+
+    await waitFor(() => {
+      expect(sincronizarCadastros).toHaveBeenCalledTimes(1);
+      expect(fetchUltimaCadastroSync).toHaveBeenCalledTimes(2); // initial load + after sync
+      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/referência/i);
     });
   });
 });

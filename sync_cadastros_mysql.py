@@ -1046,7 +1046,11 @@ def _fetch_pg_rows(
     return out
 
 
-def sincronizar(*, pg_write: bool = False, dry_run: bool = False, plan: bool = False) -> dict[str, Any]:
+def sincronizar(*, pg_write: bool = False, dry_run: bool = False, plan: bool = False, refs_only: bool = False) -> dict[str, Any]:
+    if refs_only and not pg_write:
+        raise ValueError("--refs-only requer --pg-write")
+    if refs_only and (dry_run or plan):
+        raise ValueError("--refs-only incompatível com --dry-run/--plan")
     if pg_write and dry_run:
         raise ValueError("Use apenas --pg-write ou --dry-run, não ambos")
     if plan and (pg_write or dry_run):
@@ -1181,8 +1185,12 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False, plan: bool = F
                 "sincronizado_em": sync_ts.isoformat(),
             }
 
-        estab_counts = sync_estabelecimentos(conn_pg, prestadores, pg_write=pg_write)
-        proc_counts = sync_procedimentos(conn_pg, procedimentos, pg_write=pg_write)
+        if refs_only:
+            estab_counts = dict(COUNT_TEMPLATE)
+            proc_counts = dict(COUNT_TEMPLATE)
+        else:
+            estab_counts = sync_estabelecimentos(conn_pg, prestadores, pg_write=pg_write)
+            proc_counts = sync_procedimentos(conn_pg, procedimentos, pg_write=pg_write)
         forma_counts = sync_formas(
             conn_pg, formas, pg_write=pg_write, skipped_rows=skipped_formas
         )
@@ -1243,16 +1251,22 @@ def main() -> None:
         action="store_true",
         help="Emite diff read-only (estab+proc) sem gravar",
     )
+    parser.add_argument(
+        "--refs-only",
+        action="store_true",
+        dest="refs_only",
+        help="Sincroniza apenas tabelas de referência (forma/cbo/rubrica); requer --pg-write",
+    )
     args = parser.parse_args()
 
-    if not args.pg_write and not args.dry_run and not args.plan:
+    if not args.pg_write and not args.dry_run and not args.plan and not args.refs_only:
         print("Erro: use --dry-run, --pg-write ou --plan", file=sys.stderr)
         sys.exit(1)
 
     load_dotenv()
 
     try:
-        result = sincronizar(pg_write=args.pg_write, dry_run=args.dry_run, plan=args.plan)
+        result = sincronizar(pg_write=args.pg_write, dry_run=args.dry_run, plan=args.plan, refs_only=args.refs_only)
     except Exception as exc:
         result = _error_result(str(exc))
 

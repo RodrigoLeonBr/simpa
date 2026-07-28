@@ -10,6 +10,7 @@ const { spawn } = require('child_process');
 const { query } = require('../src/services/db');
 const {
   sincronizar,
+  sincronizarReferencias,
   parseSyncOutput,
   listSyncHistory,
   getLatestSync,
@@ -359,5 +360,30 @@ describe('cadastrosSync service', () => {
 
     expect(result.pagination.page).toBe(1);
     expect(result.pagination.limit).toBe(100);
+  });
+
+  it('sincronizarReferencias spawns with --refs-only flag', async () => {
+    mockSpawn({
+      stdout: JSON.stringify({
+        status: 'ok',
+        estabelecimentos: { inserted: 0, updated: 0, inactivated: 0 },
+        procedimentos: { inserted: 0, updated: 0, inactivated: 0 },
+        formas: { inserted: 3, updated: 0, inactivated: 0 },
+        cbos: { inserted: 1, updated: 0, inactivated: 0 },
+        rubricas: { inserted: 2, updated: 0, inactivated: 0 },
+        sincronizado_em: '2026-06-20T12:00:00Z',
+      }),
+    });
+
+    const result = await sincronizarReferencias();
+
+    expect(result.status).toBe('ok');
+    expect(spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining(['--pg-write', '--refs-only']),
+      expect.any(Object)
+    );
+    expect(result.estabelecimentos).toEqual({ inserted: 0, updated: 0, inactivated: 0 });
+    expect(result.formas.inserted).toBe(3);
   });
 });

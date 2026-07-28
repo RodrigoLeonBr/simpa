@@ -7,7 +7,7 @@ const {
   inactivateEntity,
 } = require('../services/cadastrosService');
 const {
-  sincronizar,
+  sincronizarReferencias,
   planejarSync,
   aplicarPlano,
   listSyncHistory,
@@ -53,16 +53,14 @@ const router = express.Router();
 
 router.post('/sincronizar', requirePlanningStaff, async (req, res, next) => {
   try {
-    const resultado = await sincronizar();
+    const resultado = await sincronizarReferencias();
 
     if (resultado.status === 'ok') {
       await logAudit({
         usuarioId: req.user?.id ?? null,
-        acao: 'cadastros_sincronizar',
+        acao: 'cadastros_sincronizar_referencias',
         recurso: 'cadastros',
         detalhes: JSON.stringify({
-          estabelecimentos: resultado.estabelecimentos,
-          procedimentos: resultado.procedimentos,
           formas: resultado.formas,
           cbos: resultado.cbos,
           rubricas: resultado.rubricas,

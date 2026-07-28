@@ -3,6 +3,7 @@ import {
   fetchUltimaCadastroSync,
   computarSyncPlano,
   aplicarSyncPlano,
+  sincronizarCadastros,
 } from '../../api/cadastros';
 import type { CadastroSyncRecord, SyncPlano } from '../../types/cadastros';
 import { ToastBanner, useToast } from '../../components/shared/Toast';
@@ -24,6 +25,7 @@ export function CadastroSyncBanner() {
   const [ultima, setUltima] = useState<CadastroSyncRecord | null>(null);
   const [loadingUltima, setLoadingUltima] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncingRefs, setSyncingRefs] = useState(false);
   const [degraded, setDegraded] = useState<string | null>(null);
   const [plano, setPlano] = useState<SyncPlano | null>(null);
   const { toast, showToast } = useToast();
@@ -69,6 +71,31 @@ export function CadastroSyncBanner() {
     }
   };
 
+  const handleSyncRefs = async () => {
+    setSyncingRefs(true);
+    try {
+      const r = await sincronizarCadastros();
+      if (r.status === 'ok') {
+        const total =
+          (r.formas?.inserted ?? 0) + (r.formas?.updated ?? 0) +
+          (r.cbos?.inserted ?? 0) + (r.cbos?.updated ?? 0) +
+          (r.rubricas?.inserted ?? 0) + (r.rubricas?.updated ?? 0);
+        showToast(
+          total > 0
+            ? `Tabelas de referência atualizadas (${total} registros)`
+            : 'Tabelas de referência já em dia',
+        );
+      } else {
+        showToast(r.error ?? 'Falha ao atualizar referências');
+      }
+      void carregarUltima();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha ao atualizar referências');
+    } finally {
+      setSyncingRefs(false);
+    }
+  };
+
   const handleAplicar = async (itens: Parameters<typeof aplicarSyncPlano>[0]) => {
     if (itens.length === 0) { setPlano(null); return; }
     try {
@@ -100,6 +127,15 @@ export function CadastroSyncBanner() {
             onClick={() => void handleSync()}
           >
             {syncing ? 'Sincronizando…' : 'Atualizar cadastros do SIA'}
+          </button>
+          <button
+            type="button"
+            className="cadastro-btn secondary"
+            disabled={syncingRefs}
+            data-testid="cadastro-sync-refs-button"
+            onClick={() => void handleSyncRefs()}
+          >
+            {syncingRefs ? 'Atualizando…' : 'Atualizar tabelas SIGTAP (forma/CBO/rubrica)'}
           </button>
         </div>
 

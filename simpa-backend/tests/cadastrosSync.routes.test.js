@@ -6,7 +6,7 @@ jest.mock('../src/services/estabelecimentosService');
 const request = require('supertest');
 const { query } = require('../src/services/db');
 const {
-  sincronizar,
+  sincronizarReferencias,
   listSyncHistory,
   getLatestSync,
 } = require('../src/services/cadastrosSync');
@@ -20,10 +20,10 @@ describe('cadastros sync routes', () => {
     jest.clearAllMocks();
     query.mockResolvedValue({ rows: [] });
     logAudit.mockResolvedValue(undefined);
-    sincronizar.mockResolvedValue({
+    sincronizarReferencias.mockResolvedValue({
       status: 'ok',
-      estabelecimentos: { inserted: 2, updated: 5, inactivated: 0 },
-      procedimentos: { inserted: 10, updated: 20, inactivated: 1 },
+      estabelecimentos: { inserted: 0, updated: 0, inactivated: 0 },
+      procedimentos: { inserted: 0, updated: 0, inactivated: 0 },
       formas: { inserted: 3, updated: 4, inactivated: 0 },
       cbos: { inserted: 5, updated: 6, inactivated: 0 },
       rubricas: { inserted: 7, updated: 8, inactivated: 0 },
@@ -59,28 +59,28 @@ describe('cadastros sync routes', () => {
     );
   });
 
-  it('POST /sincronizar triggers sync and returns counts', async () => {
+  it('POST /sincronizar triggers refs-only sync and returns counts', async () => {
     const res = await request(app)
       .post('/api/cadastros/sincronizar')
       .set('Authorization', authHeader());
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('ok');
-    expect(res.body.estabelecimentos.inserted).toBe(2);
+    expect(res.body.estabelecimentos.inserted).toBe(0);
     expect(res.body.formas).toEqual({ inserted: 3, updated: 4, inactivated: 0 });
     expect(res.body.cbos).toEqual({ inserted: 5, updated: 6, inactivated: 0 });
     expect(res.body.rubricas).toEqual({ inserted: 7, updated: 8, inactivated: 0 });
-    expect(sincronizar).toHaveBeenCalledTimes(1);
+    expect(sincronizarReferencias).toHaveBeenCalledTimes(1);
     expect(logAudit).toHaveBeenCalledWith(
       expect.objectContaining({
-        acao: 'cadastros_sincronizar',
+        acao: 'cadastros_sincronizar_referencias',
         recurso: 'cadastros',
       })
     );
   });
 
   it('POST /sincronizar skips audit on erro status', async () => {
-    sincronizar.mockResolvedValueOnce({
+    sincronizarReferencias.mockResolvedValueOnce({
       status: 'erro',
       error: 'MySQL_XAMPP_UNAVAILABLE',
       estabelecimentos: { inserted: 0, updated: 0, inactivated: 0 },
@@ -99,7 +99,7 @@ describe('cadastros sync routes', () => {
   it('POST /sincronizar maps subprocess failure to 502', async () => {
     const err = new Error('MySQL connection refused');
     err.status = 502;
-    sincronizar.mockRejectedValueOnce(err);
+    sincronizarReferencias.mockRejectedValueOnce(err);
 
     const res = await request(app)
       .post('/api/cadastros/sincronizar')
@@ -209,36 +209,21 @@ describe('cadastros sync routes', () => {
     expect(res.status).toBe(500);
   });
 
-  it('POST /sincronizar then GET /estabelecimentos returns synced rows', async () => {
-    listEstabelecimentos.mockResolvedValueOnce({
-      data: [
-        {
-          id: 1,
-          codigo_externo: '1234567',
-          nome: 'UBS Centro',
-          perfil: 'APS',
-          status: 'ativo',
-          enriquecimento: {},
-        },
-      ],
-      pagination: { page: 1, limit: 50, total: 1, pages: 1 },
-    });
-
+  it('POST /sincronizar (refs-only) returns zeroed estab/proc counts and forma/cbo/rubrica counts', async () => {
+    // The route now calls sincronizarReferencias (refs-only): estab+proc are NOT synced.
+    // The mock returns zeroed estab/proc counts and real forma/cbo/rubrica counts,
+    // matching the Python --refs-only behavior.
     const syncRes = await request(app)
       .post('/api/cadastros/sincronizar')
       .set('Authorization', authHeader());
 
     expect(syncRes.status).toBe(201);
     expect(syncRes.body.status).toBe('ok');
-
-    const listRes = await request(app)
-      .get('/api/cadastros/estabelecimentos')
-      .set('Authorization', authHeader());
-
-    expect(listRes.status).toBe(200);
-    expect(listRes.body.data).toHaveLength(1);
-    expect(listRes.body.data[0].codigo_externo).toBe('1234567');
-    expect(listEstabelecimentos).toHaveBeenCalled();
+    expect(syncRes.body.estabelecimentos).toEqual({ inserted: 0, updated: 0, inactivated: 0 });
+    expect(syncRes.body.procedimentos).toEqual({ inserted: 0, updated: 0, inactivated: 0 });
+    expect(syncRes.body.formas).toEqual({ inserted: 3, updated: 4, inactivated: 0 });
+    expect(syncRes.body.cbos).toEqual({ inserted: 5, updated: 6, inactivated: 0 });
+    expect(sincronizarReferencias).toHaveBeenCalledTimes(1);
   });
 
   it('POST /sincronizar returns 403 for non-planning profile', async () => {
@@ -248,7 +233,7 @@ describe('cadastros sync routes', () => {
 
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/permissão/i);
-    expect(sincronizar).not.toHaveBeenCalled();
+    expect(sincronizarReferencias).not.toHaveBeenCalled();
   });
 
   it('requires JWT', async () => {

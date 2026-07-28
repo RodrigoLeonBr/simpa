@@ -71,10 +71,10 @@ function mapSyncRow(row) {
   };
 }
 
-function runSyncSubprocess() {
+function runSyncSubprocess(extraArgs = []) {
   return new Promise((resolve, reject) => {
     const script = scriptPath();
-    const proc = spawn(pythonBin(), [script, '--pg-write'], {
+    const proc = spawn(pythonBin(), [script, '--pg-write', ...extraArgs], {
       cwd: path.dirname(script),
       env: { ...process.env },
     });
@@ -219,6 +219,25 @@ async function sincronizar() {
   }
 
   const promise = runSyncSubprocess();
+  syncInFlight = promise;
+
+  try {
+    return await promise;
+  } finally {
+    if (syncInFlight === promise) {
+      syncInFlight = null;
+    }
+  }
+}
+
+async function sincronizarReferencias() {
+  if (syncInFlight) {
+    const error = new Error('Sincronização de cadastros já em andamento');
+    error.status = 409;
+    throw error;
+  }
+
+  const promise = runSyncSubprocess(['--refs-only']);
   syncInFlight = promise;
 
   try {
@@ -378,6 +397,7 @@ async function aplicarPlano(itens, usuarioId) {
 
 module.exports = {
   sincronizar,
+  sincronizarReferencias,
   planejarSync,
   aplicarPlano,
   parseSyncOutput,
