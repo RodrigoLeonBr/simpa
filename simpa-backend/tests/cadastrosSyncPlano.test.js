@@ -107,6 +107,20 @@ describe('aplicarPlano', () => {
     expect(sel).toMatch(/SELECT status FROM/i);
   });
 
+  it('não pula alterado quando SIMPA atual é number e diff.simpa é string equivalente', async () => {
+    // node-pg pode devolver a coluna como number; o plano traz string -> não deve dar clobber falso
+    db.__client.query.mockImplementation(async (sql) => {
+      if (/SELECT .* FROM procedimentos/i.test(sql)) return { rows: [{ pa_total: 12.5 }] };
+      return { rows: [], rowCount: 1 };
+    });
+    const r = await aplicarPlano([
+      { entidade: 'procedimento', chave: '0301010010', tipo: 'alterado',
+        diff: { pa_total: { simpa: '12.5', mysql: '13.0' } } },
+    ], 1);
+    expect(r.aplicados).toBe(1);
+    expect(r.pulados).toBe(0);
+  });
+
   it('faz ROLLBACK se uma query falha', async () => {
     db.__client.query.mockImplementation(async (sql) => {
       if (/UPDATE estabelecimentos SET/i.test(sql)) throw new Error('db boom');

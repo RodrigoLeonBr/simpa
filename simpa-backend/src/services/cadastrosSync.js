@@ -312,7 +312,10 @@ async function _clobberOk(client, tabela, chaveCol, chave, diff, permitidos) {
     [chave]
   );
   if (rows.length === 0) return false;
-  return campos.every((c) => rows[0][c] === diff[c].simpa);
+  // Compara normalizando p/ string: node-pg devolve NUMERIC como string e INT como number,
+  // enquanto diff.simpa vem do plano Python (json.dumps default=str). O `===` cru daria
+  // "clobber" falso por tipo diferente; um skip falso é seguro mas gera reprocesso desnecessário.
+  return campos.every((c) => String(rows[0][c]) === String(diff[c].simpa));
 }
 
 async function aplicarPlano(itens, usuarioId) {
@@ -345,6 +348,10 @@ async function aplicarPlano(itens, usuarioId) {
         );
         aplicados += 1;
       } else if (item.tipo === 'novo') {
+        // ponytail: INSERT usa só os campos do diff. O plano Python (build_entity_plan)
+        // sempre emite TODOS os compare_fields para 'novo' (inclui NOT NULL nome/descricao),
+        // então o fluxo normal nunca viola NOT NULL. Um 'novo' parcial malformado abortaria
+        // o batch inteiro (rollback atômico) — aceitável; adicionar guard 422 se virar problema.
         const campos = Object.keys(item.diff).filter((c) => permitidos.includes(c));
         const cols = [cfg.chaveCol, ...campos];
         const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
