@@ -86,6 +86,27 @@ describe('aplicarPlano', () => {
     expect(insertCall[0]).toMatch(/ON CONFLICT/i);
   });
 
+  it('ignora chave de campo fora do allowlist no clobber (anti-injeção)', async () => {
+    const capturado = [];
+    db.__client.query.mockImplementation(async (sql) => {
+      capturado.push(sql);
+      if (/SELECT .* FROM estabelecimentos/i.test(sql)) return { rows: [{ status: 'ativo' }] };
+      return { rows: [], rowCount: 1 };
+    });
+    await aplicarPlano([
+      { entidade: 'estabelecimento', chave: '111', tipo: 'alterado',
+        diff: {
+          status: { simpa: 'ativo', mysql: 'inativo' },
+          'evil; DROP TABLE estabelecimentos; --': { simpa: 'x', mysql: 'y' },
+        } },
+    ], 1);
+    // nenhuma query pode conter o texto malicioso
+    expect(capturado.some((s) => /DROP TABLE/i.test(s))).toBe(false);
+    // o SELECT de clobber deve pedir só a coluna allowlistada `status`
+    const sel = capturado.find((s) => /SELECT .* FROM estabelecimentos/i.test(s));
+    expect(sel).toMatch(/SELECT status FROM/i);
+  });
+
   it('faz ROLLBACK se uma query falha', async () => {
     db.__client.query.mockImplementation(async (sql) => {
       if (/UPDATE estabelecimentos SET/i.test(sql)) throw new Error('db boom');

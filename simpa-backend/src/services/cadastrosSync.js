@@ -304,8 +304,8 @@ const CAMPOS_PERMITIDOS = {
   procedimento: ['descricao', 'pa_total', 'rubrica', 'pa_id', 'financiamento', 'status'],
 };
 
-async function _clobberOk(client, tabela, chaveCol, chave, diff) {
-  const campos = Object.keys(diff).filter((c) => 'simpa' in diff[c]);
+async function _clobberOk(client, tabela, chaveCol, chave, diff, permitidos) {
+  const campos = Object.keys(diff).filter((c) => permitidos.includes(c) && 'simpa' in diff[c]);
   if (campos.length === 0) return true;
   const { rows } = await client.query(
     `SELECT ${campos.join(', ')} FROM ${tabela} WHERE ${chaveCol} = $1`,
@@ -327,14 +327,14 @@ async function aplicarPlano(itens, usuarioId) {
       const permitidos = CAMPOS_PERMITIDOS[item.entidade];
 
       if (item.tipo === 'sumiu') {
-        if (!(await _clobberOk(client, cfg.tabela, cfg.chaveCol, item.chave, item.diff))) { pulados += 1; continue; }
+        if (!(await _clobberOk(client, cfg.tabela, cfg.chaveCol, item.chave, item.diff, permitidos))) { pulados += 1; continue; }
         await client.query(
           `UPDATE ${cfg.tabela} SET status = 'inativo' WHERE ${cfg.chaveCol} = $1`,
           [item.chave]
         );
         aplicados += 1;
       } else if (item.tipo === 'alterado') {
-        if (!(await _clobberOk(client, cfg.tabela, cfg.chaveCol, item.chave, item.diff))) { pulados += 1; continue; }
+        if (!(await _clobberOk(client, cfg.tabela, cfg.chaveCol, item.chave, item.diff, permitidos))) { pulados += 1; continue; }
         const campos = Object.keys(item.diff).filter((c) => permitidos.includes(c));
         if (campos.length === 0) { pulados += 1; continue; }
         const sets = campos.map((c, i) => `${c} = $${i + 2}`).join(', ');
