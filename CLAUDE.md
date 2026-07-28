@@ -288,6 +288,7 @@ Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md`
 | Exportar produção e-SUS casada com de-para SIGTAP? | `producaoSigtapService.js` + `GET /api/cadastros/procedimentos-sigtap/producao?competencia=` · UI `ProducaoSigtapExport.tsx` · [cadastros.md](docs/agent/cadastros.md) |
 | Enriquecimento por perfil? | `PUT …/enriquecimento/:slug` + tabelas `enriquecimento_*` |
 | Como cadastra leitos por vigência? | `leitosVigenciaService.js` / `LeitosVigenciasPanel.tsx` |
+| Gate manter/aplicar do sync de cadastros? | `cadastrosSync.js` `planejarSync`/`aplicarPlano` · UI `SyncPlanoPreview.tsx` · [cadastros.md](docs/agent/cadastros.md#workflow-sync-plano-gate) |
 | Deploy release sem build no destino? | `npm run docker:release:export` → `deploy-release.sh --recreate --migrate` · [restore-backup-e-release-docker.md](docs/agent/restore-backup-e-release-docker.md) |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |
 | Roles de usuário | `requirePlanningStaff.js`, `admin.js` |

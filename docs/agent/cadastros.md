@@ -354,6 +354,85 @@ Blocos com **código inline** ("Outros procedimentos (SIGTAP)") NÃO entram — 
 
 ---
 
+## Workflow: sync-plano gate (manter/aplicar) {#workflow-sync-plano-gate}
+
+Spec: `docs/superpowers/specs/2026-07-28-cadastros-sync-gate-design.md` · **Status: concluído**
+
+### Premissa
+
+SIMPA é a fonte de verdade para **estabelecimentos** e **procedimentos**. O sync MySQL→PG não pode sobrescrever silenciosamente campos que o operador editou na UI. O gate resolve: a API computa um diff (sem gravar nada), o operador revisa e aprova linha a linha ou em bloco.
+
+Forma/CBO/rubrica permanecem sem gate — são puras tabelas de referência SIGTAP sem edição manual — e continuam em blind-sync via `--refs-only`.
+
+### Fluxo end-to-end
+
+```
+POST /api/cadastros/sync-plano
+  → sync_cadastros_mysql.py --plan
+  → diff JSON { estabelecimentos, procedimentos, resumo, sincronizado_em }
+      ↓
+Operador revisa em SyncPlanoPreview.tsx (manter | aplicar por linha ou em bloco)
+      ↓
+POST /api/cadastros/sync-plano/aplicar  { itens: ApplyItem[] }
+  → transação PG + anti-clobber guard
+  → { aplicados, pulados }
+```
+
+### Shape do diff
+
+```ts
+Item = {
+  chave: string,           // codigo_externo (estab) ou codigo_sigtap (proc)
+  tipo: 'novo' | 'alterado' | 'sumiu',
+  diff: {
+    [campo]: { simpa?: any, mysql?: any }
+  }
+}
+
+ApplyItem = Item & { entidade: 'estabelecimentos' | 'procedimentos' }
+```
+
+Campos com `*_editado = true` (propriedade do SIMPA, ex.: `perfil_editado`) são **excluídos** do diff — o plan nunca propõe sobrescrevê-los.
+
+### Semântica manter vs aplicar
+
+- **Aplicar:** grava o valor MySQL no PG. O campo sai do diff no próximo plan.
+- **Manter:** no-op nesta rodada. O diff reaparece no próximo plan enquanto o MySQL ainda divergir.
+
+A decisão é por item; o operador pode aplicar parte e manter outra. Não há "rejeitar permanentemente" — o diff só some quando MySQL e SIMPA convergem, ou quando o campo vira `*_editado`.
+
+### Anti-clobber guard
+
+Ao aplicar, o serviço relê o valor atual SIMPA de cada campo no PG. Se divergir do `simpa` capturado no plan (ou seja, outra operação alterou o campo entre plan e aplicar), o item é pulado e entra em `pulados`. Nenhum erro — o operador pode refazer o plan para ver o estado atual.
+
+### Lock de exclusão mútua
+
+`planejarSync`, `aplicarPlano` e `sincronizarReferencias` (refs-only) compartilham o mesmo in-flight lock que o antigo `sincronizar` — só uma operação por vez.
+
+### `POST /api/cadastros/sincronizar` (repontado)
+
+O endpoint anterior blind-sync agora chama `sincronizarReferencias()` = `sync_cadastros_mysql.py --refs-only`. Sincroniza **apenas** forma/CBO/rubrica (nunca estabelecimentos/procedimentos). O full blind-upsert de estab+proc não é mais acessível via HTTP. Audit: `cadastros_sincronizar_referencias`.
+
+Na UI Cadastros, o banner exibe dois botões: **"Revisar alterações MySQL"** (abre `SyncPlanoPreview`) e **"Atualizar tabelas SIGTAP"** (dispara refs-only).
+
+### Backend
+
+| Arquivo | Funções relevantes |
+|---------|--------------------|
+| `cadastrosSync.js` | `planejarSync()`, `aplicarPlano(itens)`, `sincronizarReferencias()` |
+| `sync_cadastros_mysql.py` | `--plan` (diff read-only), `--refs-only` (forma/cbo/rubrica apenas), `--pg-write` (legado, não mais chamado via HTTP) |
+
+`CAMPOS_PERMITIDOS` em `cadastrosSync.js` é o allowlist de colunas que `aplicarPlano` aceita escrever — impede SQL injection por campo.
+
+### Frontend
+
+| Arquivo | Comportamento |
+|---------|---------------|
+| `CadastroSyncBanner` | Dois botões: plano e refs-only |
+| `SyncPlanoPreview.tsx` | Tabs estab/proc; per-row manter/aplicar; bulk por tab; indicador `pulados` |
+
+---
+
 ## Workflow: leitos-hospitalares-vigencia {#workflow-leitos-hospitalares-vigencia}
 
 Migration: `migration_026_leitos_vigencia.sql` (tabela `enriquecimento_hospitalar_leitos_vigencia`) — ver [database.md](database.md#migration-026-aplicada). Endpoints: [backend-api.md](backend-api.md).

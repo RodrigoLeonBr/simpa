@@ -170,7 +170,12 @@ Services SIHD:
 | GET | `/api/cadastros/formas` | JWT — listagem paginada (`formasService.listFormas`) |
 | GET | `/api/cadastros/cbos` | JWT — listagem paginada (`cbosService.listCbos`) |
 | POST/PUT/DELETE | `/api/cadastros/formas`, `/cbos` | JWT — **405** read-only (MySQL espelho) |
-| GET/POST | procedimentos, sincronizar, … | ver **[cadastros.md](cadastros.md)** |
+| POST | `/api/cadastros/sync-plano` | JWT + `requirePlanningStaff` — diff read-only estab+proc (nunca grava); retorna `{ estabelecimentos, procedimentos, resumo, sincronizado_em }` |
+| POST | `/api/cadastros/sync-plano/aplicar` | JWT + `requirePlanningStaff` — body `{ itens: ApplyItem[] }`; transação PG + anti-clobber; retorna `{ aplicados, pulados }` |
+| POST | `/api/cadastros/sincronizar` | JWT + `requirePlanningStaff` — **refs-only** (forma/cbo/rubrica); nunca toca estab/proc; audit `cadastros_sincronizar_referencias` |
+| GET | `/api/cadastros/sincronizacoes` | JWT — histórico de syncs |
+| GET | `/api/cadastros/sincronizacoes/ultima` | JWT — último sync |
+| GET/POST | procedimentos, … | ver **[cadastros.md](cadastros.md)** |
 
 #### Leitos hospitalares por vigência
 
@@ -243,7 +248,7 @@ Ver **[auth-roles.md](auth-roles.md#admin)**.
 | `parser.js` | Spawn `parse_esus_csv.py` (aceita IDs) |
 | `storage.js` | Paths de upload em disco |
 | `sia.js` | Spawn `sync_sia_mysql.py` |
-| `cadastrosSync.js` | Spawn `sync_cadastros_mysql.py`; histórico com blocos `formas`/`cbos` |
+| `cadastrosSync.js` | `planejarSync` (diff read-only `--plan`), `aplicarPlano` (transação + anti-clobber), `sincronizarReferencias` (refs-only forma/cbo/rubrica); lock mútuo entre as três |
 | `formasService.js` | `listFormas` — tabela `formas_sia` (read-only) |
 | `cbosService.js` | `listCbos` — tabela `cbos_sia` (read-only) |
 | `cadastroReferenciaService.js` | `resolveFormaDescricao`, `resolveCboDescricao`; expressões SQL canônicas para join |
