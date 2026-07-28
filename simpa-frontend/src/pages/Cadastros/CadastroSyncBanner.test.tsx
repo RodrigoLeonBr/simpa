@@ -3,14 +3,30 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchUltimaCadastroSync,
-  sincronizarCadastros,
+  computarSyncPlano,
+  aplicarSyncPlano,
 } from '../../api/cadastros';
 import { CadastroSyncBanner } from './CadastroSyncBanner';
 
 vi.mock('../../api/cadastros', async () => {
   const actual = await vi.importActual<typeof import('../../api/cadastros')>('../../api/cadastros');
-  return { ...actual, fetchUltimaCadastroSync: vi.fn(), sincronizarCadastros: vi.fn() };
+  return {
+    ...actual,
+    fetchUltimaCadastroSync: vi.fn(),
+    computarSyncPlano: vi.fn(),
+    aplicarSyncPlano: vi.fn(),
+  };
 });
+
+const emptyPlano = {
+  estabelecimentos: [],
+  procedimentos: [],
+  resumo: {
+    estabelecimentos: { novo: 0, alterado: 0, sumiu: 0 },
+    procedimentos: { novo: 0, alterado: 0, sumiu: 0 },
+  },
+  sincronizado_em: '2026-07-28T12:00:00Z',
+};
 
 describe('CadastroSyncBanner', () => {
   afterEach(() => cleanup());
@@ -21,7 +37,7 @@ describe('CadastroSyncBanner', () => {
   });
 
   it('shows degraded message when sync fails with MySQL error', async () => {
-    vi.mocked(sincronizarCadastros).mockRejectedValue(
+    vi.mocked(computarSyncPlano).mockRejectedValue(
       new Error('MySQL_XAMPP_UNAVAILABLE'),
     );
 
@@ -35,14 +51,56 @@ describe('CadastroSyncBanner', () => {
     });
   });
 
-  it('refreshes last-sync badge after successful sync', async () => {
-    vi.mocked(sincronizarCadastros).mockResolvedValue({
-      status: 'ok',
-      estabelecimentos: { inserted: 2, updated: 5, inactivated: 0 },
-      procedimentos: { inserted: 10, updated: 20, inactivated: 1 },
-      rubricas: { inserted: 3, updated: 4, inactivated: 0 },
-      sincronizado_em: '2026-06-20T15:30:00Z',
+  it('shows nada-a-alterar toast when plan has zero changes', async () => {
+    vi.mocked(computarSyncPlano).mockResolvedValue(emptyPlano);
+
+    const user = userEvent.setup();
+    render(<CadastroSyncBanner />);
+
+    await user.click(screen.getByTestId('cadastro-sync-button'));
+
+    await waitFor(() => {
+      expect(computarSyncPlano).toHaveBeenCalled();
+      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/nada a alterar/i);
     });
+  });
+
+  it('opens preview when plan has changes', async () => {
+    vi.mocked(computarSyncPlano).mockResolvedValue({
+      estabelecimentos: [
+        { chave: '001', tipo: 'novo', diff: { nome: { mysql: 'UBS A' } } },
+      ],
+      procedimentos: [],
+      resumo: {
+        estabelecimentos: { novo: 1, alterado: 0, sumiu: 0 },
+        procedimentos: { novo: 0, alterado: 0, sumiu: 0 },
+      },
+      sincronizado_em: '2026-07-28T12:00:00Z',
+    });
+
+    const user = userEvent.setup();
+    render(<CadastroSyncBanner />);
+
+    await user.click(screen.getByTestId('cadastro-sync-button'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /confirmar/i })).toBeInTheDocument();
+    });
+  });
+
+  it('refreshes last-sync badge after applying plan', async () => {
+    vi.mocked(computarSyncPlano).mockResolvedValue({
+      estabelecimentos: [
+        { chave: '001', tipo: 'novo', diff: { nome: { mysql: 'UBS A' } } },
+      ],
+      procedimentos: [],
+      resumo: {
+        estabelecimentos: { novo: 1, alterado: 0, sumiu: 0 },
+        procedimentos: { novo: 0, alterado: 0, sumiu: 0 },
+      },
+      sincronizado_em: '2026-07-28T12:00:00Z',
+    });
+    vi.mocked(aplicarSyncPlano).mockResolvedValue({ aplicados: 1, pulados: 0 });
     vi.mocked(fetchUltimaCadastroSync)
       .mockRejectedValueOnce(new Error('404'))
       .mockResolvedValueOnce({
@@ -65,67 +123,22 @@ describe('CadastroSyncBanner', () => {
     await user.click(screen.getByTestId('cadastro-sync-button'));
 
     await waitFor(() => {
-      expect(sincronizarCadastros).toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: /aplicar todos/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /aplicar todos/i }));
+    await user.click(screen.getByRole('button', { name: /confirmar/i }));
+
+    await waitFor(() => {
+      expect(aplicarSyncPlano).toHaveBeenCalled();
       expect(fetchUltimaCadastroSync).toHaveBeenCalledTimes(2);
       expect(screen.getByTestId('cadastro-sync-ultima')).toHaveTextContent(/7 estab/i);
-      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Cadastros atualizados/i);
-      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/7 rubricas/i);
-    });
-  });
-
-  it('shows degraded fallback and API error toast when sync returns status erro', async () => {
-    vi.mocked(sincronizarCadastros).mockResolvedValue({
-      status: 'erro',
-      error: 'Falha no MySQL do SIA',
-      estabelecimentos: { inserted: 0, updated: 0, inactivated: 0 },
-      procedimentos: { inserted: 0, updated: 0, inactivated: 0 },
-      sincronizado_em: '2026-06-20T15:30:00Z',
-    });
-    const user = userEvent.setup();
-
-    render(<CadastroSyncBanner />);
-
-    await user.click(screen.getByTestId('cadastro-sync-button'));
-
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(/MySQL\/XAMPP indisponível/i);
-      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Falha no MySQL do SIA/i);
-    });
-  });
-
-  it('handles partial sync by keeping degraded message and refreshing last sync', async () => {
-    vi.mocked(sincronizarCadastros).mockResolvedValue({
-      status: 'parcial',
-      error: 'Alguns registros ignorados',
-      estabelecimentos: { inserted: 1, updated: 2, inactivated: 0 },
-      procedimentos: { inserted: 3, updated: 4, inactivated: 0 },
-      sincronizado_em: '2026-06-20T16:10:00Z',
-    });
-    vi.mocked(fetchUltimaCadastroSync)
-      .mockRejectedValueOnce(new Error('404'))
-      .mockResolvedValueOnce({
-        id: 2,
-        status: 'parcial',
-        sincronizado_em: '2026-06-20T16:10:00Z',
-        estabelecimentos: { inserted: 1, updated: 2, inactivated: 0 },
-        procedimentos: { inserted: 3, updated: 4, inactivated: 0 },
-      });
-    const user = userEvent.setup();
-
-    render(<CadastroSyncBanner />);
-
-    await user.click(screen.getByTestId('cadastro-sync-button'));
-
-    await waitFor(() => {
-      expect(fetchUltimaCadastroSync).toHaveBeenCalledTimes(2);
-      expect(screen.getByRole('alert')).toHaveTextContent(/Alguns registros ignorados/i);
-      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/Cadastros atualizados/i);
-      expect(screen.getByTestId('cadastro-sync-ultima')).toHaveTextContent(/3 estab/i);
+      expect(screen.getByTestId('toast-banner')).toHaveTextContent(/1 aplicados/i);
     });
   });
 
   it('shows generic toast error without degraded alert for non-MySQL failure', async () => {
-    vi.mocked(sincronizarCadastros).mockRejectedValue(new Error('Falha timeout API'));
+    vi.mocked(computarSyncPlano).mockRejectedValue(new Error('Falha timeout API'));
     const user = userEvent.setup();
 
     render(<CadastroSyncBanner />);

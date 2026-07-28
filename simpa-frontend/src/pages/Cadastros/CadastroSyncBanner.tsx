@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   fetchUltimaCadastroSync,
-  sincronizarCadastros,
+  computarSyncPlano,
+  aplicarSyncPlano,
 } from '../../api/cadastros';
-import type { CadastroSyncRecord, CadastroSyncResult } from '../../types/cadastros';
+import type { CadastroSyncRecord, SyncPlano } from '../../types/cadastros';
 import { ToastBanner, useToast } from '../../components/shared/Toast';
 import { formatImportDate } from '../../utils/importacaoView';
+import { SyncPlanoPreview } from './SyncPlanoPreview';
 
 function isMysqlUnavailableError(message: string): boolean {
   const lower = message.toLowerCase();
@@ -17,22 +19,13 @@ function isMysqlUnavailableError(message: string): boolean {
   );
 }
 
-function formatSyncToast(result: CadastroSyncResult): string {
-  const e = result.estabelecimentos;
-  const p = result.procedimentos;
-  const base = `Cadastros atualizados — ${e.inserted + e.updated} estabelecimentos, ${p.inserted + p.updated} procedimentos`;
-  if (result.rubricas) {
-    const totalRubricas = result.rubricas.inserted + result.rubricas.updated;
-    return `${base}, ${totalRubricas} rubricas`;
-  }
-  return base;
-}
 
 export function CadastroSyncBanner() {
   const [ultima, setUltima] = useState<CadastroSyncRecord | null>(null);
   const [loadingUltima, setLoadingUltima] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [degraded, setDegraded] = useState<string | null>(null);
+  const [plano, setPlano] = useState<SyncPlano | null>(null);
   const { toast, showToast } = useToast();
 
   const carregarUltima = useCallback(async () => {
@@ -55,29 +48,14 @@ export function CadastroSyncBanner() {
     setDegraded(null);
 
     try {
-      const resultado = await sincronizarCadastros();
-
-      if (resultado.status === 'erro') {
-        const msg = resultado.error ?? 'Falha na sincronização com MySQL/XAMPP';
-        setDegraded(
-          'MySQL/XAMPP indisponível. Exibindo última sincronização conhecida.',
-        );
-        showToast(msg);
-        return;
+      const p = await computarSyncPlano();
+      const { estabelecimentos: re, procedimentos: rp } = p.resumo;
+      const total = re.novo + re.alterado + re.sumiu + rp.novo + rp.alterado + rp.sumiu;
+      if (total === 0) {
+        showToast('Nada a alterar — cadastros já em dia');
+      } else {
+        setPlano(p);
       }
-
-      if (resultado.status === 'parcial') {
-        const msg =
-          resultado.error ??
-          'Sincronização concluída com registros ignorados por dados inválidos.';
-        setDegraded(msg);
-        showToast(formatSyncToast(resultado));
-        await carregarUltima();
-        return;
-      }
-
-      showToast(formatSyncToast(resultado));
-      await carregarUltima();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha na sincronização';
       if (isMysqlUnavailableError(msg)) {
@@ -88,6 +66,19 @@ export function CadastroSyncBanner() {
       showToast(msg);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleAplicar = async (itens: Parameters<typeof aplicarSyncPlano>[0]) => {
+    if (itens.length === 0) { setPlano(null); return; }
+    try {
+      const r = await aplicarSyncPlano(itens);
+      showToast(`${r.aplicados} aplicados, ${r.pulados} pulados`);
+    } catch (err) {
+      setDegraded(err instanceof Error ? err.message : 'Falha ao aplicar');
+    } finally {
+      setPlano(null);
+      void carregarUltima();
     }
   };
 
@@ -134,6 +125,14 @@ export function CadastroSyncBanner() {
       </section>
 
       <ToastBanner message={toast.message} visible={toast.visible} />
+
+      {plano && (
+        <SyncPlanoPreview
+          plano={plano}
+          onAplicar={handleAplicar}
+          onCancelar={() => setPlano(null)}
+        />
+      )}
     </>
   );
 }
