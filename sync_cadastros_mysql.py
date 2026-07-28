@@ -985,7 +985,68 @@ def _attach_skipped_metadata(
     result["error"] = f"{skipped_total} registro(s) ignorado(s) por dados inválidos no MySQL"
 
 
-def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, Any]:
+ESTAB_PLAN_FIELDS = ["nome", "cnpj", "re_tipo", "tipouni", "perfil", "area", "relatorio", "status"]
+ESTAB_PLAN_EDITADO = {"nome": "nome_editado", "perfil": "perfil_editado", "status": "status_editado"}
+PROC_PLAN_FIELDS = ["descricao", "pa_total", "rubrica", "pa_id", "financiamento", "status"]
+
+
+def build_entity_plan(
+    mysql_rows: list[dict[str, Any]],
+    pg_rows: dict[str, dict[str, Any]],
+    key: str,
+    compare_fields: list[str],
+    editado_map: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Diff read-only MySQL vs PG. editado_map: {campo: coluna_flag} pula campo SIMPA-owner.
+
+    mysql_rows: list de dicts normalizados (com `key`). pg_rows: dict[chave] -> dict com
+    compare_fields + flags editado. Retorna itens {chave, tipo, diff}.
+    """
+    items = []
+    seen: set[str] = set()
+    for row in mysql_rows:
+        chave = row[key]
+        seen.add(chave)
+        current = pg_rows.get(chave)
+        if current is None:
+            diff = {f: {"mysql": row.get(f)} for f in compare_fields}
+            items.append({"chave": chave, "tipo": "novo", "diff": diff})
+            continue
+        diff = {}
+        for f in compare_fields:
+            flag = editado_map.get(f)
+            if flag and current.get(flag):
+                continue
+            if row.get(f) != current.get(f):
+                diff[f] = {"simpa": current.get(f), "mysql": row.get(f)}
+        if diff:
+            items.append({"chave": chave, "tipo": "alterado", "diff": diff})
+    for chave, current in pg_rows.items():
+        if chave in seen:
+            continue
+        if current.get("status") == "ativo":
+            items.append({"chave": chave, "tipo": "sumiu",
+                          "diff": {"status": {"simpa": "ativo"}}})
+    return items
+
+
+def _fetch_pg_rows(
+    cur: Any,
+    table: str,
+    key: str,
+    fields: list[str],
+    flags: tuple[str, ...] = (),
+) -> dict[str, dict[str, Any]]:
+    cols = [key] + fields + list(flags)
+    cur.execute(f"SELECT {', '.join(cols)} FROM {table}")
+    out: dict[str, dict[str, Any]] = {}
+    for row in cur.fetchall():
+        rec = dict(zip(cols, row))
+        out[rec[key]] = rec
+    return out
+
+
+def sincronizar(*, pg_write: bool = False, dry_run: bool = False, plan: bool = False) -> dict[str, Any]:
     if pg_write and dry_run:
         raise ValueError("Use apenas --pg-write ou --dry-run, não ambos")
 
@@ -1087,6 +1148,37 @@ def sincronizar(*, pg_write: bool = False, dry_run: bool = False) -> dict[str, A
         raise
 
     try:
+        if plan:
+            with conn_pg.cursor() as cur:
+                pg_estab = _fetch_pg_rows(
+                    cur, "estabelecimentos", "codigo_externo",
+                    ESTAB_PLAN_FIELDS, ("nome_editado", "perfil_editado", "status_editado"),
+                )
+                pg_proc = _fetch_pg_rows(cur, "procedimentos", "codigo_sigtap", PROC_PLAN_FIELDS)
+            estab_items = build_entity_plan(
+                prestadores, pg_estab, "codigo_externo", ESTAB_PLAN_FIELDS, ESTAB_PLAN_EDITADO,
+            )
+            proc_items = build_entity_plan(
+                procedimentos, pg_proc, "codigo_sigtap", PROC_PLAN_FIELDS, {},
+            )
+            conn_pg.rollback()
+            return {
+                "status": "ok",
+                "estabelecimentos": estab_items,
+                "procedimentos": proc_items,
+                "resumo": {
+                    "estabelecimentos": {
+                        t: sum(1 for i in estab_items if i["tipo"] == t)
+                        for t in ("novo", "alterado", "sumiu")
+                    },
+                    "procedimentos": {
+                        t: sum(1 for i in proc_items if i["tipo"] == t)
+                        for t in ("novo", "alterado", "sumiu")
+                    },
+                },
+                "sincronizado_em": sync_ts.isoformat(),
+            }
+
         estab_counts = sync_estabelecimentos(conn_pg, prestadores, pg_write=pg_write)
         proc_counts = sync_procedimentos(conn_pg, procedimentos, pg_write=pg_write)
         forma_counts = sync_formas(
@@ -1144,16 +1236,21 @@ def main() -> None:
         action="store_true",
         help="Calcula contagens sem gravar no PostgreSQL",
     )
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="Emite diff read-only (estab+proc) sem gravar",
+    )
     args = parser.parse_args()
 
-    if not args.pg_write and not args.dry_run:
-        print("Erro: use --dry-run ou --pg-write", file=sys.stderr)
+    if not args.pg_write and not args.dry_run and not args.plan:
+        print("Erro: use --dry-run, --pg-write ou --plan", file=sys.stderr)
         sys.exit(1)
 
     load_dotenv()
 
     try:
-        result = sincronizar(pg_write=args.pg_write, dry_run=args.dry_run)
+        result = sincronizar(pg_write=args.pg_write, dry_run=args.dry_run, plan=args.plan)
     except Exception as exc:
         result = _error_result(str(exc))
 
