@@ -9,6 +9,7 @@ const {
 const {
   sincronizar,
   planejarSync,
+  aplicarPlano,
   listSyncHistory,
   getLatestSync,
 } = require('../services/cadastrosSync');
@@ -80,6 +81,26 @@ router.post('/sync-plano', requirePlanningStaff, async (_req, res, next) => {
   try {
     const plano = await planejarSync();
     return res.json(plano);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/sync-plano/aplicar', requirePlanningStaff, async (req, res, next) => {
+  try {
+    const itens = Array.isArray(req.body?.itens) ? req.body.itens : [];
+    if (itens.length === 0) {
+      return res.status(400).json({ erro: 'Nenhum item para aplicar' });
+    }
+    const resultado = await aplicarPlano(itens, req.user?.id ?? null);
+    await logAudit({
+      usuarioId: req.user?.id ?? null,
+      acao: 'cadastros_sync_plano_aplicar',
+      recurso: 'cadastros',
+      detalhes: JSON.stringify(resultado),
+      ip: req.ip,
+    });
+    return res.json(resultado);
   } catch (err) {
     return next(err);
   }

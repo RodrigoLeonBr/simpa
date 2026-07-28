@@ -1,4 +1,14 @@
-const { parsePlanOutput } = require('../src/services/cadastrosSync');
+jest.mock('../src/services/db', () => {
+  const client = { query: jest.fn(), release: jest.fn() };
+  return {
+    query: jest.fn(),
+    pool: { connect: jest.fn(async () => client) },
+    __client: client,
+  };
+});
+
+const db = require('../src/services/db');
+const { parsePlanOutput, aplicarPlano } = require('../src/services/cadastrosSync');
 
 describe('parsePlanOutput', () => {
   it('parseia JSON de plano', () => {
@@ -24,5 +34,69 @@ describe('parsePlanOutput', () => {
     try { parsePlanOutput('   '); } catch (e) { err = e; }
     expect(err).toBeDefined();
     expect(err.status).toBe(502);
+  });
+});
+
+describe('aplicarPlano', () => {
+  beforeEach(() => {
+    db.__client.query.mockReset();
+    db.__client.release.mockReset();
+    db.__client.query.mockResolvedValue({ rows: [], rowCount: 1 });
+  });
+
+  it('aplica alterado quando SIMPA atual bate com o diff.simpa', async () => {
+    db.__client.query.mockImplementation(async (sql) => {
+      if (/SELECT .* FROM estabelecimentos/i.test(sql)) return { rows: [{ status: 'ativo' }] };
+      return { rows: [], rowCount: 1 };
+    });
+    const r = await aplicarPlano([
+      { entidade: 'estabelecimento', chave: '111', tipo: 'alterado',
+        diff: { status: { simpa: 'ativo', mysql: 'inativo' } } },
+    ], 1);
+    expect(r.aplicados).toBe(1);
+    expect(r.pulados).toBe(0);
+    const updateCall = db.__client.query.mock.calls.find(([s]) => /UPDATE estabelecimentos SET/i.test(s));
+    expect(updateCall).toBeTruthy();
+    expect(db.__client.query.mock.calls.some(([s]) => /BEGIN/.test(s))).toBe(true);
+    expect(db.__client.query.mock.calls.some(([s]) => /COMMIT/.test(s))).toBe(true);
+  });
+
+  it('pula item quando SIMPA atual divergiu do diff.simpa (anti-clobber)', async () => {
+    db.__client.query.mockImplementation(async (sql) => {
+      if (/SELECT .* FROM estabelecimentos/i.test(sql)) return { rows: [{ status: 'inativo' }] };
+      return { rows: [], rowCount: 1 };
+    });
+    const r = await aplicarPlano([
+      { entidade: 'estabelecimento', chave: '111', tipo: 'alterado',
+        diff: { status: { simpa: 'ativo', mysql: 'inativo' } } },
+    ], 1);
+    expect(r.aplicados).toBe(0);
+    expect(r.pulados).toBe(1);
+    expect(db.__client.query.mock.calls.some(([s]) => /UPDATE estabelecimentos SET/i.test(s))).toBe(false);
+  });
+
+  it('insere novo via INSERT ... ON CONFLICT DO NOTHING', async () => {
+    const r = await aplicarPlano([
+      { entidade: 'estabelecimento', chave: '999', tipo: 'novo',
+        diff: { nome: { mysql: 'UBS NOVA' }, status: { mysql: 'ativo' } } },
+    ], 1);
+    expect(r.aplicados).toBe(1);
+    const insertCall = db.__client.query.mock.calls.find(([s]) => /INSERT INTO estabelecimentos/i.test(s));
+    expect(insertCall).toBeTruthy();
+    expect(insertCall[0]).toMatch(/ON CONFLICT/i);
+  });
+
+  it('faz ROLLBACK se uma query falha', async () => {
+    db.__client.query.mockImplementation(async (sql) => {
+      if (/UPDATE estabelecimentos SET/i.test(sql)) throw new Error('db boom');
+      if (/SELECT .* FROM estabelecimentos/i.test(sql)) return { rows: [{ status: 'ativo' }] };
+      return { rows: [], rowCount: 1 };
+    });
+    await expect(aplicarPlano([
+      { entidade: 'estabelecimento', chave: '111', tipo: 'alterado',
+        diff: { status: { simpa: 'ativo', mysql: 'inativo' } } },
+    ], 1)).rejects.toThrow('db boom');
+    expect(db.__client.query.mock.calls.some(([s]) => /ROLLBACK/.test(s))).toBe(true);
+    expect(db.__client.release).toHaveBeenCalled();
   });
 });

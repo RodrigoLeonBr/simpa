@@ -1,6 +1,6 @@
 const { spawn } = require('child_process');
 const path = require('path');
-const { query } = require('./db');
+const { query, pool } = require('./db');
 
 const SYNC_TIMEOUT_MS = parseInt(
   process.env.CADASTRO_SYNC_TIMEOUT_MS || '300000',
@@ -293,9 +293,86 @@ async function getLatestSync() {
   return mapSyncRow(rows[0]);
 }
 
+const APLICAR_TABELAS = {
+  estabelecimento: { tabela: 'estabelecimentos', chaveCol: 'codigo_externo' },
+  procedimento: { tabela: 'procedimentos', chaveCol: 'codigo_sigtap' },
+};
+
+// Allowlist de colunas por entidade — o nome da coluna NUNCA vem cru do cliente.
+const CAMPOS_PERMITIDOS = {
+  estabelecimento: ['nome', 'cnpj', 're_tipo', 'tipouni', 'perfil', 'area', 'relatorio', 'status'],
+  procedimento: ['descricao', 'pa_total', 'rubrica', 'pa_id', 'financiamento', 'status'],
+};
+
+async function _clobberOk(client, tabela, chaveCol, chave, diff) {
+  const campos = Object.keys(diff).filter((c) => 'simpa' in diff[c]);
+  if (campos.length === 0) return true;
+  const { rows } = await client.query(
+    `SELECT ${campos.join(', ')} FROM ${tabela} WHERE ${chaveCol} = $1`,
+    [chave]
+  );
+  if (rows.length === 0) return false;
+  return campos.every((c) => rows[0][c] === diff[c].simpa);
+}
+
+async function aplicarPlano(itens, usuarioId) {
+  const client = await pool.connect();
+  let aplicados = 0;
+  let pulados = 0;
+  try {
+    await client.query('BEGIN');
+    for (const item of itens) {
+      const cfg = APLICAR_TABELAS[item.entidade];
+      if (!cfg) { pulados += 1; continue; }
+      const permitidos = CAMPOS_PERMITIDOS[item.entidade];
+
+      if (item.tipo === 'sumiu') {
+        if (!(await _clobberOk(client, cfg.tabela, cfg.chaveCol, item.chave, item.diff))) { pulados += 1; continue; }
+        await client.query(
+          `UPDATE ${cfg.tabela} SET status = 'inativo' WHERE ${cfg.chaveCol} = $1`,
+          [item.chave]
+        );
+        aplicados += 1;
+      } else if (item.tipo === 'alterado') {
+        if (!(await _clobberOk(client, cfg.tabela, cfg.chaveCol, item.chave, item.diff))) { pulados += 1; continue; }
+        const campos = Object.keys(item.diff).filter((c) => permitidos.includes(c));
+        if (campos.length === 0) { pulados += 1; continue; }
+        const sets = campos.map((c, i) => `${c} = $${i + 2}`).join(', ');
+        const vals = campos.map((c) => item.diff[c].mysql);
+        await client.query(
+          `UPDATE ${cfg.tabela} SET ${sets} WHERE ${cfg.chaveCol} = $1`,
+          [item.chave, ...vals]
+        );
+        aplicados += 1;
+      } else if (item.tipo === 'novo') {
+        const campos = Object.keys(item.diff).filter((c) => permitidos.includes(c));
+        const cols = [cfg.chaveCol, ...campos];
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+        const vals = [item.chave, ...campos.map((c) => item.diff[c].mysql)];
+        await client.query(
+          `INSERT INTO ${cfg.tabela} (${cols.join(', ')}) VALUES (${placeholders})
+           ON CONFLICT (${cfg.chaveCol}) DO NOTHING`,
+          vals
+        );
+        aplicados += 1;
+      } else {
+        pulados += 1;
+      }
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+  return { aplicados, pulados };
+}
+
 module.exports = {
   sincronizar,
   planejarSync,
+  aplicarPlano,
   parseSyncOutput,
   parsePlanOutput,
   scriptPath,
