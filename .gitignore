@@ -19,3 +19,5 @@ test-results/
 
 # Graphify output/cache (gerado por ferramenta, não versionar)
 graphify-out/
+
+.worktrees/
