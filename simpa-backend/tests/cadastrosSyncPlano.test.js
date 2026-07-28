@@ -18,4 +18,11 @@ describe('parsePlanOutput', () => {
     const stdout = JSON.stringify({ status: 'erro', erro: 'PG down' });
     expect(() => parsePlanOutput(stdout)).toThrow('PG down');
   });
+
+  it('lança 502 em stdout vazio', () => {
+    let err;
+    try { parsePlanOutput('   '); } catch (e) { err = e; }
+    expect(err).toBeDefined();
+    expect(err.status).toBe(502);
+  });
 });
