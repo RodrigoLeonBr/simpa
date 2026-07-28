@@ -136,6 +136,65 @@ function runSyncSubprocess() {
   });
 }
 
+function parsePlanOutput(stdout) {
+  const parsed = JSON.parse(stdout.trim());
+  if (parsed.status === 'erro') {
+    const error = new Error(parsed.erro || 'Erro ao planejar sync');
+    error.status = 502;
+    throw error;
+  }
+  return parsed;
+}
+
+function runPlanSubprocess() {
+  return new Promise((resolve, reject) => {
+    const script = scriptPath();
+    const proc = spawn(pythonBin(), [script, '--plan'], {
+      cwd: path.dirname(script),
+      env: { ...process.env },
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      proc.kill('SIGTERM');
+      const error = new Error('Timeout do plano de sync');
+      error.status = 504;
+      reject(error);
+    }, SYNC_TIMEOUT_MS);
+    proc.stdout.on('data', (c) => { stdout += c.toString(); });
+    proc.stderr.on('data', (c) => { stderr += c.toString(); });
+    proc.on('error', (err) => { clearTimeout(timer); reject(err); });
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      try {
+        return resolve(parsePlanOutput(stdout));
+      } catch (err) {
+        if (code !== 0) {
+          const e = new Error(stderr.trim() || `sync --plan exit ${code}`);
+          e.status = 502;
+          return reject(e);
+        }
+        return reject(err);
+      }
+    });
+  });
+}
+
+async function planejarSync() {
+  if (syncInFlight) {
+    const error = new Error('Sincronização já em andamento');
+    error.status = 409;
+    throw error;
+  }
+  const promise = runPlanSubprocess();
+  syncInFlight = promise;
+  try {
+    return await promise;
+  } finally {
+    if (syncInFlight === promise) syncInFlight = null;
+  }
+}
+
 async function sincronizar() {
   if (syncInFlight) {
     const error = new Error('Sincronização de cadastros já em andamento');
@@ -220,7 +279,9 @@ async function getLatestSync() {
 
 module.exports = {
   sincronizar,
+  planejarSync,
   parseSyncOutput,
+  parsePlanOutput,
   scriptPath,
   pythonBin,
   listSyncHistory,

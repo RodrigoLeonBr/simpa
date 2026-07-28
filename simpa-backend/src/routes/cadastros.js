@@ -8,6 +8,7 @@ const {
 } = require('../services/cadastrosService');
 const {
   sincronizar,
+  planejarSync,
   listSyncHistory,
   getLatestSync,
 } = require('../services/cadastrosSync');
@@ -70,6 +71,15 @@ router.post('/sincronizar', requirePlanningStaff, async (req, res, next) => {
     }
 
     return res.status(201).json(resultado);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/sync-plano', requirePlanningStaff, async (_req, res, next) => {
+  try {
+    const plano = await planejarSync();
+    return res.json(plano);
   } catch (err) {
     return next(err);
   }
