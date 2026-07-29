@@ -7,6 +7,8 @@ const request = require('supertest');
 const { query } = require('../src/services/db');
 const {
   sincronizarReferencias,
+  planejarSync,
+  aplicarPlano,
   listSyncHistory,
   getLatestSync,
 } = require('../src/services/cadastrosSync');
@@ -20,6 +22,14 @@ describe('cadastros sync routes', () => {
     jest.clearAllMocks();
     query.mockResolvedValue({ rows: [] });
     logAudit.mockResolvedValue(undefined);
+    planejarSync.mockResolvedValue({
+      status: 'ok',
+      estabelecimentos: [],
+      procedimentos: [],
+      resumo: { estabelecimentos: { novo: 0, alterado: 0, sumiu: 0 }, procedimentos: { novo: 0, alterado: 0, sumiu: 0 } },
+      sincronizado_em: '2026-07-28T12:00:00Z',
+    });
+    aplicarPlano.mockResolvedValue({ aplicados: 0, pulados: 0 });
     sincronizarReferencias.mockResolvedValue({
       status: 'ok',
       estabelecimentos: { inserted: 0, updated: 0, inactivated: 0 },
@@ -239,5 +249,48 @@ describe('cadastros sync routes', () => {
   it('requires JWT', async () => {
     const res = await request(app).post('/api/cadastros/sincronizar');
     expect(res.status).toBe(401);
+  });
+
+  it('POST /sync-plano returns 403 for non-planning profile', async () => {
+    const res = await request(app)
+      .post('/api/cadastros/sync-plano')
+      .set('Authorization', unidadeHeader());
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/permissão/i);
+    expect(planejarSync).not.toHaveBeenCalled();
+  });
+
+  it('POST /sync-plano/aplicar returns 400 when itens is empty', async () => {
+    const res = await request(app)
+      .post('/api/cadastros/sync-plano/aplicar')
+      .set('Authorization', authHeader())
+      .send({ itens: [] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.erro).toMatch(/nenhum item/i);
+    expect(aplicarPlano).not.toHaveBeenCalled();
+  });
+
+  it('POST /sync-plano/aplicar returns 400 when itens is missing', async () => {
+    const res = await request(app)
+      .post('/api/cadastros/sync-plano/aplicar')
+      .set('Authorization', authHeader())
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.erro).toMatch(/nenhum item/i);
+    expect(aplicarPlano).not.toHaveBeenCalled();
+  });
+
+  it('POST /sync-plano/aplicar returns 403 for non-planning profile', async () => {
+    const res = await request(app)
+      .post('/api/cadastros/sync-plano/aplicar')
+      .set('Authorization', unidadeHeader())
+      .send({ itens: [{ entidade: 'estabelecimento', chave: '111', tipo: 'sumiu', diff: {} }] });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/permissão/i);
+    expect(aplicarPlano).not.toHaveBeenCalled();
   });
 });

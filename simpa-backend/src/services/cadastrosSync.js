@@ -145,7 +145,7 @@ function parsePlanOutput(stdout) {
   }
   const parsed = JSON.parse(trimmed);
   if (parsed.status === 'erro') {
-    const error = new Error(parsed.erro || 'Erro ao planejar sync');
+    const error = new Error(parsed.erro || parsed.error || 'Erro ao planejar sync');
     error.status = 502;
     throw error;
   }
@@ -337,7 +337,7 @@ async function _clobberOk(client, tabela, chaveCol, chave, diff, permitidos) {
   return campos.every((c) => String(rows[0][c]) === String(diff[c].simpa));
 }
 
-async function aplicarPlano(itens, usuarioId) {
+async function aplicarPlano(itens) {
   const client = await pool.connect();
   let aplicados = 0;
   let pulados = 0;

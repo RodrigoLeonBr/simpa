@@ -1021,9 +1021,12 @@ def build_entity_plan(
                 diff[f] = {"simpa": current.get(f), "mysql": row.get(f)}
         if diff:
             items.append({"chave": chave, "tipo": "alterado", "diff": diff})
+    status_flag = editado_map.get("status")
     for chave, current in pg_rows.items():
         if chave in seen:
             continue
+        if status_flag and current.get(status_flag):
+            continue  # SIMPA-owner: não propõe inativação
         if current.get("status") == "ativo":
             items.append({"chave": chave, "tipo": "sumiu",
                           "diff": {"status": {"simpa": "ativo"}}})

@@ -25,7 +25,7 @@ describe('parsePlanOutput', () => {
   });
 
   it('propaga status erro do python', () => {
-    const stdout = JSON.stringify({ status: 'erro', erro: 'PG down' });
+    const stdout = JSON.stringify({ status: 'erro', error: 'PG down' });
     expect(() => parsePlanOutput(stdout)).toThrow('PG down');
   });
 
@@ -52,7 +52,7 @@ describe('aplicarPlano', () => {
     const r = await aplicarPlano([
       { entidade: 'estabelecimento', chave: '111', tipo: 'alterado',
         diff: { status: { simpa: 'ativo', mysql: 'inativo' } } },
-    ], 1);
+    ]);
     expect(r.aplicados).toBe(1);
     expect(r.pulados).toBe(0);
     const updateCall = db.__client.query.mock.calls.find(([s]) => /UPDATE estabelecimentos SET/i.test(s));
@@ -69,7 +69,7 @@ describe('aplicarPlano', () => {
     const r = await aplicarPlano([
       { entidade: 'estabelecimento', chave: '111', tipo: 'alterado',
         diff: { status: { simpa: 'ativo', mysql: 'inativo' } } },
-    ], 1);
+    ]);
     expect(r.aplicados).toBe(0);
     expect(r.pulados).toBe(1);
     expect(db.__client.query.mock.calls.some(([s]) => /UPDATE estabelecimentos SET/i.test(s))).toBe(false);
@@ -79,7 +79,7 @@ describe('aplicarPlano', () => {
     const r = await aplicarPlano([
       { entidade: 'estabelecimento', chave: '999', tipo: 'novo',
         diff: { nome: { mysql: 'UBS NOVA' }, status: { mysql: 'ativo' } } },
-    ], 1);
+    ]);
     expect(r.aplicados).toBe(1);
     const insertCall = db.__client.query.mock.calls.find(([s]) => /INSERT INTO estabelecimentos/i.test(s));
     expect(insertCall).toBeTruthy();
@@ -99,7 +99,7 @@ describe('aplicarPlano', () => {
           status: { simpa: 'ativo', mysql: 'inativo' },
           'evil; DROP TABLE estabelecimentos; --': { simpa: 'x', mysql: 'y' },
         } },
-    ], 1);
+    ]);
     // nenhuma query pode conter o texto malicioso
     expect(capturado.some((s) => /DROP TABLE/i.test(s))).toBe(false);
     // o SELECT de clobber deve pedir só a coluna allowlistada `status`
@@ -116,7 +116,7 @@ describe('aplicarPlano', () => {
     const r = await aplicarPlano([
       { entidade: 'procedimento', chave: '0301010010', tipo: 'alterado',
         diff: { pa_total: { simpa: '12.5', mysql: '13.0' } } },
-    ], 1);
+    ]);
     expect(r.aplicados).toBe(1);
     expect(r.pulados).toBe(0);
   });
@@ -130,7 +130,7 @@ describe('aplicarPlano', () => {
     await expect(aplicarPlano([
       { entidade: 'estabelecimento', chave: '111', tipo: 'alterado',
         diff: { status: { simpa: 'ativo', mysql: 'inativo' } } },
-    ], 1)).rejects.toThrow('db boom');
+    ])).rejects.toThrow('db boom');
     expect(db.__client.query.mock.calls.some(([s]) => /ROLLBACK/.test(s))).toBe(true);
     expect(db.__client.release).toHaveBeenCalled();
   });

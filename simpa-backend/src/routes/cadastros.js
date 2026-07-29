@@ -90,7 +90,7 @@ router.post('/sync-plano/aplicar', requirePlanningStaff, async (req, res, next) 
     if (itens.length === 0) {
       return res.status(400).json({ erro: 'Nenhum item para aplicar' });
     }
-    const resultado = await aplicarPlano(itens, req.user?.id ?? null);
+    const resultado = await aplicarPlano(itens);
     await logAudit({
       usuarioId: req.user?.id ?? null,
       acao: 'cadastros_sync_plano_aplicar',
