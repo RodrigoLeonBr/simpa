@@ -101,19 +101,17 @@ def test_extrair_sia_comp_format(monkeypatch):
     assert "prd_cmp" in captured["query"]
 
 
-def test_extrair_sia_em_blocos_paginated(monkeypatch):
+def test_extrair_sia_em_blocos_slices_single_query(monkeypatch):
+    """Agrega uma única vez (sem OFFSET quadrático) e fatia na memória."""
     calls = {"n": 0}
 
     def fake_read_sql(query, conn, params=None):
         calls["n"] += 1
-        if calls["n"] == 1:
-            assert params == {"comp": "202605", "limit": 2, "offset": 0}
-            assert "LIMIT %(limit)s OFFSET %(offset)s" in query
-            return pd.DataFrame([{"quantidade": 1}, {"quantidade": 2}])
-        if calls["n"] == 2:
-            assert params == {"comp": "202605", "limit": 2, "offset": 2}
-            return pd.DataFrame([{"quantidade": 3}])
-        return pd.DataFrame()
+        assert params == {"comp": "202605"}
+        assert "LIMIT" not in query and "OFFSET" not in query
+        return pd.DataFrame(
+            [{"quantidade": 1}, {"quantidade": 2}, {"quantidade": 3}]
+        )
 
     monkeypatch.setattr(sync_sia_mysql.pd, "read_sql", fake_read_sql)
 
@@ -125,9 +123,8 @@ def test_extrair_sia_em_blocos_paginated(monkeypatch):
         )
     )
 
-    assert len(blocos) == 2
-    assert len(blocos[0]) == 2
-    assert len(blocos[1]) == 1
+    assert calls["n"] == 1  # GROUP BY roda uma vez só
+    assert [len(b) for b in blocos] == [2, 1]
 
 
 def test_transformar_normaliza_faixa_sexo_e_metricas():

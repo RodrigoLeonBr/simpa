@@ -26,7 +26,16 @@ describe('exportProducao', () => {
     expect(sql).toMatch(/JOIN procedimentos_esus_sigtap/);
     expect(sql).toMatch(/m\.status = 'ativo'/);
     expect(sql).toMatch(/HAVING SUM/);
+    expect(sql).toMatch(/est\.codigo_externo\s+AS cnes/);
     expect(params[0]).toBe('2026-05');
+  });
+
+  it('inclui blocos com SIGTAP na descrição via UNION (sem de-para)', async () => {
+    await exportProducao('2026-05');
+    const [sql] = query.mock.calls[0];
+    expect(sql).toMatch(/UNION ALL/);
+    expect(sql).toMatch(/r\.secao ILIKE '%SIGTAP%'/);
+    expect(sql).toMatch(/LEFT\(regexp_replace\(r\.descricao/);
   });
 });
 

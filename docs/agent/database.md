@@ -27,11 +27,19 @@
 
 Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `027` em `/docker-entrypoint-initdb.d/`.
 
+Deploy remoto (volume já existente): `scripts/apply-migrations.sh` / `.ps1` aplica só pendentes e registra em `simpa_schema_migrations` (criada sob demanda). Ver [docker-env.md](docker-env.md) e [restore-backup-e-release-docker.md](restore-backup-e-release-docker.md).
+
 ### Correções UTF-8 (volumes já existentes)
 
-Migrations `016` / `017` / `021` / `027` só rodam no **primeiro** init com volume vazio. Em banco já populado: ver **[correcao-utf8-painel-metricas.md](correcao-utf8-painel-metricas.md)** (`docker cp` + `psql -f`; nunca `Get-Content | docker exec` no Windows).
+Migrations `016` / `017` / `021` / `027` só rodam no **primeiro** init com volume vazio. Em banco já populado: ver **[correcao-utf8-painel-metricas.md](correcao-utf8-painel-metricas.md)** (`docker cp` + `psql -f`; nunca `Get-Content | docker exec` no Windows). Preferir `apply-migrations` se o arquivo ainda não estiver em `simpa_schema_migrations`.
 
 ## Tabelas por domínio
+
+### Operação / deploy
+
+| Tabela | Uso |
+|--------|-----|
+| `simpa_schema_migrations` | Tracking de `migration_*.sql` já aplicados no destino (`filename` PK). Criada por `apply-migrations`; não faz parte do initdb. |
 
 ### e-SUS / consolidado
 

@@ -53,6 +53,7 @@ $copyFiles = @(
     "parse_esus_csv.py",
     "consolidate_dashboard.py",
     "sync_sia_mysql.py",
+    "sync_sih_mysql.py",
     "sync_cadastros_mysql.py",
     "etl_contract.py",
     "etl_db.py"
@@ -66,8 +67,30 @@ foreach ($file in $copyFiles) {
     Copy-Item $src (Join-Path $bundleRoot $file)
 }
 
-Copy-Item "$Root/scripts/deploy-release.ps1" (Join-Path $bundleRoot "scripts/deploy-release.ps1")
-Copy-Item "$Root/scripts/deploy-release.sh" (Join-Path $bundleRoot "scripts/deploy-release.sh")
+# Stamp version + project name into the packaged example env
+$envExamplePath = Join-Path $bundleRoot ".env.docker.example"
+$envExample = Get-Content $envExamplePath -Raw
+$envExample = $envExample -replace '(?m)^SIMPA_VERSION=.*$', "SIMPA_VERSION=$Version"
+if ($envExample -notmatch '(?m)^COMPOSE_PROJECT_NAME=') {
+    $envExample = $envExample.TrimEnd() + "`r`n`r`nCOMPOSE_PROJECT_NAME=simpa`r`n"
+} else {
+    $envExample = $envExample -replace '(?m)^COMPOSE_PROJECT_NAME=.*$', "COMPOSE_PROJECT_NAME=simpa"
+}
+Set-Content -Path $envExamplePath -Value $envExample -Encoding UTF8
+
+$scriptFiles = @(
+    "deploy-release.ps1",
+    "deploy-release.sh",
+    "apply-migrations.ps1",
+    "apply-migrations.sh"
+)
+foreach ($sf in $scriptFiles) {
+    $src = Join-Path $Root "scripts\$sf"
+    if (-not (Test-Path $src)) {
+        Write-Error "Missing required script: scripts/$sf"
+    }
+    Copy-Item $src (Join-Path $bundleRoot "scripts\$sf")
+}
 
 Write-Host "==> Saving Docker images..."
 docker save -o (Join-Path $bundleRoot "images/simpa-api-$Version.tar") "simpa-api:$Version"
@@ -83,17 +106,25 @@ SIMPA release bundle
 Version: $Version
 Built: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 Git: $gitHash
+Compose project: simpa (COMPOSE_PROJECT_NAME)
 
-Deploy no servidor remoto:
-  1. Copie esta pasta para o servidor (scp, rsync, pendrive, etc.)
+Deploy no servidor remoto (sem build):
+  1. Copie esta pasta/zip para o servidor
   2. cd simpa-$Version
   3. cp .env.docker.example .env.docker && edite PG_PASS, JWT_SECRET, MySQL...
-  4. Defina SIMPA_VERSION=$Version em .env.docker
+  4. SIMPA_VERSION=$Version e COMPOSE_PROJECT_NAME=simpa (já no example)
   5. Linux:   bash scripts/deploy-release.sh
      Windows: powershell -ExecutionPolicy Bypass -File scripts/deploy-release.ps1
 
-Atualizar release existente (preserva dados PG):
-  bash scripts/deploy-release.sh --recreate
+Primeira vez + restore de backup antigo:
+  bash scripts/deploy-release.sh
+  # restaurar .sql (ver docs/agent/restore-backup-e-release-docker.md)
+  bash scripts/apply-migrations.sh --baseline 012
+  bash scripts/apply-migrations.sh
+  docker compose -p simpa --env-file .env.docker restart api
+
+Atualizar release (preserva dados PG + aplica migrations novas):
+  bash scripts/deploy-release.sh --recreate --migrate
 "@
 Set-Content -Path (Join-Path $bundleRoot "MANIFEST.txt") -Value $manifest -Encoding UTF8
 

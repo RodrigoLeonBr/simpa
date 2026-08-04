@@ -1,114 +1,169 @@
 # Restaurar backup PostgreSQL e release Docker
 
-Guia operacional: restaurar `.sql` de outro servidor neste ambiente, aplicar migrations pendentes, gerar pacote Docker aqui e atualizar outro servidor **sem compilar no destino**.
+Guia operacional: gerar pacote **neste PC** (com build), subir no **servidor destino sem compilar**, restaurar backup e aplicar migrations com tracking.
 
-Pré-requisitos locais:
-
-- Pasta do projeto com `.env.docker` configurado
-- Docker Compose no ar (`npm run docker:up` ou `npm run docker:dev:refresh`)
-- Arquivo de backup `.sql` (ex.: `simpa-backup-2026-07-08T20-17-57-530Z.sql`)
+Design: [2026-07-24-deploy-release-migrate-design.md](../superpowers/specs/2026-07-24-deploy-release-migrate-design.md) · Env/Compose: [docker-env.md](docker-env.md) · Schema: [database.md](database.md).
 
 ---
 
-## Solução: banco vazio → restaurar
+## Cheatsheet (o essencial)
+
+### Neste PC (build + pacote)
+
+```powershell
+# Na raiz do clone, com .env.docker ok
+powershell -ExecutionPolicy Bypass -File scripts\docker-release-export.ps1 -Version "2026.07.24"
+# Saída: release\simpa-2026.07.24\  e  release\simpa-2026.07.24.zip
+```
+
+### Servidor destino — 1ª vez (stack zero + restore + migrations)
+
+```bash
+unzip simpa-2026.07.24.zip && cd simpa-2026.07.24
+cp .env.docker.example .env.docker
+# Editar: PG_PASS, JWT_SECRET, MYSQL_*  (SIMPA_VERSION e COMPOSE_PROJECT_NAME=simpa já vêm no example)
+
+bash scripts/deploy-release.sh
+
+# Recriar DB vazio + restore do .sql (seção "Banco vazio → restaurar")
+bash scripts/apply-migrations.sh --baseline 012
+bash scripts/apply-migrations.sh
+docker compose -p simpa --env-file .env.docker restart api
+```
+
+Containers: `simpa-postgres-1`, `simpa-api-1`, `simpa-web-1`.
+
+### Servidor destino — próximas versões
+
+```bash
+# Nova pasta/zip; atualizar SIMPA_VERSION no .env.docker
+bash scripts/deploy-release.sh --recreate --migrate
+```
+
+`--recreate` troca imagens **sem** apagar o volume PG. `--migrate` aplica só `migration_*.sql` ainda não registrados em `simpa_schema_migrations` e reinicia a `api`.
+
+---
+
+## Pré-requisitos
+
+| Onde | Precisa |
+|------|---------|
+| PC de build | Docker, `.env.docker`, código atual (incl. `Dockerfile.api` com ETL SIH) |
+| Destino | Docker Engine + Compose **v2.24+**, portas `WEB_PORT` / `PG_PUBLISH_PORT`, MySQL acessível se for sync SIA/SIH |
+| Destino | **Não** precisa de Node/npm para build — só `docker load` + scripts do pacote |
+
+---
+
+## Banco vazio → restaurar
 
 ### Por que limpar antes
 
-Se o Postgres local já tem migrations mais novas que o dump (ex.: `sih_*`, `metas_oci_par`), o restore com `--clean` falha ao dropar a PK de `estabelecimentos` por causa de FKs que **não existem** no arquivo de backup.
+Se o Postgres já tem migrations mais novas que o dump (ex.: `sih_*`, `metas_oci_par`), o restore com `--clean` falha ao dropar a PK de `estabelecimentos` por causa de FKs que **não existem** no arquivo de backup.
 
 Não use `docker compose down -v` + `up` e restaure em cima: o init recria o schema atual completo e o mesmo erro volta.
 
-### Passos (PowerShell, raiz do projeto)
+### Destino / projeto `simpa` (recomendado)
+
+Com `COMPOSE_PROJECT_NAME=simpa` no `.env.docker`:
+
+```bash
+docker compose -p simpa --env-file .env.docker exec -T postgres \
+  psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+  -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'simpa' AND pid <> pg_backend_pid();"
+
+docker compose -p simpa --env-file .env.docker exec -T postgres \
+  psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+  -c "DROP DATABASE IF EXISTS simpa;"
+
+docker compose -p simpa --env-file .env.docker exec -T postgres \
+  psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+  -c "CREATE DATABASE simpa OWNER postgres;"
+
+docker compose -p simpa --env-file .env.docker cp /caminho/backup.sql postgres:/tmp/backup.sql
+docker compose -p simpa --env-file .env.docker exec -T postgres \
+  psql -U postgres -d simpa -v ON_ERROR_STOP=1 -f /tmp/backup.sql
+```
+
+### Dev local (sem `-p`, pasta do clone)
 
 ```powershell
-# 1) Encerrar conexões e recriar o banco vazio
 docker compose --env-file .env.docker exec -T postgres psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'simpa' AND pid <> pg_backend_pid();"
 docker compose --env-file .env.docker exec -T postgres psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS simpa;"
 docker compose --env-file .env.docker exec -T postgres psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE simpa OWNER postgres;"
-
-# 2) Copiar o .sql para o container (repita se o container foi recriado)
 docker compose --env-file .env.docker cp "CAMINHO\PARA\simpa-backup-....sql" postgres:/tmp/backup.sql
-
-# 3) Restaurar
 docker compose --env-file .env.docker exec -T postgres psql -U postgres -d simpa -v ON_ERROR_STOP=1 -f /tmp/backup.sql
 ```
 
-Alternativa equivalente (mesmo efeito):
+Alternativa (mesmo efeito):
 
 ```powershell
 docker compose --env-file .env.docker exec -T postgres psql -U postgres -d simpa -v ON_ERROR_STOP=1 -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres; GRANT ALL ON SCHEMA public TO public;"
 docker compose --env-file .env.docker exec -T postgres psql -U postgres -d simpa -v ON_ERROR_STOP=1 -f /tmp/backup.sql
 ```
 
-Ignore dicas do tipo **Gordon / docker ai** — não resolvem esse caso.
-
-### Ajuste de usuário/banco
-
-Se no `.env.docker` `PG_USER` / `PG_DB` forem diferentes de `postgres` / `simpa`, troque nos comandos.
+Se `PG_USER` / `PG_DB` no `.env.docker` forem diferentes de `postgres` / `simpa`, troque nos comandos.
 
 ### Alternativa pela UI
 
 Com stack no ar e login **admin**: **Administração → Backup → Restaurar de arquivo .sql**, confirme digitando `RESTAURAR`.
 
-Limite padrão: 500 MB (`BACKUP_MAX_RESTORE_MB` no `.env.docker`). O ponto crítico continua o mesmo: **não restaurar em cima de um schema mais novo sem limpar antes**.
+Limite padrão: 500 MB (`BACKUP_MAX_RESTORE_MB`). Continua válido: **não restaurar em cima de um schema mais novo sem limpar antes**.
 
 ---
 
 ## Depois do restore: schema da origem
 
-O schema fica **como no servidor de origem** (data do backup). O código local pode esperar tabelas/migrations posteriores.
+O schema fica **como no dump**. O código novo pode exigir migrations posteriores.
 
-- Só para **consultar dados** daquele backup → ok.
-- Para o app **atual** funcionar em cima desses dados → aplicar as migrations que faltam (próxima seção).
+- Só consultar dados do backup → ok.
+- App atual em cima desses dados → baseline + apply (próxima seção).
 
-Conferir tabelas:
+Exemplo: dump até ~migration **012** tem `populacao_cadastrada`, mas **não** tem `sih_*`, `metas_oci_par`, `procedimentos_esus_sigtap`.
 
-```powershell
-docker compose --env-file .env.docker exec -T postgres psql -U postgres -d simpa -c "\dt public.*"
+```bash
+docker compose -p simpa --env-file .env.docker exec -T postgres \
+  psql -U postgres -d simpa -c "\dt public.*"
 ```
-
-Exemplo: backup até ~migration 012 tem `populacao_cadastrada`, mas **não** tem `sih_*`, `metas_oci_par`, `procedimentos_esus_sigtap`.
 
 ---
 
-## Aplicar migrations pendentes (013 → 027)
+## Migrations com tracking (`simpa_schema_migrations`)
 
-Na raiz `E:\xampp\htdocs\simpa` (ou pasta do clone).
+Tabela criada sob demanda por `scripts/apply-migrations.sh` / `.ps1`:
 
-**UTF-8 no Windows:** não use `Get-Content | docker exec` — corrompe acentos. Use `docker cp` + `psql -f` (ver bloco abaixo e `docs/agent/database.md`).
+```sql
+CREATE TABLE IF NOT EXISTS simpa_schema_migrations (
+  filename TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+| Comando | Efeito |
+|---------|--------|
+| `apply-migrations.sh` | Aplica `migration_*.sql` cujo `filename` **não** está na tabela; registra após sucesso |
+| `apply-migrations.sh --baseline 012` | **Não** executa SQL: marca `migration_002`…`migration_012_*` como aplicadas (`ON CONFLICT DO NOTHING`) |
+| `deploy-release.sh --migrate` | Sobe/atualiza stack + apply pendentes + `restart api` |
+
+**UTF-8 no Windows:** o script usa `docker cp` + `psql -f` (nunca `Get-Content | docker exec`).
+
+### Após restore de dump antigo
+
+```bash
+# Ajuste 012 ao último número já coberto pelo dump
+bash scripts/apply-migrations.sh --baseline 012
+bash scripts/apply-migrations.sh
+docker compose -p simpa --env-file .env.docker restart api
+```
+
+Windows:
 
 ```powershell
-# Ajuste o nome do container se necessário: docker ps --format "{{.Names}}"
-$container = "simpa-postgres-1"
-$files = @(
-  "migration_013_sih_tabelas.sql",
-  "migration_014_sia_painel_indicadores.sql",
-  "migration_015_apac_metas_oci_par.sql",
-  "migration_016_fix_painel_widgets_utf8.sql",
-  "migration_017_estabelecimentos_nome_utf8.sql",
-  "migration_018_estabelecimentos_status_editado.sql",
-  "migration_019_widget_sql_override.sql",
-  "migration_020_sih_aih.sql",
-  "migration_021_fix_painel_metricas_utf8.sql",
-  "migration_022_procedimentos_esus_sigtap.sql",
-  "migration_023_sih_aih_campos.sql",
-  "migration_024_sih_aih_widgets.sql",
-  "migration_025_sih_proc_qtd_linhas.sql",
-  "migration_026_leitos_vigencia.sql",
-  "migration_027_fix_sih_metricas_utf8.sql"
-)
-
-foreach ($f in $files) {
-  Write-Host "`n==> $f"
-  docker cp $f "${container}:/tmp/$f"
-  if ($LASTEXITCODE -ne 0) { Write-Host "FALHOU cp $f"; break }
-  docker exec $container psql -U postgres -d simpa -v ON_ERROR_STOP=1 -f "/tmp/$f"
-  if ($LASTEXITCODE -ne 0) {
-    Write-Host "FALHOU em $f — pare aqui e analise o erro."
-    break
-  }
-}
+powershell -ExecutionPolicy Bypass -File scripts\apply-migrations.ps1 -Baseline 012
+powershell -ExecutionPolicy Bypass -File scripts\apply-migrations.ps1
+docker compose -p simpa --env-file .env.docker restart api
 ```
+
+Se falhar, **não pule a ordem** — corrija e rode `apply-migrations` de novo (só pendentes).
 
 | Migration | Efeito principal |
 |-----------|------------------|
@@ -127,142 +182,112 @@ foreach ($f in $files) {
 | 026 | leitos por vigência |
 | 027 | UTF-8 métricas SIH + formas “Atenção…” |
 
-A maioria usa `IF NOT EXISTS` / `ON CONFLICT` / `UPDATE` idempotente. Se falhar, **não pule a ordem** — retome a partir do arquivo que quebrou.
-
 ### Conferir depois
 
-```powershell
-docker compose --env-file .env.docker exec -T postgres psql -U postgres -d simpa -c "\dt public.*"
+```bash
+docker compose -p simpa --env-file .env.docker exec -T postgres \
+  psql -U postgres -d simpa -c "SELECT filename FROM simpa_schema_migrations ORDER BY filename;"
 ```
 
-Devem aparecer, entre outras: `sih_sincronizacoes`, `sih_internacoes`, `sih_procedimentos`, `sih_aih`, `metas_oci_par`, `procedimentos_esus_sigtap`.
+Devem existir, entre outras: `sih_sincronizacoes`, `sih_internacoes`, `sih_procedimentos`, `sih_aih`, `metas_oci_par`, `procedimentos_esus_sigtap`.
 
-Lista esperada alinhada ao código atual (~37 tabelas), incluindo as acima + `usuarios`, `estabelecimentos`, `sia_producao`, `painel_widgets`, etc.
+### Após migrations
 
-### Próximos passos após migrations
-
-1. Reiniciar a API (se estava no ar durante restore/migrations):
-
-   ```powershell
-   docker compose --env-file .env.docker restart api
-   ```
-
-2. Login com usuário que veio no **backup** (não o do banco vazio antigo).
-3. Smoke: http://localhost:8080/api/health e abrir Painel / Cadastros.
-4. Dados **SIH**: migrations só criam schema; tabelas podem estar vazias. Sincronize em **Importação** se precisar de produção hospitalar.
-5. **SIA / e-SUS**: dados do dump já devem estar em `sia_producao` / `dados_consolidados`; re-sincronize só se quiser atualizar.
-
-Opcional — colunas críticas:
-
-```powershell
-docker compose --env-file .env.docker exec -T postgres psql -U postgres -d simpa -c "\d sih_aih"
-docker compose --env-file .env.docker exec -T postgres psql -U postgres -d simpa -c "\d estabelecimentos"
-```
+1. Login com usuário que veio no **backup**.
+2. Smoke: `http://localhost:8080/api/health` (ou `WEB_PORT`).
+3. **SIH:** migrations só criam schema — sincronize em **Importação** se precisar de produção.
+4. **SIA / e-SUS:** dados do dump já devem estar em `sia_producao` / `dados_consolidados`.
 
 ---
 
-## Gerar pacote Docker neste servidor (build local)
+## Gerar pacote neste PC (build local)
 
-Para máquinas de destino com pouco recurso: **compile aqui**, transfira o pacote, **suba lá sem `--build`**.
-
-Pré-requisito: `.env.docker` configurado (o build usa o compose/`PG_PASS` do contexto).
-
-### Comandos (PC / servidor de build)
+Pré-requisito: `.env.docker` no clone (compose usa `PG_PASS` no contexto de build).
 
 ```powershell
-# Compila api + web e gera pacote em release/simpa-<versão>/
 npm run docker:release:export
-
-# Atalho Windows (se existir na raiz)
+# ou
 .\exportar-docker-release.bat
+# ou versão fixa:
+powershell -ExecutionPolicy Bypass -File scripts\docker-release-export.ps1 -Version "2026.07.24"
 
-# Só compilar imagens, sem empacotar
+# Só build das imagens, sem zip:
 npm run docker:release:build
-
-# Versão customizada
-powershell -File scripts/docker-release-export.ps1 -Version "1.2.0"
 ```
-
-### Saída
 
 | Artefato | Conteúdo |
 |----------|----------|
 | `release/simpa-<versão>/` | Pasta pronta para o servidor |
 | `release/simpa-<versão>.zip` | Mesmo conteúdo compactado |
 
-O pacote inclui: imagens `.tar` (`simpa-api:<versão>`, `simpa-web:<versão>`), `docker-compose.yml`, `docker-compose.deploy.yml`, SQL, scripts ETL montados como volume, e `scripts/deploy-release.sh` / `deploy-release.ps1`.
+O pacote inclui:
 
-### Variável `SIMPA_VERSION`
-
-Definida em `.env.docker` do **destino**. Deve coincidir com a tag das imagens do pacote (ex.: `2026.06.21-HHmm`).
+- Imagens `images/simpa-api-<versão>.tar` e `simpa-web-<versão>.tar`
+- `docker-compose.yml`, `docker-compose.deploy.yml`
+- `.env.docker.example` com `SIMPA_VERSION=<versão>` e `COMPOSE_PROJECT_NAME=simpa`
+- `schema_full.sql` + todos `migration_*.sql`
+- ETL: `parse_esus_csv.py`, `consolidate_dashboard.py`, `sync_sia_mysql.py`, `sync_sih_mysql.py`, `sync_cadastros_mysql.py`, `etl_contract.py`, `etl_db.py`
+- Scripts: `deploy-release.sh` / `.ps1`, `apply-migrations.sh` / `.ps1`
+- `MANIFEST.txt`
 
 ---
 
-## Atualizar outro servidor (sem compilar no destino)
+## Atualizar outro servidor (sem `--build`)
 
-### Requisitos no servidor remoto
+### Variáveis no destino
 
-- Docker Engine + Docker Compose **v2.24+** (suporte a `build: !reset null`)
-- Portas livres: `WEB_PORT` (default 8080), `PG_PUBLISH_PORT` (opcional, default 5433)
-- MySQL acessível se usar sync SIA (`MYSQL_HOST` — em Linux use IP do host, não `host.docker.internal`)
+| Variável | Função |
+|----------|--------|
+| `SIMPA_VERSION` | Tag das imagens (`simpa-api:<versão>`, `simpa-web:<versão>`) — deve bater com o nome dos `.tar` |
+| `COMPOSE_PROJECT_NAME` | Default `simpa` → containers `simpa-postgres-1`, `simpa-api-1`, `simpa-web-1` |
+| `PG_PASS`, `JWT_SECRET`, `MYSQL_*`, `WEB_PORT` | Segredos / rede |
 
-### Fluxo resumido
+`docker-compose.deploy.yml` remove o bloco `build`; o deploy sempre usa `--no-build`.
+
+### Flags do deploy
+
+| Comando | Efeito |
+|---------|--------|
+| `bash scripts/deploy-release.sh` | `docker load` + `up -d --no-build` |
+| `… --recreate` | + `--force-recreate` (mantém volume PG) |
+| `… --migrate` | + apply pendentes + restart `api` |
+| `… --recreate --migrate` | update típico de versão |
+
+Windows: `deploy-release.ps1 -Recreate -Migrate`.
+
+### Fluxo
 
 | Etapa | Onde | Ação |
 |-------|------|------|
-| 1 | Servidor de build | `npm run docker:release:export` |
-| 2 | Rede / USB | Transferir `release/simpa-<versão>/` ou o `.zip` |
-| 3 | Servidor remoto | Configurar `.env.docker` |
-| 4 | Servidor remoto | `deploy-release` **sem** `--build` |
+| 1 | PC de build | `npm run docker:release:export` (ou `-Version "…"`) |
+| 2 | Rede / USB | Transferir pasta ou `.zip` |
+| 3 | Destino | `cp .env.docker.example .env.docker` + editar segredos |
+| 4 | Destino | `deploy-release` (1ª vez) ou `--recreate --migrate` (update) |
 
-### Primeira instalação no remoto
-
-```bash
-unzip simpa-2026.06.21.zip   # use o nome real do zip
-cd simpa-2026.06.21
-cp .env.docker.example .env.docker
-# Editar PG_PASS, JWT_SECRET, MYSQL_*, WEB_PORT
-# IMPORTANTE: SIMPA_VERSION = versão do pacote (ex.: 2026.06.21-HHmm)
-nano .env.docker
-
-bash scripts/deploy-release.sh
-```
-
-Windows no servidor:
+### Teste local do pacote (no PC de build)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/deploy-release.ps1
+# Copiar .env.docker para dentro da pasta do release e ajustar SIMPA_VERSION
+powershell -File scripts/docker-release-import.ps1 -BundlePath release/simpa-2026.07.24 -Recreate -Migrate
 ```
 
-### Atualizar release mantendo dados do Postgres
+---
 
-```bash
-# Descompactar/substituir pasta da nova versão, ajustar SIMPA_VERSION no .env.docker
-bash scripts/deploy-release.sh --recreate
-```
+## Troubleshooting
 
-O `--recreate` sobe as novas imagens **sem** apagar o volume do Postgres (dados preservados). Ainda assim, faça backup `.sql` antes de atualizar produção.
-
-### Importar pacote já descompactado (teste local do pacote)
-
-```powershell
-powershell -File scripts/docker-release-import.ps1 -BundlePath release/simpa-2026.06.21-HHmm
-```
-
-Requer `.env.docker` **dentro** da pasta do pacote com `SIMPA_VERSION` correto.
-
-### Migrations após atualizar o app no remoto
-
-Se o pacote novo trouxer `migration_*.sql` além do schema do volume antigo:
-
-1. Faça backup do Postgres no remoto.
-2. Aplique só as migrations **faltantes**, na ordem (mesmo padrão da seção acima).
-3. Reinicie o container `api`.
+| Problema | Causa | Solução |
+|----------|-------|---------|
+| `can't open file '/app/sync_sih_mysql.py'` | Imagem antiga sem ETL SIH no `Dockerfile.api` | Reexportar release neste PC (código atual) e redeploy |
+| `Missing images/simpa-api-….tar` | `SIMPA_VERSION` ≠ tag do pacote | Alinhar `.env.docker` com o nome da pasta/`MANIFEST.txt` |
+| Containers com prefixo estranho | `COMPOSE_PROJECT_NAME` ausente | Usar `simpa` e `docker compose -p simpa …` |
+| Apply tenta reexecutar 002… após restore | Sem baseline | `apply-migrations.sh --baseline N` antes do apply |
+| Compose exige build no destino | Esqueceu overlay deploy | Scripts já usam `-f docker-compose.deploy.yml` |
 
 ---
 
 ## Referências
 
 - Compose / env / portas: [docker-env.md](docker-env.md)
-- Schema e migrations: [database.md](database.md)
+- Schema e lista de migrations: [database.md](database.md)
 - Backup pela UI admin: [auth-roles.md](auth-roles.md) (seção Backup PostgreSQL)
+- Spec: [deploy-release-migrate design](../superpowers/specs/2026-07-24-deploy-release-migrate-design.md)

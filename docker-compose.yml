@@ -65,6 +65,7 @@ services:
       - ./parse_esus_csv.py:/app/parse_esus_csv.py:ro
       - ./consolidate_dashboard.py:/app/consolidate_dashboard.py:ro
       - ./sync_sia_mysql.py:/app/sync_sia_mysql.py:ro
+      - ./sync_sih_mysql.py:/app/sync_sih_mysql.py:ro
       - ./sync_cadastros_mysql.py:/app/sync_cadastros_mysql.py:ro
       - ./etl_contract.py:/app/etl_contract.py:ro
       - ./etl_db.py:/app/etl_db.py:ro

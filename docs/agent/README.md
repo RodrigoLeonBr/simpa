@@ -19,8 +19,8 @@
 | [correcao-utf8-painel-metricas.md](correcao-utf8-painel-metricas.md) | Acentos `??` no banco (métricas/widgets/estabelecimentos/formas) — causa e apply PowerShell |
 | [manual-editar-widget-painel.md](manual-editar-widget-painel.md) | Campo a campo do drawer Editar widget do Painel e impacto no Layout A |
 | [etl-python.md](etl-python.md) | Scripts Python, sync MySQL |
-| [docker-env.md](docker-env.md) | Compose, variáveis, portas |
-| [restore-backup-e-release-docker.md](restore-backup-e-release-docker.md) | Restaurar `.sql`, migrations pós-restore, gerar/atualizar release Docker sem build no destino |
+| [docker-env.md](docker-env.md) | Compose, variáveis, portas, `docker:release:*` |
+| [restore-backup-e-release-docker.md](restore-backup-e-release-docker.md) | Cheatsheet: export local, deploy destino (`--migrate`), restore `.sql`, baseline |
 | [auth-roles.md](auth-roles.md) | Login, JWT, perfis, admin |
 | [testing-ci.md](testing-ci.md) | Jest, Vitest, pytest, Playwright, CI |
 | [compozy.md](compozy.md) | Workflows PRD/TechSpec/tasks |

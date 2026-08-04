@@ -14,6 +14,8 @@ Ponto de entrada: **[`CLAUDE.md`](CLAUDE.md)** · Índice modular: **[`docs/agen
 | [`docs/agent/frontend.md`](docs/agent/frontend.md) | Páginas, hooks, componentes |
 | [`docs/agent/cadastros.md`](docs/agent/cadastros.md) | Estabelecimentos, sync, enriquecimento, workflows |
 | [`docs/agent/database.md`](docs/agent/database.md) | Schema, migrations, queries |
+| [`docs/agent/docker-env.md`](docs/agent/docker-env.md) | Compose, env, `docker:release:*` |
+| [`docs/agent/restore-backup-e-release-docker.md`](docs/agent/restore-backup-e-release-docker.md) | Export local → deploy destino sem build, restore, `--migrate` |
 | [`docs/agent/etl-python.md`](docs/agent/etl-python.md) | Scripts Python e sync MySQL |
 | [`docs/agent/indicadores-qualidade.md`](docs/agent/indicadores-qualidade.md) | Catálogo `/indicadores`, fontes, queries, avaliação no banco |
 | [`docs/agent/importacao-esus-regras.md`](docs/agent/importacao-esus-regras.md) | Fluxo importação e-SUS (`/importacao`) |
@@ -215,6 +217,9 @@ npm run build
 | `npm run docker:dev:up` | Compose dev em background |
 | `npm run docker:dev:refresh` | Rebuild/recreate do Docker dev usando `.env.docker` |
 | `npm run docker:smoke` | Valida stack Docker |
+| `npm run docker:release:export` | Build local + pacote zip para servidor destino (sem build lá) |
+| `npm run docker:release:build` | Só build das imagens com tag de versão |
+| `npm run docker:release:deploy` | Testa/importa pacote local (`--no-build`) |
 | `npm run test` | Jest backend + Vitest frontend |
 | `npm run test:py` | Pytest unitário (sem integração PG) |
 | `npm run test:py:integration` | Pytest integração (requer Postgres em `PG_HOST`) |
@@ -273,6 +278,8 @@ Credenciais E2E padrão: `admin` / `simpa@2026` (variáveis `E2E_ADMIN_USER`, `E
 **Atualização rápida do Docker dev no Windows:** execute `atualizar-docker-dev.bat` na raiz. Opcionalmente passe `api` ou `web` para recriar só um serviço: `atualizar-docker-dev.bat api`.
 
 **Atualização rápida do Docker prod no Windows:** execute `atualizar-docker-prod.bat` na raiz. Opcionalmente passe `api` ou `web`: `atualizar-docker-prod.bat web`.
+
+**Release para outro servidor (build aqui, sobe lá sem compilar):** ver cheatsheet em [`docs/agent/restore-backup-e-release-docker.md`](docs/agent/restore-backup-e-release-docker.md) — `docker:release:export` → `deploy-release.sh --recreate --migrate`.
 
 ## Repositório
 

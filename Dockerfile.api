@@ -14,7 +14,7 @@ COPY requirements.txt ./
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt || \
     pip3 install --no-cache-dir python-dotenv psycopg2-binary
 
-COPY parse_esus_csv.py consolidate_dashboard.py sync_sia_mysql.py etl_contract.py etl_db.py ./
+COPY parse_esus_csv.py consolidate_dashboard.py sync_sia_mysql.py sync_sih_mysql.py sync_cadastros_mysql.py etl_contract.py etl_db.py ./
 COPY simpa-backend/package.json simpa-backend/package-lock.json* ./simpa-backend/
 RUN cd simpa-backend && npm install --omit=dev
 

@@ -5,6 +5,7 @@ import { ToastBanner, useToast } from '../shared/Toast';
 
 const PRODUCAO_COLUMNS: CsvColumn[] = [
   { key: 'competencia', label: 'Competência' },
+  { key: 'cnes', label: 'CNES' },
   { key: 'unidade', label: 'Unidade' },
   { key: 'tipo_relatorio', label: 'Relatório' },
   { key: 'bloco', label: 'Bloco' },
@@ -54,8 +55,8 @@ export function ProducaoSigtapExport() {
         <h3>Exportar produção e-SUS → SIGTAP</h3>
       </div>
       <p className="analytics-subtitle">
-        Produção importada da competência, só procedimentos com de-para ativo. Agrega por unidade e
-        código SIGTAP.
+        Produção importada da competência: procedimentos com de-para ativo mais blocos que já
+        trazem o código SIGTAP na descrição. Agrega por unidade e código SIGTAP.
       </p>
       <div className="cadastro-head-actions" style={{ justifyContent: 'flex-start', marginTop: 12 }}>
         <select

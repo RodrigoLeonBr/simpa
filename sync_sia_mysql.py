@@ -226,36 +226,36 @@ def extrair_sia_em_blocos(
     exec_id: str | None = None,
 ):
     """
-    Extrai produção SIA em páginas agregadas para reduzir risco de timeout.
+    Extrai produção SIA agregada em UMA query e itera em fatias na memória.
+
+    Paginar com LIMIT/OFFSET reexecutava o GROUP BY inteiro a cada página
+    (custo quadrático): as páginas finais ficavam cada vez mais lentas e o
+    MySQL derrubava a conexão em competências grandes (timeout ~65%). A
+    agregação agora roda uma única vez; as fatias servem só para progresso e
+    para transformar em blocos sem carregar tudo de uma vez no transform.
     """
-    query, _ = build_sia_query(paginated=True)
+    query, _ = build_sia_query()
     comp = competencia_date.strftime("%Y%m")
     page_size = block_size or _extract_block_size()
-    offset = 0
 
-    while True:
-        started_at = time.perf_counter()
-        df = pd.read_sql(
-            query,
-            conn_mysql,
-            params={
-                "comp": comp,
-                "limit": page_size,
-                "offset": offset,
-            },
+    started_at = time.perf_counter()
+    df_full = pd.read_sql(query, conn_mysql, params={"comp": comp})
+    total = len(df_full)
+    if total == 0:
+        emit_progress(
+            exec_id=exec_id,
+            stage="extracao_mysql",
+            event="extract_finished",
+            message="Extração MySQL concluída",
+            block_index=1,
+            block_rows=0,
+            offset=0,
+            duration_ms=int((time.perf_counter() - started_at) * 1000),
         )
-        if df.empty:
-            emit_progress(
-                exec_id=exec_id,
-                stage="extracao_mysql",
-                event="extract_finished",
-                message="Extração MySQL concluída",
-                block_index=(offset // page_size) + 1,
-                block_rows=0,
-                offset=offset,
-                duration_ms=int((time.perf_counter() - started_at) * 1000),
-            )
-            break
+        return
+
+    for offset in range(0, total, page_size):
+        bloco = df_full.iloc[offset : offset + page_size].reset_index(drop=True)
         block_index = (offset // page_size) + 1
         emit_progress(
             exec_id=exec_id,
@@ -263,14 +263,11 @@ def extrair_sia_em_blocos(
             event="extract_block",
             message=f"Bloco {block_index} extraído do MySQL",
             block_index=block_index,
-            block_rows=len(df),
+            block_rows=len(bloco),
             offset=offset,
             duration_ms=int((time.perf_counter() - started_at) * 1000),
         )
-        yield df
-        if len(df) < page_size:
-            break
-        offset += page_size
+        yield bloco
 
 
 def transformar(df: pd.DataFrame) -> pd.DataFrame:
