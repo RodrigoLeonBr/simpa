@@ -94,7 +94,7 @@ Release (build local → destino sem `--build`, `--migrate`, restore): **[docs/a
 
 ## Banco de dados
 
-- Init Docker: `schema_full.sql` + `migration_002` … `027` em `docker-compose.yml`.
+- Init Docker: `schema_full.sql` + `migration_002` … `031` em `docker-compose.yml`.
 - Volume já existente / destino: `scripts/apply-migrations.*` + tabela `simpa_schema_migrations`.
 - Tabelas-chave: `estabelecimentos`, `procedimentos`, `formas_sia`, `cbos_sia`, `enriquecimento_*`, `esus_cargas`, `dados_consolidados`, `usuarios`.
 - Contrato dashboard lido de `dados_consolidados.dados_conteudo` (JSONB).
@@ -253,6 +253,14 @@ Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md`
 
 ---
 
+## Feature concluída: painel-periodo-foco-hospitalar
+
+**Entregue:** seleção de período (mês/trimestre/quadrimestre/ano) no Painel e no preview de widgets; `src/services/periodo.js` (`resolvePeriodo`/`getPreviousPeriodo`); `bindTemplate` +placeholders `:competencia_inicio`/`:competencia_fim` (allowlist); `migration_031` coluna `painel_widgets.agregacao_periodo` (`ultimo_mes`/`soma`/`media`); `resolveMetricValueForWidget` (media = média mês a mês; soma/ultimo_mes 1 query); delta compara período anterior equivalente; `/painel-layout` + preview aceitam `periodo`. Frontend: `PeriodoSelect` no FilterBar, `useFilters.periodo` (competencia derivada = mês-fim), campo Agregação no `WidgetEditDrawer`, exemplos SQL de período. **Layout B (Foco) dinâmico** para não-APS (Hospitalar B = ready): exibe todos os widgets. Retrocompat: grão Mês + `ultimo_mes` = comportamento anterior.
+
+**Commit:** `df63168` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos)** · Manual: **[manual-editar-widget-painel.md](docs/agent/manual-editar-widget-painel.md)** · DB/views: **[database.md](docs/agent/database.md#migration-031-aplicada)**.
+
+---
+
 ## Convenções para agentes
 
 ### Faça
@@ -281,6 +289,9 @@ Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md`
 | Como deriva perfil no sync? | `sync_cadastros_mysql.py` → `derive_perfil` |
 | Como enriquece forma/cbo no SIA? | `siaProducaoService.js` + `cadastroReferenciaService.js` |
 | Como Layout A carrega widgets dinâmicos? | `usePainelLayout.ts` → `fetchPainelLayout` · fallback `dashboardView.ts` |
+| Como Layout B (Foco) exibe todos os widgets? | `LayoutB.tsx` `FocoDynamic` (auto-fit) · `catalogView.ts` Hospitalar B = ready |
+| Como seleciona período (trimestre/quadri/ano)? | `PeriodoSelect.tsx` + `useFilters.periodo` · resolve em `services/periodo.js` |
+| Como widget agrega período? | `painel_widgets.agregacao_periodo` · `resolveMetricValueForWidget` · placeholders `:competencia_inicio/:fim` em `bindTemplate` |
 | Como cadastro de widgets do Painel? | `IndicadoresPainelPage.tsx` · `painelWidgetsService.js` |
 | Extensão SIH forma/cbo? | `cadastroReferenciaService.js` → `resolveFormaDescricao` / `resolveCboDescricao` |
 | De-para procedimento e-SUS→SIGTAP? | `cadastroRegistry.js` (`procedimentos_esus_sigtap`) + tabela homônima (migration 022) · UI `/cadastros/procedimentos-sigtap` |

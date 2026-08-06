@@ -24,8 +24,12 @@
 | `migration_025_sih_proc_qtd_linhas.sql` | Coluna `sih_procedimentos.qtd_linhas` (COUNT(*) linhas brutas `s_aih_pa` por grupo); histórico de importação passa a usar `SUM(qtd_linhas)` |
 | `migration_026_leitos_vigencia.sql` | `enriquecimento_hospitalar_leitos_vigencia` — leitos hospitalares versionados por vigência (Hospitalar/Misto) |
 | `migration_027_fix_sih_metricas_utf8.sql` | Corrige UTF-8 em métricas `sih.*`, widgets Hospitalar 024 e 5 `formas_sia` (“Atenção…”) |
+| `migration_028_esus_producao_view.sql` | View `v_esus_producao` (join canônico `esus_cargas ⋈ esus_indicadores_raw`); 3 métricas `esus_raw` do catálogo migradas para ler a view |
+| `migration_029_esus_sigtap_blocos.sql` | Coluna `procedimentos_esus_sigtap.origem` (`curado`/`descoberto`) + backfill dos blocos SIGTAP do e-SUS; view `v_esus_producao_sigtap` (produção e-SUS × SIGTAP num JOIN único) |
+| `migration_030_widgets_consultas_aps.sql` | Métricas + widgets "Consultas" / "Consultas médicas" (APS Layout A) a partir de `sia_producao` (forma `030101`) |
+| `migration_031_widget_agregacao_periodo.sql` | Coluna `painel_widgets.agregacao_periodo` (`ultimo_mes`/`soma`/`media`) — habilita seleção de período (trimestre/quadrimestre/ano) no Painel |
 
-Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `027` em `/docker-entrypoint-initdb.d/`.
+Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `031` em `/docker-entrypoint-initdb.d/`.
 
 Deploy remoto (volume já existente): `scripts/apply-migrations.sh` / `.ps1` aplica só pendentes e registra em `simpa_schema_migrations` (criada sob demanda). Ver [docker-env.md](docker-env.md) e [restore-backup-e-release-docker.md](restore-backup-e-release-docker.md).
 
@@ -71,9 +75,28 @@ Migrations `016` / `017` / `021` / `027` só rodam no **primeiro** init com volu
 | Tabela | Uso |
 |--------|-----|
 | `painel_metricas_catalogo` | Métricas descobíveis (e-SUS raw, SIA, consolidado); `sql_template` parametrizado |
-| `painel_widgets` | Slots do Painel por `perfil`/`layout`; FK opcional → catálogo; `sql_preview` para admin |
+| `painel_widgets` | Slots do Painel por `perfil`/`layout`; FK opcional → catálogo; `sql_preview` para admin; `agregacao_periodo` (migration 031) |
 
 Seed inicial: 10 métricas + 8 widgets APS Layout A (espelha cards/gráficos atuais). Runtime MVP: `painelWidgetsService.resolvePainelLayout` + cadastro CRUD — ver [cadastros.md#workflow-painel-widgets-dinamicos](cadastros.md#workflow-painel-widgets-dinamicos).
+
+**Período (migration 031):** `agregacao_periodo` define como o widget colapsa um período multi-mês selecionado no Painel (trimestre/quadrimestre/ano):
+
+| Valor | Execução | Placeholders no `sql_template` |
+|-------|----------|--------------------------------|
+| `ultimo_mes` (default) | 1 query no mês final do período (snapshot; retrocompatível) | `:competencia` |
+| `soma` | 1 query no intervalo (produção somável: SIA/SIH) | `:competencia_inicio` / `:competencia_fim` (`BETWEEN`) |
+| `media` | roda o SQL mês a mês e tira a média (taxas/indicadores) | `:competencia` (por mês) |
+
+Binding server-side em `painelMetricsService.bindTemplate` (allowlist: `competencia`, `competencia_inicio`, `competencia_fim`, `estabelecimento_id`, `equipe_id`). Resolução do período em `src/services/periodo.js` (`resolvePeriodo`/`getPreviousPeriodo`); delta compara período anterior equivalente.
+
+### Views (Painel / produção)
+
+| View | Migration | Uso |
+|------|-----------|-----|
+| `v_esus_producao` | 028 | Join canônico `esus_cargas ⋈ esus_indicadores_raw`; expõe escopo (`competencia`, `estabelecimento_id`, `equipe_id`, `tipo_relatorio`, `secao`, `descricao`) + JSONB `valores`. Templates de métricas `fonte_tipo=esus_raw` filtram na query externa (pushdown; mesmo plano, sem materialização) |
+| `v_esus_producao_sigtap` | 029 | Produção e-SUS chaveada por código SIGTAP — JOIN único `v_esus_producao ⋈ procedimentos_esus_sigtap` (curado + descoberto). Filtrar `codigo_sigtap LIKE 'NNNN%'`. **Não** contém consultas `0301` (e-SUS não codifica consulta — consulta é SIA) |
+
+Views comuns (não materializadas): o planner achata e os filtros sofrem pushdown até as tabelas base. Servem de seam para materializar colunas tipadas no futuro sem tocar nos templates.
 
 ### SIHD (migration 013+)
 
@@ -178,6 +201,15 @@ Detalhe e SQL para indicadores: [sihd-internacao-dicionario-dados.md](sihd-inter
 - **Índice:** `idx_leitos_vigencia_estab` em `estabelecimento_id`.
 - **Backfill:** cria uma vigência aberta (`000001`–`999999`) por estabelecimento a partir de `enriquecimento_hospitalar.leitos` / `enriquecimento_misto.leitos` existentes (pula estabelecimentos que já têm vigência); normaliza chave legada `uti` → `uti_adulto`.
 - **Relação com colunas legadas:** `enriquecimento_hospitalar.leitos` / `enriquecimento_misto.leitos` continuam existindo e são mantidas como **espelho somente-leitura da vigência aberta** (`vigencia_fim = '999999'`), atualizado por `mirrorOpenVigenciaLeitos` a cada create/update/delete de vigência — `PUT /enriquecimento/:slug` não grava mais em `leitos` (ver [cadastros.md](cadastros.md#workflow-leitos-hospitalares-vigencia)).
+
+## Migration 031 (aplicada)
+
+`migration_031_widget_agregacao_periodo.sql` — ordem Docker: `31-migration_031_widget_agregacao_periodo.sql`.
+
+- **`painel_widgets.agregacao_periodo`:** `TEXT NOT NULL DEFAULT 'ultimo_mes'`; CHECK `agregacao_periodo IN ('ultimo_mes','soma','media')` (idempotente via `pg_constraint`).
+- Habilita a seleção de período (trimestre/quadrimestre/ano) no Painel — ver tabela de execução em [Painel dinâmico](#painel-dinâmico-migration-008) acima e placeholders `:competencia_inicio`/`:competencia_fim` em `bindTemplate`.
+- **Retrocompat:** default `ultimo_mes` + grão Mês reproduz o comportamento anterior (equivalência `= :competencia`) byte-a-byte.
+- **DB existente / export de widgets:** aplicar a migration antes de recriar widgets; o `painel_indicadores_export.sql` não precisa preencher a coluna (default cobre), mas exports novos devem incluí-la para preservar `soma`/`media`.
 
 ## Queries úteis
 

@@ -226,21 +226,28 @@ Spec: `.compozy/tasks/painel-widgets-dinamicos/` · **Status: MVP concluído (ta
 ### Fluxo end-to-end
 
 ```
-migration_008 (catálogo + widgets seed)
-  → painelMetricsService (executeMetric, discoverMetricsFromRaw)
-  → painelWidgetsService (CRUD, resolvePainelLayout, previewWidget)
-  → GET /painel-layout + cadastro /painel-widgets|metricas
-  → IndicadoresPainelPage (CRUD, preview, Atualizar catálogo)
-  → LayoutA + usePainelLayout (fallback dashboardView se API falhar)
+migration_008 (catálogo + widgets seed) · migration_031 (agregacao_periodo)
+  → painelMetricsService (executeMetric, bindTemplate, discoverMetricsFromRaw)
+  → periodo.js (resolvePeriodo/getPreviousPeriodo)
+  → painelWidgetsService (CRUD, resolvePainelLayout, previewWidget, resolveMetricValueForWidget)
+  → GET /painel-layout?periodo=… + cadastro /painel-widgets|metricas
+  → IndicadoresPainelPage (CRUD, preview por período, Atualizar catálogo)
+  → LayoutA (cards) / LayoutB (Foco, todos os widgets) + usePainelLayout (fallback dashboardView se API falhar)
 ```
+
+### Período (migration 031)
+
+O Painel permite selecionar **mês / trimestre / quadrimestre / ano** (`PeriodoSelect` no FilterBar → `useFilters.periodo`). Cada widget declara `agregacao_periodo` (`ultimo_mes` default / `soma` / `media`) — ver [manual-editar-widget-painel.md § Agregação por período](manual-editar-widget-painel.md#agregação-por-período) e a tabela de execução em [database.md](database.md#painel-dinâmico-migration-008). Placeholders `:competencia_inicio`/`:competencia_fim` (`BETWEEN`) para `soma`; delta compara período anterior equivalente. Retrocompat: grão Mês + `ultimo_mes` = comportamento anterior.
+
+**Layout B (Foco):** dinâmico para perfis não-APS (Hospitalar B = `ready` em `catalogView.ts`), exibe **todos** os widgets cadastrados (cards auto-fit + todas as linhas + rankings auto-fit). Layout A segue limitado a cards + 1ª linha + 1º ranking.
 
 ### Cadastro UI — `/cadastros/indicadores-painel`
 
 | Ação | Quem | Detalhe |
 |------|------|---------|
-| Listar widgets APS/A | JWT | Tabela ordenada por `ordem` |
-| Criar/editar/inativar | Planning staff | `WidgetEditDrawer` + picker métricas (`fetchPainelMetricas`) |
-| Pré-visualizar | Planning staff | Teste no drawer (competência/unidade) + `WidgetPreviewModal`; SQL override opcional |
+| Listar widgets por perfil/layout | JWT | Seletores Perfil (APS/MAC/Hospitalar) + Layout (A/B/C); tabela ordenada por `ordem` |
+| Criar/editar/inativar | Planning staff | `WidgetEditDrawer` + picker métricas (`fetchPainelMetricas`); campo **Agregação por período** (`ultimo_mes`/`soma`/`media`) |
+| Pré-visualizar | Planning staff | Teste no drawer (grão+período/unidade via `PeriodoSelect`) + `WidgetPreviewModal`; SQL override opcional |
 | Atualizar catálogo | Planning staff | `discoverPainelMetricas()` → toast inserted/updated |
 
 **Manual campo a campo (função + impacto no Painel):** [manual-editar-widget-painel.md](manual-editar-widget-painel.md).
