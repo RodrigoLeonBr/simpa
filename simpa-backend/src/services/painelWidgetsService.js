@@ -1,5 +1,8 @@
 const { pool, query } = require('./db');
 const { executeMetric, executeSqlTemplate } = require('./painelMetricsService');
+const { resolvePeriodo, getPreviousPeriodo } = require('./periodo');
+
+const AGREGACOES_PERIODO = ['ultimo_mes', 'soma', 'media'];
 
 const MUTABLE_FIELDS = [
   'slug',
@@ -18,6 +21,7 @@ const MUTABLE_FIELDS = [
   'sql_override',
   'spark_sql_override',
   'delta_config',
+  'agregacao_periodo',
   'status',
 ];
 
@@ -126,6 +130,23 @@ function normalizeSqlOverrideField(value) {
   return trimmed || null;
 }
 
+function normalizeAgregacaoPeriodo(value, { required = false } = {}) {
+  if (value === undefined) {
+    return required ? 'ultimo_mes' : undefined;
+  }
+  if (value === null || value === '') {
+    return 'ultimo_mes';
+  }
+  if (!AGREGACOES_PERIODO.includes(value)) {
+    throw createHttpError(
+      `agregacao_periodo inválido — use ${AGREGACOES_PERIODO.join(', ')}`,
+      400,
+      'VALIDATION_ERROR'
+    );
+  }
+  return value;
+}
+
 function normalizeCreatePayload(body = {}) {
   const payload = {};
   for (const field of MUTABLE_FIELDS) {
@@ -151,6 +172,7 @@ function normalizeCreatePayload(body = {}) {
   payload.delta_config = ensureJsonObjectOrNull(payload.delta_config, 'delta_config');
   payload.sql_override = normalizeSqlOverrideField(payload.sql_override);
   payload.spark_sql_override = normalizeSqlOverrideField(payload.spark_sql_override);
+  payload.agregacao_periodo = normalizeAgregacaoPeriodo(payload.agregacao_periodo, { required: true });
   payload.status = payload.status || 'ativo';
 
   return payload;
@@ -192,6 +214,9 @@ function normalizeUpdatePayload(body = {}) {
   }
   if (Object.prototype.hasOwnProperty.call(payload, 'spark_sql_override')) {
     payload.spark_sql_override = normalizeSqlOverrideField(payload.spark_sql_override);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'agregacao_periodo')) {
+    payload.agregacao_periodo = normalizeAgregacaoPeriodo(payload.agregacao_periodo);
   }
 
   return payload;
@@ -308,11 +333,51 @@ async function resolveMetricValue(
 }
 
 function buildScope(scope = {}) {
+  const periodoStr = scope.periodo || scope.competencia;
+  let periodo;
+  try {
+    periodo = resolvePeriodo(periodoStr);
+  } catch (err) {
+    throw createHttpError(err.message, 400, 'VALIDATION_ERROR');
+  }
+
   return {
-    competencia: scope.competencia,
+    periodo: String(periodoStr),
+    competencia: periodo.competencia,
+    competenciaInicio: periodo.inicio,
+    competenciaFim: periodo.fim,
+    meses: periodo.meses,
     estabelecimentoId: scope.estabelecimentoId ?? null,
     equipeId: scope.equipeId ?? null,
   };
+}
+
+// Roda a métrica respeitando agregacao_periodo do widget.
+// media → média mês a mês (indicadores/taxas). soma/ultimo_mes → 1 query
+// (o SQL decide via :competencia ou :competencia_inicio/:competencia_fim).
+async function resolveMetricValueForWidget(widget, scope, opts = {}) {
+  if (
+    widget.agregacao_periodo === 'media' &&
+    Array.isArray(scope.meses) &&
+    scope.meses.length > 1
+  ) {
+    const singles = [];
+    let lastRows = [];
+    for (const mes of scope.meses) {
+      const mesScope = { ...scope, competencia: mes, competenciaInicio: mes, competenciaFim: mes };
+      const result = await resolveMetricValue(widget.metrica_id, mesScope, opts);
+      if (result.single != null) {
+        singles.push(result.single);
+      }
+      lastRows = result.rows;
+    }
+    const single = singles.length
+      ? singles.reduce((acc, value) => acc + value, 0) / singles.length
+      : null;
+    return { rows: lastRows, single };
+  }
+
+  return resolveMetricValue(widget.metrica_id, scope, opts);
 }
 
 async function resolveDelta(widget, scope, currentValue) {
@@ -332,12 +397,18 @@ async function resolveDelta(widget, scope, currentValue) {
     return undefined;
   }
 
+  const prevStr = getPreviousPeriodo(scope.periodo || scope.competencia);
+  const prev = resolvePeriodo(prevStr);
   const previousScope = {
     ...scope,
-    competencia: getPreviousCompetencia(scope.competencia),
+    periodo: prevStr,
+    competencia: prev.competencia,
+    competenciaInicio: prev.inicio,
+    competenciaFim: prev.fim,
+    meses: prev.meses,
   };
   const fallbackChave = widget.fonte_config?.fallback_chave;
-  const previousResult = await resolveMetricValue(widget.metrica_id, previousScope, {
+  const previousResult = await resolveMetricValueForWidget(widget, previousScope, {
     fallbackChave,
     sqlOverride: widget.sql_override,
   });
@@ -374,7 +445,7 @@ async function resolveSparkSeries(widget, scope) {
 
 async function resolveCardWidget(widget, scope) {
   const fallbackChave = widget.fonte_config?.fallback_chave;
-  const metricResult = await resolveMetricValue(widget.metrica_id, scope, {
+  const metricResult = await resolveMetricValueForWidget(widget, scope, {
     fallbackChave,
     sqlOverride: widget.sql_override,
   });
@@ -568,12 +639,14 @@ async function createWidget(body) {
     `INSERT INTO painel_widgets (
        slug, perfil, layout, ordem, tipo, titulo, subtitulo, formato,
        metrica_id, fonte_config, spark_metrica_id, spark_config,
-       sql_preview, sql_override, spark_sql_override, delta_config, status,
+       sql_preview, sql_override, spark_sql_override, delta_config,
+       agregacao_periodo, status,
        atualizado_em
      ) VALUES (
        $1, $2, $3, $4, $5, $6, $7, $8,
        $9, $10::jsonb, $11, $12::jsonb,
-       $13, $14, $15, $16::jsonb, $17,
+       $13, $14, $15, $16::jsonb,
+       $17, $18,
        now()
      )
      RETURNING id`,
@@ -594,6 +667,7 @@ async function createWidget(body) {
       payload.sql_override ?? null,
       payload.spark_sql_override ?? null,
       payload.delta_config == null ? null : JSON.stringify(payload.delta_config),
+      payload.agregacao_periodo ?? 'ultimo_mes',
       payload.status,
     ]
   );
@@ -754,6 +828,7 @@ function normalizePreviewDraft(widget = {}) {
     sql_override: widget.sql_override ?? null,
     spark_sql_override: widget.spark_sql_override ?? null,
     delta_config: ensureJsonObjectOrNull(widget.delta_config, 'delta_config'),
+    agregacao_periodo: normalizeAgregacaoPeriodo(widget.agregacao_periodo, { required: true }),
   };
 
   return draft;
@@ -763,11 +838,12 @@ async function resolvePainelLayout({
   perfil = 'APS',
   layout = 'A',
   competencia,
+  periodo,
   estabelecimentoId = null,
   equipeId = null,
 }) {
   const startedAt = Date.now();
-  const scope = buildScope({ competencia, estabelecimentoId, equipeId });
+  const scope = buildScope({ competencia, periodo, estabelecimentoId, equipeId });
   const widgets = await listWidgets({ perfil, layout, includeInactive: false });
 
   if (!widgets.length) {
@@ -784,7 +860,8 @@ async function resolvePainelLayout({
       event: 'painel.layout.resolve',
       perfil,
       layout,
-      competencia,
+      periodo: scope.periodo,
+      competencia: scope.competencia,
       widgetCount: resolved.length,
       durationMs: Date.now() - startedAt,
     })
@@ -793,7 +870,8 @@ async function resolvePainelLayout({
   return {
     perfil,
     layout,
-    competencia,
+    periodo: scope.periodo,
+    competencia: scope.competencia,
     widgets: resolved,
   };
 }

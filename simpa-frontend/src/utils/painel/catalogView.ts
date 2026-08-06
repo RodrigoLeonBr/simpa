@@ -13,7 +13,7 @@ export const PAINEL_KPI_CATALOGS: Record<
 > = {
   APS: { A: 'ready', B: 'ready', C: 'ready' },
   MAC: { A: 'ready', B: 'pending', C: 'pending' },
-  Hospitalar: { A: 'ready', B: 'pending', C: 'pending' },
+  Hospitalar: { A: 'ready', B: 'ready', C: 'pending' },
   Misto: { A: 'pending', B: 'pending', C: 'pending' },
 };
 
@@ -52,6 +52,10 @@ export function needsConsolidatedDashboard(
     return false;
   }
   if (layout === 'A' && isDynamicPainelPerfil(perfil)) {
+    return false;
+  }
+  // dados_consolidados só existe p/ APS. MAC/Hospitalar usam painel-layout (widgets) em qualquer layout.
+  if (perfil !== 'APS' && isDynamicPainelPerfil(perfil)) {
     return false;
   }
   return true;

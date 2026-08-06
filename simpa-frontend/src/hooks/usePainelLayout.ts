@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchPainelLayout } from '../api/painelWidgets';
 import type { PainelLayoutResponse } from '../types/painelWidgets';
 import { isDynamicPainelPerfil } from '../utils/painel/catalogView';
+import type { PainelLayout } from '../utils/painel/types';
 import { useFilters } from './useFilters';
 import { buildDashboardFilters } from './useDashboard';
 
@@ -15,8 +16,8 @@ function toFriendlyError(message: string): string {
   return 'Falha ao carregar layout dinâmico do painel';
 }
 
-export function usePainelLayout(layoutId: 'A' = 'A') {
-  const { competencia, unidadeId, equipeId, painelPerfil } = useFilters();
+export function usePainelLayout(layoutId: PainelLayout = 'A') {
+  const { periodo, unidadeId, equipeId, painelPerfil } = useFilters();
   const [layout, setLayout] = useState<PainelLayoutResponse | null>(null);
   const dynamicPerfil = isDynamicPainelPerfil(painelPerfil);
   const [loading, setLoading] = useState<boolean>(dynamicPerfil);
@@ -24,8 +25,8 @@ export function usePainelLayout(layoutId: 'A' = 'A') {
   const [reloadTick, setReloadTick] = useState(0);
 
   const filterKey = useMemo(
-    () => `${layoutId}:${painelPerfil}:${competencia}:${unidadeId ?? 'all'}:${equipeId ?? 'all'}`,
-    [layoutId, painelPerfil, competencia, unidadeId, equipeId]
+    () => `${layoutId}:${painelPerfil}:${periodo}:${unidadeId ?? 'all'}:${equipeId ?? 'all'}`,
+    [layoutId, painelPerfil, periodo, unidadeId, equipeId]
   );
 
   const refetch = useCallback(() => {
@@ -51,7 +52,7 @@ export function usePainelLayout(layoutId: 'A' = 'A') {
       try {
         const idFilters = buildDashboardFilters(unidadeId, equipeId);
         const payload = await fetchPainelLayout({
-          competencia,
+          periodo,
           perfil: painelPerfil,
           layout: layoutId,
           estabelecimentoId: idFilters?.estabelecimentoId,
@@ -79,7 +80,7 @@ export function usePainelLayout(layoutId: 'A' = 'A') {
     return () => {
       cancelled = true;
     };
-  }, [filterKey, reloadTick, competencia, unidadeId, equipeId, painelPerfil, layoutId, dynamicPerfil]);
+  }, [filterKey, reloadTick, periodo, unidadeId, equipeId, painelPerfil, layoutId, dynamicPerfil]);
 
   return { layout, loading, error, refetch };
 }

@@ -1,7 +1,13 @@
 const { query } = require('./db');
 
 const COMPETENCIA_RE = /^(\d{4})-(\d{2})$/;
-const PLACEHOLDER_ORDER = ['competencia', 'estabelecimento_id', 'equipe_id'];
+const PLACEHOLDER_ORDER = [
+  'competencia',
+  'competencia_inicio',
+  'competencia_fim',
+  'estabelecimento_id',
+  'equipe_id',
+];
 const PLACEHOLDER_INDEX = PLACEHOLDER_ORDER.reduce((acc, key, idx) => {
   acc[key] = idx + 1;
   return acc;
@@ -88,6 +94,8 @@ function bindTemplate(sql, scope) {
 
   const scopeValues = {
     competencia: parseCompetencia(scope?.competencia),
+    competencia_inicio: parseCompetencia(scope?.competenciaInicio ?? scope?.competencia),
+    competencia_fim: parseCompetencia(scope?.competenciaFim ?? scope?.competencia),
     estabelecimento_id: parseOptionalBigInt(scope?.estabelecimentoId, 'estabelecimento_id'),
     equipe_id: parseOptionalBigInt(scope?.equipeId, 'equipe_id'),
   };

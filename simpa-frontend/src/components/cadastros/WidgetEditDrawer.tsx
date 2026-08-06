@@ -11,11 +11,13 @@ import {
   type PainelWidgetLayout,
   type PainelWidgetPerfil,
   formatPainelWidgetLayoutLabel,
+  WIDGET_AGREGACAO_PERIODO_OPTIONS,
   WIDGET_FIELDS,
   WIDGET_FORMATO_SELECT_OPTIONS,
   WIDGET_TIPO_SELECT_OPTIONS,
   widgetRowToFormValues,
 } from '../../utils/indicadoresPainelView';
+import { PeriodoSelect } from '../shared/PeriodoSelect';
 import { PAINEL_SQL_EXAMPLE_GROUPS, type PainelSqlExample } from '../../utils/painelWidgetSqlExamples';
 import { validateCadastroForm } from '../../utils/cadastroView';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -42,6 +44,7 @@ function buildSelectOptions(metrics: PainelMetricaCatalogo[]) {
   return {
     tipo: WIDGET_TIPO_SELECT_OPTIONS,
     formato: WIDGET_FORMATO_SELECT_OPTIONS,
+    agregacao_periodo: WIDGET_AGREGACAO_PERIODO_OPTIONS,
     metrica_id: metrics.map((metric) => ({
       value: String(metric.id),
       label: `${metric.label} (${metric.chave})`,
@@ -169,7 +172,7 @@ export function WidgetEditDrawer({
   const [sqlMain, setSqlMain] = useState('');
   const [sqlSpark, setSqlSpark] = useState('');
   const [activeExampleId, setActiveExampleId] = useState(PAINEL_SQL_EXAMPLE_GROUPS[0]?.id ?? 'contrato');
-  const [competencia, setCompetencia] = useState(DEFAULT_COMPETENCIAS[0] ?? '2026-05');
+  const [periodo, setPeriodo] = useState(DEFAULT_COMPETENCIAS[0] ?? '2026-05');
   const [estabelecimentoId, setEstabelecimentoId] = useState('');
   const [estabelecimentos, setEstabelecimentos] = useState<Estabelecimento[]>([]);
   const [previewBusy, setPreviewBusy] = useState(false);
@@ -183,7 +186,7 @@ export function WidgetEditDrawer({
     setMetricQuery('');
     setPreviewResult(null);
     setPreviewBusy(false);
-    setCompetencia(DEFAULT_COMPETENCIAS[0] ?? '2026-05');
+    setPeriodo(DEFAULT_COMPETENCIAS[0] ?? '2026-05');
     setEstabelecimentoId('');
 
     let mainMetric: PainelMetricaCatalogo | null = row?.metrica ?? null;
@@ -351,7 +354,7 @@ export function WidgetEditDrawer({
       const result = await previewPainelWidget({
         widget: draft,
         scope: {
-          competencia,
+          periodo,
           estabelecimentoId: estabelecimentoId ? Number(estabelecimentoId) : undefined,
         },
       });
@@ -411,7 +414,8 @@ export function WidgetEditDrawer({
               <h3 id="widget-edit-title">{title}</h3>
               <p className="widget-edit-subtitle">
                 Perfil {perfil} · {formatPainelWidgetLayoutLabel(layout)} · SQL customizado ·
-                placeholders <code>:competencia</code>, <code>:estabelecimento_id</code>,{' '}
+                placeholders <code>:competencia</code>, <code>:competencia_inicio</code>,{' '}
+                <code>:competencia_fim</code>, <code>:estabelecimento_id</code>,{' '}
                 <code>:equipe_id</code>
               </p>
             </div>
@@ -427,7 +431,9 @@ export function WidgetEditDrawer({
                   <h4>Identidade do widget</h4>
                   <div className="widget-edit-meta-grid">
                     {WIDGET_FIELDS.filter((field) =>
-                      ['slug', 'titulo', 'subtitulo', 'tipo', 'formato'].includes(field.key),
+                      ['slug', 'titulo', 'subtitulo', 'tipo', 'formato', 'agregacao_periodo'].includes(
+                        field.key,
+                      ),
                     ).map((field) => {
                       const error = errors[field.key];
                       const options = selectOptions[field.key as keyof typeof selectOptions] ?? [];
@@ -560,21 +566,12 @@ export function WidgetEditDrawer({
                 <section className="widget-edit-section widget-edit-preview">
                   <h4>Testar execução</h4>
                   <div className="widget-edit-preview-controls">
-                    <label className="cadastro-field">
-                      <span>Competência</span>
-                      <select
-                        className="mono"
-                        value={competencia}
-                        onChange={(event) => setCompetencia(event.target.value)}
-                        data-testid="widget-edit-competencia"
-                      >
-                        {DEFAULT_COMPETENCIAS.map((item) => (
-                          <option key={item} value={item}>
-                            {item}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <PeriodoSelect
+                      periodo={periodo}
+                      competencias={DEFAULT_COMPETENCIAS}
+                      onChange={setPeriodo}
+                      testIdPrefix="widget-edit"
+                    />
                     <label className="cadastro-field">
                       <span>Estabelecimento</span>
                       <select

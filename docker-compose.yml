@@ -38,6 +38,7 @@ services:
       - ./migration_028_esus_producao_view.sql:/docker-entrypoint-initdb.d/28-migration_028_esus_producao_view.sql:ro
       - ./migration_029_esus_sigtap_blocos.sql:/docker-entrypoint-initdb.d/29-migration_029_esus_sigtap_blocos.sql:ro
       - ./migration_030_widgets_consultas_aps.sql:/docker-entrypoint-initdb.d/30-migration_030_widgets_consultas_aps.sql:ro
+      - ./migration_031_widget_agregacao_periodo.sql:/docker-entrypoint-initdb.d/31-migration_031_widget_agregacao_periodo.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

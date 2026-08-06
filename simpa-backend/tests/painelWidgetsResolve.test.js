@@ -94,11 +94,11 @@ describe('painelWidgetsService resolve/preview', () => {
     });
 
     expect(query.mock.calls[1][0]).toContain('FROM painel_metricas_catalogo');
-    expect(executeMetric).toHaveBeenNthCalledWith(2, 20, {
-      competencia: '2026-05',
-      estabelecimentoId: null,
-      equipeId: null,
-    });
+    expect(executeMetric).toHaveBeenNthCalledWith(
+      2,
+      20,
+      expect.objectContaining({ competencia: '2026-05', estabelecimentoId: null, equipeId: null })
+    );
     expect(result.widgets[0].value).toBe(77);
   });
 
@@ -163,16 +163,96 @@ describe('painelWidgetsService resolve/preview', () => {
       competencia: '2026-05',
     });
 
-    expect(executeMetric).toHaveBeenNthCalledWith(1, 10, {
-      competencia: '2026-05',
-      estabelecimentoId: null,
-      equipeId: null,
+    expect(executeMetric).toHaveBeenNthCalledWith(
+      1,
+      10,
+      expect.objectContaining({ competencia: '2026-05', estabelecimentoId: null, equipeId: null })
+    );
+    expect(executeMetric).toHaveBeenNthCalledWith(
+      2,
+      10,
+      expect.objectContaining({ competencia: '2026-04', estabelecimentoId: null, equipeId: null })
+    );
+  });
+
+  it('agregacao_periodo media roda métrica mês a mês e tira média', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          slug: 'taxa',
+          ordem: 1,
+          tipo: 'card',
+          titulo: 'Taxa',
+          formato: 'numero',
+          metrica_id: 10,
+          fonte_config: {},
+          spark_metrica_id: null,
+          delta_config: null,
+          agregacao_periodo: 'media',
+        },
+      ],
     });
-    expect(executeMetric).toHaveBeenNthCalledWith(2, 10, {
-      competencia: '2026-04',
-      estabelecimentoId: null,
-      equipeId: null,
+    executeMetric
+      .mockResolvedValueOnce({ rows: [{ valor: 10 }], single: 10 })
+      .mockResolvedValueOnce({ rows: [{ valor: 20 }], single: 20 })
+      .mockResolvedValueOnce({ rows: [{ valor: 30 }], single: 30 });
+
+    const result = await resolvePainelLayout({
+      perfil: 'Hospitalar',
+      layout: 'B',
+      periodo: '2026-T1',
     });
+
+    expect(executeMetric).toHaveBeenCalledTimes(3);
+    expect(executeMetric).toHaveBeenNthCalledWith(1, 10, expect.objectContaining({ competencia: '2026-01' }));
+    expect(executeMetric).toHaveBeenNthCalledWith(3, 10, expect.objectContaining({ competencia: '2026-03' }));
+    expect(result.widgets[0].value).toBe(20);
+    expect(result.periodo).toBe('2026-T1');
+    expect(result.competencia).toBe('2026-03');
+  });
+
+  it('grafico_linha sob período expõe intervalo (inicio/fim) ao SQL', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 5,
+          slug: 'serie',
+          ordem: 1,
+          tipo: 'grafico_linha',
+          titulo: 'Série',
+          formato: 'numero',
+          metrica_id: 55,
+          fonte_config: {},
+          spark_metrica_id: null,
+          delta_config: null,
+        },
+      ],
+    });
+    executeMetric.mockResolvedValueOnce({
+      rows: [
+        { competencia: '2026-01', valor: 10 },
+        { competencia: '2026-02', valor: 20 },
+        { competencia: '2026-03', valor: 30 },
+      ],
+      single: null,
+    });
+
+    const result = await resolvePainelLayout({
+      perfil: 'Hospitalar',
+      layout: 'B',
+      periodo: '2026-T1',
+    });
+
+    expect(executeMetric).toHaveBeenCalledWith(
+      55,
+      expect.objectContaining({
+        competencia: '2026-03',
+        competenciaInicio: '2026-01',
+        competenciaFim: '2026-03',
+      })
+    );
+    expect(result.widgets[0].series).toHaveLength(3);
   });
 
   it('ranking com estabelecimentoId retorna no máximo uma linha', async () => {

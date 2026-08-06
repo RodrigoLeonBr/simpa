@@ -116,6 +116,24 @@
   margin-bottom: 14px;
 }
 
+/* Foco (Layout B) dinâmico: nº de colunas ajusta à largura da tela. */
+.foco-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.foco-linha {
+  margin-top: 14px;
+}
+
+.foco-rankings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
 .kpi-card {
   background: var(--bg-card);
   border: 1px solid var(--border);

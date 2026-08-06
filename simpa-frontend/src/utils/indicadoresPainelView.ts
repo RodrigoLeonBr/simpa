@@ -21,6 +21,7 @@ export const WIDGET_FIELDS: CadastroFieldDef[] = [
   { key: 'formato', label: 'Formato', required: true, type: 'select' },
   { key: 'metrica_id', label: 'Métrica principal', required: true, type: 'select' },
   { key: 'spark_metrica_id', label: 'Métrica sparkline (opcional)', type: 'select' },
+  { key: 'agregacao_periodo', label: 'Agregação por período', required: true, type: 'select' },
 ];
 
 export const WIDGET_TIPO_SELECT_OPTIONS = [
@@ -38,6 +39,13 @@ export const WIDGET_FORMATO_SELECT_OPTIONS = [
   { value: 'fracao', label: 'Fração' },
 ];
 
+// Como o widget colapsa um período multi-mês (trimestre/quadri/ano).
+export const WIDGET_AGREGACAO_PERIODO_OPTIONS = [
+  { value: 'ultimo_mes', label: 'Último mês (snapshot)' },
+  { value: 'soma', label: 'Soma (BETWEEN início/fim)' },
+  { value: 'media', label: 'Média mês a mês' },
+];
+
 export function widgetRowToFormValues(row?: PainelWidgetConfig | null): Record<string, string> {
   if (!row) {
     return {
@@ -48,6 +56,7 @@ export function widgetRowToFormValues(row?: PainelWidgetConfig | null): Record<s
       formato: 'numero',
       metrica_id: '',
       spark_metrica_id: '',
+      agregacao_periodo: 'ultimo_mes',
     };
   }
 
@@ -59,6 +68,7 @@ export function widgetRowToFormValues(row?: PainelWidgetConfig | null): Record<s
     formato: row.formato,
     metrica_id: row.metrica_id ? String(row.metrica_id) : '',
     spark_metrica_id: row.spark_metrica_id ? String(row.spark_metrica_id) : '',
+    agregacao_periodo: row.agregacao_periodo ?? 'ultimo_mes',
   };
 }
 
@@ -91,6 +101,8 @@ export function mapWidgetFormPayload(
     formato: values.formato as PainelWidgetConfig['formato'],
     metrica_id: values.metrica_id ? Number(values.metrica_id) : null,
     spark_metrica_id: values.spark_metrica_id ? Number(values.spark_metrica_id) : null,
+    agregacao_periodo:
+      (values.agregacao_periodo as PainelWidgetConfig['agregacao_periodo']) || 'ultimo_mes',
     perfil,
     layout,
   };

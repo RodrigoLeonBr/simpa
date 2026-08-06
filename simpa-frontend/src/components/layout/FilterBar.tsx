@@ -6,15 +6,16 @@ import {
   buildEstabelecimentosPerfilQuery,
 } from '../../utils/estabelecimentosView';
 import { useFilters } from '../../hooks/useFilters';
+import { PeriodoSelect } from '../shared/PeriodoSelect';
 
 export function FilterBar() {
   const {
-    competencia,
+    periodo,
     unidadeId,
     equipeId,
     painelPerfil,
     competencias,
-    setCompetencia,
+    setPeriodo,
     setUnidadeId,
     setEquipeId,
   } = useFilters();
@@ -64,21 +65,14 @@ export function FilterBar() {
 
   return (
     <div className="filter-bar" data-testid="filter-bar">
-      <label className="filter-field">
-        <span className="filter-label">Competência</span>
-        <select
-          className="filter-select mono"
-          value={competencia}
-          onChange={(event) => setCompetencia(event.target.value)}
-          data-testid="filter-competencia"
-        >
-          {competencias.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-      </label>
+      <PeriodoSelect
+        periodo={periodo}
+        competencias={competencias}
+        onChange={setPeriodo}
+        testIdPrefix="filter"
+        labelGrao="Grão"
+        labelPeriodo="Competência"
+      />
 
       <label className="filter-field">
         <span className="filter-label">Unidade</span>

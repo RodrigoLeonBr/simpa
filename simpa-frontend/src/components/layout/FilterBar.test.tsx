@@ -161,4 +161,16 @@ describe('FilterBar', () => {
     await userEvent.selectOptions(competenciaSelect, '2026-04');
     expect(competenciaSelect).toHaveValue('2026-04');
   });
+
+  it('trocar grão para Trimestre muda o período para valor de trimestre', async () => {
+    render(
+      <FiltersProvider>
+        <FilterBar />
+      </FiltersProvider>,
+    );
+
+    await userEvent.selectOptions(screen.getByTestId('filter-grao'), 'trimestre');
+    // opcoes[0] = trimestre mais recente do ano mais recente
+    expect(screen.getByTestId('filter-valor')).toHaveValue('2026-T4');
+  });
 });

@@ -6,6 +6,7 @@ import type { Estabelecimento } from '../../types/cadastros';
 import type { PainelWidgetConfig, ResolvedPainelWidget } from '../../types/painelWidgets';
 import { activeEstabelecimentos } from '../../utils/estabelecimentosView';
 import { ModalPortal } from './ModalPortal';
+import { PeriodoSelect } from '../shared/PeriodoSelect';
 import { WidgetPreviewResult } from './WidgetPreviewResult';
 
 interface WidgetPreviewModalProps {
@@ -16,7 +17,7 @@ interface WidgetPreviewModalProps {
 }
 
 export function WidgetPreviewModal({ open, widget, onClose, onError }: WidgetPreviewModalProps) {
-  const [competencia, setCompetencia] = useState(DEFAULT_COMPETENCIAS[0] ?? '2026-05');
+  const [periodo, setPeriodo] = useState(DEFAULT_COMPETENCIAS[0] ?? '2026-05');
   const [estabelecimentoId, setEstabelecimentoId] = useState('');
   const [estabelecimentos, setEstabelecimentos] = useState<Estabelecimento[]>([]);
   const [estabelecimentosBusy, setEstabelecimentosBusy] = useState(false);
@@ -25,7 +26,7 @@ export function WidgetPreviewModal({ open, widget, onClose, onError }: WidgetPre
 
   useEffect(() => {
     if (!open) return;
-    setCompetencia(DEFAULT_COMPETENCIAS[0] ?? '2026-05');
+    setPeriodo(DEFAULT_COMPETENCIAS[0] ?? '2026-05');
     setEstabelecimentoId('');
     setPreviewResult(null);
     setPreviewBusy(false);
@@ -71,7 +72,7 @@ export function WidgetPreviewModal({ open, widget, onClose, onError }: WidgetPre
       const result = await previewPainelWidget({
         widgetId: widget.id,
         scope: {
-          competencia,
+          periodo,
           estabelecimentoId: estabelecimentoId ? Number(estabelecimentoId) : undefined,
         },
       });
@@ -110,21 +111,12 @@ export function WidgetPreviewModal({ open, widget, onClose, onError }: WidgetPre
               {widget.titulo} · {widget.metrica?.label ?? 'Sem métrica'}
             </p>
 
-            <label className="cadastro-field">
-              <span>Competência</span>
-              <select
-                className="mono"
-                value={competencia}
-                onChange={(event) => setCompetencia(event.target.value)}
-                data-testid="preview-competencia"
-              >
-                {DEFAULT_COMPETENCIAS.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <PeriodoSelect
+              periodo={periodo}
+              competencias={DEFAULT_COMPETENCIAS}
+              onChange={setPeriodo}
+              testIdPrefix="preview"
+            />
 
             <label className="cadastro-field">
               <span>Estabelecimento (opcional)</span>

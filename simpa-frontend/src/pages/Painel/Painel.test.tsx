@@ -56,6 +56,7 @@ vi.mock('../../hooks/usePainelLayout', () => ({
 }));
 
 import { useDashboard } from '../../hooks/useDashboard';
+import { usePainelLayout } from '../../hooks/usePainelLayout';
 
 function renderPainel() {
   return render(
@@ -137,6 +138,13 @@ describe('Painel page', () => {
   });
 
   it('layout switcher changes visible panel under APS', async () => {
+    // APS sem widgets dinâmicos → Layout B usa fallback consolidado (hero "Atendimentos individuais").
+    vi.mocked(usePainelLayout).mockReturnValue({
+      layout: { perfil: 'APS', layout: 'B', competencia: '2026-05', widgets: [] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     const user = userEvent.setup();
     renderPainel();
 

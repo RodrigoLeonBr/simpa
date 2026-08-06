@@ -3,10 +3,10 @@ import {
   buildPainelKpis,
   buildRanking,
   buildTrendSeries,
-  type RankingRow,
 } from '../../utils/dashboardView';
 import { EChart, trendOption } from '../../components/charts/LazyEChart';
 import { KpiCard } from '../../components/painel/KpiCard';
+import { RankingBar } from '../../components/painel/RankingBar';
 import { useFilters } from '../../hooks/useFilters';
 import { usePainelLayout } from '../../hooks/usePainelLayout';
 import {
@@ -87,20 +87,6 @@ export function LayoutA({ data, unidades }: LayoutAProps) {
             ))}
           </div>
         </section>
-      </div>
-    </div>
-  );
-}
-
-function RankingBar({ row }: { row: RankingRow }) {
-  return (
-    <div className="ranking-row">
-      <div className="ranking-row-head">
-        <span>{row.nome}</span>
-        <span className="mono">{row.valueLabel}</span>
-      </div>
-      <div className="ranking-track">
-        <div className="ranking-fill" style={{ width: `${row.widthPct}%`, background: row.color }} />
       </div>
     </div>
   );

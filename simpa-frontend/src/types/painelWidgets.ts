@@ -13,6 +13,8 @@ export type PainelWidgetFormato =
   | 'texto'
   | 'fracao';
 
+export type PainelWidgetAgregacaoPeriodo = 'ultimo_mes' | 'soma' | 'media';
+
 export interface PainelMetricaCatalogo {
   id: number;
   chave: string;
@@ -45,6 +47,7 @@ export interface PainelWidgetConfig {
   sql_override: string | null;
   spark_sql_override: string | null;
   delta_config: Record<string, unknown> | null;
+  agregacao_periodo: PainelWidgetAgregacaoPeriodo;
   status: string;
 }
 
@@ -73,11 +76,13 @@ export interface PainelLayoutResponse {
   perfil: string;
   layout: string;
   competencia: string;
+  periodo?: string;
   widgets: ResolvedPainelWidget[];
 }
 
 export interface FetchPainelLayoutParams {
-  competencia: string;
+  competencia?: string;
+  periodo?: string;
   perfil?: string;
   layout?: string;
   estabelecimentoId?: number;
@@ -100,7 +105,8 @@ export interface PreviewPainelWidgetParams {
   widgetId?: number;
   widget?: Partial<PainelWidgetConfig>;
   scope?: {
-    competencia: string;
+    competencia?: string;
+    periodo?: string;
     estabelecimentoId?: number;
     equipeId?: number;
   };

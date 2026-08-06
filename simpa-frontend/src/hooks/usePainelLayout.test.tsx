@@ -70,7 +70,7 @@ describe('usePainelLayout', () => {
     });
 
     expect(fetchPainelLayout).toHaveBeenLastCalledWith(
-      expect.objectContaining({ competencia: '2026-04' })
+      expect.objectContaining({ periodo: '2026-04' })
     );
   });
 

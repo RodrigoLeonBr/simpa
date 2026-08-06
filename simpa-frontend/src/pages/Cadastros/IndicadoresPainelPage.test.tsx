@@ -410,7 +410,7 @@ describe('IndicadoresPainelPage', () => {
               titulo: 'Título em rascunho',
               metrica_id: 1,
             }),
-            scope: expect.objectContaining({ competencia: '2026-05' }),
+            scope: expect.objectContaining({ periodo: '2026-05' }),
           }),
         );
         const arg = vi.mocked(previewPainelWidget).mock.calls[0][0] as {
@@ -526,14 +526,14 @@ describe('IndicadoresPainelPage', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: 'Pré-visualizar' })).toBeInTheDocument());
       fireEvent.click(screen.getByRole('button', { name: 'Pré-visualizar' }));
 
-      const competenciaSelect = await screen.findByTestId('preview-competencia');
+      const competenciaSelect = await screen.findByTestId('preview-valor');
       fireEvent.change(competenciaSelect, { target: { value: '2026-05' } });
       fireEvent.click(screen.getByTestId('preview-run-button'));
 
       await waitFor(() => {
         expect(previewPainelWidget).toHaveBeenCalledWith({
           widgetId: 1,
-          scope: { competencia: '2026-05', estabelecimentoId: undefined },
+          scope: { periodo: '2026-05', estabelecimentoId: undefined },
         });
         expect(screen.getByTestId('preview-value')).toHaveTextContent('120');
         expect(screen.getByTestId('preview-delta')).toHaveTextContent('+5 vs mês anterior');
@@ -688,7 +688,7 @@ describe('IndicadoresPainelPage', () => {
       await waitFor(() => {
         expect(previewPainelWidget).toHaveBeenCalledWith({
           widgetId: 1,
-          scope: { competencia: '2026-05', estabelecimentoId: 42 },
+          scope: { periodo: '2026-05', estabelecimentoId: 42 },
         });
       });
     });

@@ -35,13 +35,16 @@ router.get('/painel-layout', async (req, res, next) => {
   try {
     const {
       competencia,
+      periodo,
       perfil = 'APS',
       layout = 'A',
       estabelecimento_id,
       equipe_id,
     } = req.query;
 
-    if (!competencia || !COMPETENCIA_RE.test(String(competencia))) {
+    // periodo (trimestre/quadri/ano) tem precedência; validação de formato em resolvePeriodo.
+    // Sem periodo, mantém contrato antigo: competencia YYYY-MM obrigatória.
+    if (!periodo && (!competencia || !COMPETENCIA_RE.test(String(competencia)))) {
       return res.status(400).json({
         error: 'competencia inválida — use YYYY-MM',
       });
@@ -63,7 +66,8 @@ router.get('/painel-layout', async (req, res, next) => {
     }
 
     const result = await resolvePainelLayout({
-      competencia: String(competencia),
+      competencia: competencia != null ? String(competencia) : undefined,
+      periodo: periodo != null ? String(periodo) : undefined,
       perfil: String(perfil),
       layout: String(layout),
       estabelecimentoId,

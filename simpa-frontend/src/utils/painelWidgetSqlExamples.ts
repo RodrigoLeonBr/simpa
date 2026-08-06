@@ -60,6 +60,63 @@ LIMIT 12`,
     ],
   },
   {
+    id: 'periodo',
+    label: 'Período (trimestre/quadri/ano)',
+    examples: [
+      {
+        id: 'periodo-soma',
+        title: 'Card soma no intervalo (agregação = soma)',
+        hint: 'Some a produção de todos os meses do período. Selecione "Soma" em Agregação por período.',
+        target: 'main',
+        sql: `SELECT COALESCE(SUM(sp.valor_aprovado), 0) AS valor
+FROM sia_producao sp
+WHERE sp.competencia BETWEEN :competencia_inicio::date AND :competencia_fim::date
+  AND (:estabelecimento_id::bigint IS NULL
+       OR sp.estabelecimento_id = :estabelecimento_id::bigint)`,
+      },
+      {
+        id: 'periodo-ultimo-mes',
+        title: 'Card snapshot (agregação = último mês)',
+        hint: 'Valor cumulativo do mês final do período (ex.: leitos, cadastros ativos). Use :competencia.',
+        target: 'main',
+        sql: `SELECT COALESCE(SUM(sp.quantidade), 0)::bigint AS valor
+FROM sia_producao sp
+WHERE sp.competencia = :competencia::date
+  AND (:estabelecimento_id::bigint IS NULL
+       OR sp.estabelecimento_id = :estabelecimento_id::bigint)`,
+      },
+      {
+        id: 'periodo-linha',
+        title: 'Gráfico linha — todos os meses do período',
+        hint: 'grafico_linha: uma linha por competência no intervalo. BETWEEN + GROUP BY.',
+        target: 'main',
+        sql: `SELECT to_char(sp.competencia, 'YYYY-MM') AS competencia,
+       COALESCE(SUM(sp.valor_aprovado), 0) AS valor
+FROM sia_producao sp
+WHERE sp.competencia BETWEEN :competencia_inicio::date AND :competencia_fim::date
+  AND (:estabelecimento_id::bigint IS NULL
+       OR sp.estabelecimento_id = :estabelecimento_id::bigint)
+GROUP BY sp.competencia
+ORDER BY sp.competencia`,
+      },
+      {
+        id: 'periodo-ranking',
+        title: 'Ranking somando o intervalo',
+        hint: 'grafico_ranking: soma por unidade em todos os meses do período.',
+        target: 'main',
+        sql: `SELECT e.nome AS unidade,
+       COALESCE(SUM(sp.valor_aprovado), 0) AS valor,
+       sp.estabelecimento_id
+FROM sia_producao sp
+JOIN estabelecimentos e ON e.id = sp.estabelecimento_id
+WHERE sp.competencia BETWEEN :competencia_inicio::date AND :competencia_fim::date
+GROUP BY e.nome, sp.estabelecimento_id
+ORDER BY valor DESC
+LIMIT 20`,
+      },
+    ],
+  },
+  {
     id: 'sia-financeiro',
     label: 'SIA — financeiro',
     examples: [

@@ -47,6 +47,26 @@ describe('painelMetricsService', () => {
       expect(bound.values).toEqual(['2026-05-01', 10, 11]);
     });
 
+    it('mapeia placeholders de intervalo competencia_inicio/fim', () => {
+      const bound = bindTemplate(
+        `SELECT COALESCE(SUM(valor),0) AS valor
+         FROM sia_producao
+         WHERE competencia BETWEEN :competencia_inicio::date AND :competencia_fim::date`,
+        { competencia: '2026-06', competenciaInicio: '2026-04', competenciaFim: '2026-06' }
+      );
+
+      expect(bound.text).toContain('BETWEEN $1::date AND $2::date');
+      expect(bound.values).toEqual(['2026-04-01', '2026-06-01']);
+    });
+
+    it('intervalo cai para competencia quando inicio/fim ausentes', () => {
+      const bound = bindTemplate(
+        'SELECT 1 AS valor FROM t WHERE competencia BETWEEN :competencia_inicio::date AND :competencia_fim::date',
+        { competencia: '2026-05' }
+      );
+      expect(bound.values).toEqual(['2026-05-01', '2026-05-01']);
+    });
+
     it('lança erro para placeholder não permitido', () => {
       expect(() =>
         bindTemplate('SELECT * FROM foo WHERE x = :user_input', {

@@ -25,6 +25,7 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 
 export function fetchPainelLayout({
   competencia,
+  periodo,
   perfil = 'APS',
   layout = 'A',
   estabelecimentoId,
@@ -32,6 +33,7 @@ export function fetchPainelLayout({
 }: FetchPainelLayoutParams): Promise<PainelLayoutResponse> {
   const query = buildQuery({
     competencia,
+    periodo,
     perfil,
     layout,
     estabelecimento_id: estabelecimentoId,
