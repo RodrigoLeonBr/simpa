@@ -5,6 +5,7 @@ const os = require('os');
 const { query } = require('../services/db');
 const { preview, processar } = require('../services/parser');
 const { runConsolidation } = require('../services/consolidator');
+const { discoverEsusSigtapFromBlocks } = require('../services/producaoSigtapService');
 const {
   buildPath,
   hashFile,
@@ -118,6 +119,14 @@ async function triggerConsolidation(meta, resolved) {
             equipe: meta.equipe_nome,
           }
     );
+    // ponytail: harvest re-varre todos os blocos SIGTAP a cada import (idempotente,
+    // O(raw)); trocar por delta se o volume raw crescer muito. Best-effort — não
+    // deixa a importação falhar se o de-para não atualizar.
+    try {
+      await discoverEsusSigtapFromBlocks();
+    } catch (_) {
+      /* de-para segue com o que já tinha; próximo import tenta de novo */
+    }
     return { ok: true, result: output.result };
   } catch (err) {
     return { ok: false, error: err.message };
