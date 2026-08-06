@@ -3,5 +3,11 @@
 services:
   api:
     build: !reset null
+    # Scripts Python já embutidos na imagem (Dockerfile.api COPY). No deploy remoto
+    # NÃO fazer bind-mount de ./sync_*.py etc.: se o arquivo faltar no host, o Docker
+    # cria um diretório vazio em /app/<script>.py e mascara a cópia da imagem →
+    # "python3: can't open file '/app/sync_sia_mysql.py'". Mantém só uploads.
+    volumes: !override
+      - uploads:/app/uploads
   web:
     build: !reset null

@@ -181,6 +181,10 @@ Se falhar, **não pule a ordem** — corrija e rode `apply-migrations` de novo (
 | 025 | `sih_procedimentos.qtd_linhas` |
 | 026 | leitos por vigência |
 | 027 | UTF-8 métricas SIH + formas “Atenção…” |
+| 028 | view `v_esus_producao` (join canônico e-SUS) |
+| 029 | `procedimentos_esus_sigtap.origem` + view `v_esus_producao_sigtap` |
+| 030 | métricas/widgets "Consultas" APS (SIA) |
+| 031 | `painel_widgets.agregacao_periodo` (período trimestre/quadri/ano) |
 
 ### Conferir depois
 
@@ -242,7 +246,7 @@ O pacote inclui:
 | `COMPOSE_PROJECT_NAME` | Default `simpa` → containers `simpa-postgres-1`, `simpa-api-1`, `simpa-web-1` |
 | `PG_PASS`, `JWT_SECRET`, `MYSQL_*`, `WEB_PORT` | Segredos / rede |
 
-`docker-compose.deploy.yml` remove o bloco `build`; o deploy sempre usa `--no-build`.
+`docker-compose.deploy.yml` remove o bloco `build` (deploy sempre `--no-build`) **e** os bind-mounts `./sync_*.py`/`etl_*.py` do serviço `api` (`volumes: !override` → só `uploads`). Os scripts Python já estão embutidos na imagem (`Dockerfile.api`); assim o destino **não** precisa dos `.py` no host e não corre o risco do diretório-fantasma. Requer Compose **v2.24+** (tags `!reset`/`!override`).
 
 ### Flags do deploy
 
@@ -277,7 +281,8 @@ powershell -File scripts/docker-release-import.ps1 -BundlePath release/simpa-202
 
 | Problema | Causa | Solução |
 |----------|-------|---------|
-| `can't open file '/app/sync_sih_mysql.py'` | Imagem antiga sem ETL SIH no `Dockerfile.api` | Reexportar release neste PC (código atual) e redeploy |
+| `python3: can't open file '/app/sync_sia_mysql.py'` (ou `sync_sih`/`consolidate_dashboard`/`parse_esus`…) | **Bind-mount mascarando a imagem.** `docker-compose.yml` monta `./sync_*.py:/app/…:ro`; se o `.py` faltar no host (deploy parcial), o Docker cria um **diretório vazio** no lugar e esconde a cópia embutida na imagem | Usar o overlay deploy (que **remove** esses mounts — imagem já contém os scripts): `docker compose -f docker-compose.yml -f docker-compose.deploy.yml --env-file .env.docker up -d --no-build --force-recreate api`. Se sobraram dirs-fantasma no host, `rmdir sync_*.py etl_*.py consolidate_dashboard.py parse_esus_csv.py`. Ver [docker-env.md](docker-env.md) |
+| `can't open file '/app/sync_sih_mysql.py'` mesmo com overlay deploy | Imagem antiga sem ETL SIH no `Dockerfile.api` | Reexportar release neste PC (código atual) e redeploy |
 | `Missing images/simpa-api-….tar` | `SIMPA_VERSION` ≠ tag do pacote | Alinhar `.env.docker` com o nome da pasta/`MANIFEST.txt` |
 | Containers com prefixo estranho | `COMPOSE_PROJECT_NAME` ausente | Usar `simpa` e `docker compose -p simpa …` |
 | Apply tenta reexecutar 002… após restore | Sem baseline | `apply-migrations.sh --baseline N` antes do apply |
