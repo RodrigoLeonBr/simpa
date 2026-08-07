@@ -80,6 +80,31 @@ describe('backupService', () => {
     expect(client.release).toHaveBeenCalled();
   });
 
+  it('refuses pure-JS restore of a pg_dump file when psql is missing', async () => {
+    const header = '--\n-- PostgreSQL database dump\n--\n\\restrict abc\n';
+    fs.openSync.mockReturnValue(7);
+    fs.readSync.mockImplementation((fd, buf) => {
+      const bytes = buf.write(header, 0, 'utf8');
+      return bytes;
+    });
+    fs.closeSync.mockImplementation(() => undefined);
+    // psql --version falha → sem cliente psql
+    spawn.mockImplementation((cmd, args) => ({
+      stdout: { on: jest.fn() },
+      stderr: { on: jest.fn() },
+      on: jest.fn((event, cb) => {
+        if (event === 'close') {
+          const failed = cmd === 'psql' && args[0] === '--version';
+          cb(failed ? 1 : 0);
+        }
+      }),
+    }));
+
+    await expect(
+      backupService.restoreFromUpload('/tmp/dump.sql', 'RESTAURAR')
+    ).rejects.toThrow('exige o cliente psql');
+  });
+
   it('lists backups from upload dir', () => {
     fs.readdirSync.mockReturnValue([
       'simpa-backup-2026-06-21T12-00-00-000Z.sql',

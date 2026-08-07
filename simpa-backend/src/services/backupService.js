@@ -283,10 +283,29 @@ function assertRestoreConfirm(confirm) {
   }
 }
 
+// Dump gerado por pg_dump traz meta-comandos psql (\restrict, COPY ... FROM stdin)
+// que NÃO executam via client.query — restore pure-JS falharia silenciosamente.
+function isPgDumpFile(filepath) {
+  const buf = Buffer.alloc(4096);
+  const fd = fs.openSync(filepath, 'r');
+  try {
+    const bytes = fs.readSync(fd, buf, 0, 4096, 0);
+    return /^\s*(--\s*PostgreSQL database dump|\\restrict)/m.test(buf.toString('utf8', 0, bytes));
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 async function restoreBackupFile(filepath) {
   assertRestoreSize(filepath);
 
   const hasPsql = await commandExists('psql');
+  if (isPgDumpFile(filepath) && !hasPsql) {
+    throw new Error(
+      'Backup gerado por pg_dump exige o cliente psql para restaurar (meta-comandos como \\restrict/COPY não rodam pelo modo interno). Instale postgresql-client no container.'
+    );
+  }
+
   if (hasPsql) {
     await runPsqlFile(filepath);
     return { mode: 'psql' };
