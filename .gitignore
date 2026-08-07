@@ -21,3 +21,7 @@ test-results/
 graphify-out/
 
 .worktrees/
+
+# Dumps / exports de banco gerados (backups, exports de painel) — dados, não versionar
+simpa-backup-*.sql
+*_export.sql
