@@ -279,7 +279,18 @@ Credenciais E2E padrão: `admin` / `simpa@2026` (variáveis `E2E_ADMIN_USER`, `E
 
 **Atualização rápida do Docker prod no Windows:** execute `atualizar-docker-prod.bat` na raiz. Opcionalmente passe `api` ou `web`: `atualizar-docker-prod.bat web`.
 
-**Release para outro servidor (build aqui, sobe lá sem compilar):** ver cheatsheet em [`docs/agent/restore-backup-e-release-docker.md`](docs/agent/restore-backup-e-release-docker.md) — `docker:release:export` → `deploy-release.sh --recreate --migrate`.
+**Release para outro servidor (build aqui, sobe lá sem compilar):** ver cheatsheet em [`docs/agent/restore-backup-e-release-docker.md`](docs/agent/restore-backup-e-release-docker.md). Servidor destino **Windows 11** → use os `.ps1` (o `bash` falha em `docker cp`/UTF-8):
+
+```powershell
+# Neste PC: build + pacote
+npm run docker:release:export
+
+# No servidor destino (dentro da pasta do release, com .env.docker):
+powershell -ExecutionPolicy Bypass -File scripts\deploy-release.ps1            # 1ª vez
+powershell -ExecutionPolicy Bypass -File scripts\restore-db.ps1 -Backup C:\path\backup.sql   # restore de .sql (opcional)
+powershell -ExecutionPolicy Bypass -File scripts\apply-migrations.ps1          # migrations pendentes
+powershell -ExecutionPolicy Bypass -File scripts\deploy-release.ps1 -Recreate -Migrate   # updates de versão
+```
 
 ## Repositório
 
