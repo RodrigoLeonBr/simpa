@@ -18,29 +18,51 @@ powershell -ExecutionPolicy Bypass -File scripts\docker-release-export.ps1 -Vers
 
 ### Servidor destino — 1ª vez (stack zero + restore + migrations)
 
+> Servidor é **Windows 11** → use os `.ps1`. O `bash` do XAMPP/Git costuma falhar em `docker cp`/UTF-8. Os `.sh` equivalentes ficam no bloco Linux ao final de cada seção.
+
+```powershell
+Expand-Archive simpa-2026.07.24.zip -DestinationPath . ; Set-Location simpa-2026.07.24
+Copy-Item .env.docker.example .env.docker
+# Editar: PG_PASS, JWT_SECRET, MYSQL_*  (SIMPA_VERSION e COMPOSE_PROJECT_NAME=simpa já vêm no example)
+
+powershell -ExecutionPolicy Bypass -File scripts\deploy-release.ps1
+
+# Recriar DB vazio + restore do .sql num passo (pede confirmação "RESTAURAR"):
+powershell -ExecutionPolicy Bypass -File scripts\restore-db.ps1 -Backup C:\path\backup.sql
+
+# Dump moderno (traz simpa_schema_migrations): rode só o apply (pendentes).
+powershell -ExecutionPolicy Bypass -File scripts\apply-migrations.ps1
+docker compose -p simpa --env-file .env.docker restart api
+
+# Só se o dump for ANTIGO (anterior à tabela de tracking): marque a baseline antes.
+# Ajuste o número ao último migration já coberto pelo dump.
+# powershell -File scripts\apply-migrations.ps1 -Baseline 012 ; powershell -File scripts\apply-migrations.ps1
+```
+
+<details><summary>Equivalente Linux (bash)</summary>
+
 ```bash
 unzip simpa-2026.07.24.zip && cd simpa-2026.07.24
 cp .env.docker.example .env.docker
-# Editar: PG_PASS, JWT_SECRET, MYSQL_*  (SIMPA_VERSION e COMPOSE_PROJECT_NAME=simpa já vêm no example)
-
 bash scripts/deploy-release.sh
-
-# Recriar DB vazio + restore do .sql (seção "Banco vazio → restaurar")
-bash scripts/apply-migrations.sh --baseline 012
+# restore manual do .sql (seção "Banco vazio → restaurar")
 bash scripts/apply-migrations.sh
 docker compose -p simpa --env-file .env.docker restart api
 ```
+</details>
 
 Containers: `simpa-postgres-1`, `simpa-api-1`, `simpa-web-1`.
 
 ### Servidor destino — próximas versões
 
-```bash
+```powershell
 # Nova pasta/zip; atualizar SIMPA_VERSION no .env.docker
-bash scripts/deploy-release.sh --recreate --migrate
+powershell -ExecutionPolicy Bypass -File scripts\deploy-release.ps1 -Recreate -Migrate
 ```
 
-`--recreate` troca imagens **sem** apagar o volume PG. `--migrate` aplica só `migration_*.sql` ainda não registrados em `simpa_schema_migrations` e reinicia a `api`.
+Linux: `bash scripts/deploy-release.sh --recreate --migrate`.
+
+`-Recreate` troca imagens **sem** apagar o volume PG. `-Migrate` aplica só `migration_*.sql` ainda não registrados em `simpa_schema_migrations` e reinicia a `api`.
 
 ---
 
@@ -62,7 +84,17 @@ Se o Postgres já tem migrations mais novas que o dump (ex.: `sih_*`, `metas_oci
 
 Não use `docker compose down -v` + `up` e restaure em cima: o init recria o schema atual completo e o mesmo erro volta.
 
-### Destino / projeto `simpa` (recomendado)
+### Destino Windows (script — recomendado)
+
+Um passo (terminate → drop → create → `docker cp` → `psql -f`), UTF-8 seguro, pede confirmação `RESTAURAR`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\restore-db.ps1 -Backup C:\path\backup.sql
+```
+
+Lê `COMPOSE_PROJECT_NAME`/`PG_USER`/`PG_DB` do `.env.docker`. Os blocos manuais abaixo são o fallback / o que o script faz por dentro.
+
+### Destino / projeto `simpa` (manual)
 
 Com `COMPOSE_PROJECT_NAME=simpa` no `.env.docker`:
 
@@ -146,7 +178,23 @@ CREATE TABLE IF NOT EXISTS simpa_schema_migrations (
 
 **UTF-8 no Windows:** o script usa `docker cp` + `psql -f` (nunca `Get-Content | docker exec`).
 
-### Após restore de dump antigo
+### Após restore
+
+**Primeiro cheque se o dump já traz o tracking:**
+
+```bash
+docker compose -p simpa --env-file .env.docker exec -T postgres \
+  psql -U postgres -d simpa -c "SELECT max(filename) FROM simpa_schema_migrations;"
+```
+
+- **Tem linhas** (dump moderno) → **não** use `--baseline`. Rode só o apply, que aplica as pendentes:
+
+```bash
+bash scripts/apply-migrations.sh
+docker compose -p simpa --env-file .env.docker restart api
+```
+
+- **Erro "relation does not exist"** (dump antigo, anterior ao tracking) → marque baseline no último número coberto pelo dump, depois aplique:
 
 ```bash
 # Ajuste 012 ao último número já coberto pelo dump
@@ -155,10 +203,9 @@ bash scripts/apply-migrations.sh
 docker compose -p simpa --env-file .env.docker restart api
 ```
 
-Windows:
+Windows (dump moderno):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\apply-migrations.ps1 -Baseline 012
 powershell -ExecutionPolicy Bypass -File scripts\apply-migrations.ps1
 docker compose -p simpa --env-file .env.docker restart api
 ```
@@ -231,7 +278,7 @@ O pacote inclui:
 - `.env.docker.example` com `SIMPA_VERSION=<versão>` e `COMPOSE_PROJECT_NAME=simpa`
 - `schema_full.sql` + todos `migration_*.sql`
 - ETL: `parse_esus_csv.py`, `consolidate_dashboard.py`, `sync_sia_mysql.py`, `sync_sih_mysql.py`, `sync_cadastros_mysql.py`, `etl_contract.py`, `etl_db.py`
-- Scripts: `deploy-release.sh` / `.ps1`, `apply-migrations.sh` / `.ps1`
+- Scripts: `deploy-release.sh` / `.ps1`, `apply-migrations.sh` / `.ps1`, `restore-db.ps1`
 - `MANIFEST.txt`
 
 ---

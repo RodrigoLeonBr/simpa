@@ -82,7 +82,8 @@ $scriptFiles = @(
     "deploy-release.ps1",
     "deploy-release.sh",
     "apply-migrations.ps1",
-    "apply-migrations.sh"
+    "apply-migrations.sh",
+    "restore-db.ps1"
 )
 foreach ($sf in $scriptFiles) {
     $src = Join-Path $Root "scripts\$sf"
@@ -113,18 +114,20 @@ Deploy no servidor remoto (sem build):
   2. cd simpa-$Version
   3. cp .env.docker.example .env.docker && edite PG_PASS, JWT_SECRET, MySQL...
   4. SIMPA_VERSION=$Version e COMPOSE_PROJECT_NAME=simpa (já no example)
-  5. Linux:   bash scripts/deploy-release.sh
-     Windows: powershell -ExecutionPolicy Bypass -File scripts/deploy-release.ps1
+  5. Windows: powershell -ExecutionPolicy Bypass -File scripts/deploy-release.ps1
+     Linux:   bash scripts/deploy-release.sh
 
-Primeira vez + restore de backup antigo:
-  bash scripts/deploy-release.sh
-  # restaurar .sql (ver docs/agent/restore-backup-e-release-docker.md)
-  bash scripts/apply-migrations.sh --baseline 012
-  bash scripts/apply-migrations.sh
+Primeira vez + restore de backup (Windows):
+  powershell -File scripts/deploy-release.ps1
+  powershell -File scripts/restore-db.ps1 -Backup C:\path\backup.sql
+  # Dump moderno (traz simpa_schema_migrations): pule o -Baseline.
+  # Dump antigo: powershell -File scripts/apply-migrations.ps1 -Baseline 012
+  powershell -File scripts/apply-migrations.ps1
   docker compose -p simpa --env-file .env.docker restart api
 
 Atualizar release (preserva dados PG + aplica migrations novas):
-  bash scripts/deploy-release.sh --recreate --migrate
+  Windows: powershell -File scripts/deploy-release.ps1 -Recreate -Migrate
+  Linux:   bash scripts/deploy-release.sh --recreate --migrate
 "@
 Set-Content -Path (Join-Path $bundleRoot "MANIFEST.txt") -Value $manifest -Encoding UTF8
 
