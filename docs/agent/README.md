@@ -25,6 +25,7 @@
 | [testing-ci.md](testing-ci.md) | Jest, Vitest, pytest, Playwright, CI |
 | [compozy.md](compozy.md) | Workflows PRD/TechSpec/tasks |
 | [indicadores-qualidade.md](indicadores-qualidade.md) | Catálogo `/indicadores`, fontes, queries e avaliação no banco |
+| [relatorios-indicadores.md](relatorios-indicadores.md) | `/relatorios` e `/indicadores`: onde cadastrar, fonte dos valores, comandos de atualização |
 | [importacao-esus-regras.md](importacao-esus-regras.md) | Fluxo importação e-SUS, preview, de-para, status |
 | [importacao-esus-dicionario-dados.md](importacao-esus-dicionario-dados.md) | Tabelas e-SUS, raw JSONB, populacao_cadastrada |
 | [sia-atualizacao-cadastro-regras.md](sia-atualizacao-cadastro-regras.md) | Sync cadastros MySQL → PG |

@@ -23,9 +23,9 @@ React 19 + Vite 8 + Tailwind 4. Raiz: `simpa-frontend/src/`.
 | `/cadastros/formas` | `FormasPage` | read-only, espelho MySQL |
 | `/cadastros/cbos` | `CbosPage` | read-only, espelho MySQL |
 | `/importacao` | `ImportacaoPage` | — |
-| `/metas` | `MetasPage` | — |
-| `/indicadores` | `IndicadoresPage` | — |
-| `/relatorios` | `RelatoriosPage` | placeholder |
+| `/metas` | `MetasPage` | operação: [relatorios-indicadores.md](relatorios-indicadores.md) |
+| `/indicadores` | `IndicadoresPage` | operação: [relatorios-indicadores.md](relatorios-indicadores.md) |
+| `/relatorios` | `RelatoriosPage` | ranking por unidade sintético — [relatorios-indicadores.md](relatorios-indicadores.md) |
 | `/admin/usuarios` | `UsuariosPage` | Admin |
 | `/admin/auditoria` | `AuditoriaPage` | Admin / Planejamento |
 
