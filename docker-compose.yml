@@ -41,6 +41,8 @@ services:
       - ./migration_031_widget_agregacao_periodo.sql:/docker-entrypoint-initdb.d/31-migration_031_widget_agregacao_periodo.sql:ro
       - ./migration_032_widgets_hospitalar_c.sql:/docker-entrypoint-initdb.d/32-migration_032_widgets_hospitalar_c.sql:ro
       - ./migration_033_sih_especialidade_carater.sql:/docker-entrypoint-initdb.d/33-migration_033_sih_especialidade_carater.sql:ro
+      - ./migration_034_seed_indicadores_catalog.sql:/docker-entrypoint-initdb.d/34-migration_034_seed_indicadores_catalog.sql:ro
+      - ./migration_035_seed_metas_default_2026.sql:/docker-entrypoint-initdb.d/35-migration_035_seed_metas_default_2026.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

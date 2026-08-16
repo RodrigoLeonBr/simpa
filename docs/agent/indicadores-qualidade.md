@@ -39,7 +39,20 @@ CSV e-SUS (+ cadastro individual) ──► esus_cargas / esus_indicadores_raw /
 - **Série histórica (12 meses):** usa `indicador.historico` quando existir; **senão gera série sintética** a partir de `exec` (`qualidadeView.ts`).
 - **Comparação entre unidades:** usa `indicador.porUnidade` quando existir; **senão distribui valores sintéticos** entre unidades APS.
 
-**Importante:** com `exec = null` e `meta = null` (estado atual no banco), a UI exibe "—" e status **Não apurado**. Gráficos e ranking por unidade podem estar vazios ou sintéticos.
+**Atualização 2026-08-16:** com cargas e-SUS completas (2026-01…07), **C1, B1, B2, B3, B5, B6** agora têm `num`/`den`/`exec` calculados por **razão de produção** (autocontida no e-SUS) em `etl_contract._producao_ratios()`. `meta` segue `null` (tabelas `indicadores`/`metas_financiamento` vazias → status "sem meta"). B4, M1/M2 e IGM-* seguem `exec = null` (dependem de atividade_coletiva / eMulti / SI-PNI / SIH-AIH / dado longitudinal). Reconsolidar com `python consolidate_dashboard.py --all --pg-write`.
+
+Fórmulas de razão de produção (base decidida com a Secretaria):
+
+| cod | num (seção → descrição) | den |
+|-----|-------------------------|-----|
+| C1 | atendimento_individual · Tipo de atendimento → *Consulta agendada programada / Cuidado continuado* | total da seção Tipo de atendimento |
+| B1 | atendimento_odontologico · Tipo de consulta → *Primeira consulta odontológica programática* | total consultas odonto |
+| B2 | odonto · Conduta / Desfecho → *Tratamento concluído* | total consultas odonto |
+| B3 | odonto · Procedimentos → *Exodontia permanente + decíduo* | total Procedimentos odonto |
+| B5 | odonto · Procedimentos → flúor, selante, cariostático, profilaxia, evidenciação placa, orientação higiene | total Procedimentos odonto |
+| B6 | odonto · Outros procedimentos (SIGTAP) → *0307010074 TRA/ART* | total Procedimentos odonto |
+
+**Legado:** para B4/M1/M2/IGM-*, a UI ainda exibe "—" e status **Não apurado**; ranking/histórico por unidade podem ser sintéticos.
 
 ---
 
@@ -469,12 +482,23 @@ Sem `estabelecimento_id` no path legado, `fetch_pop_row` retorna `None` e todos 
 | 7 | **IGM-VAC** | Integração SI-PNI ou proxy | Alto |
 | 8 | **IGM-ICSAP** | Import SIHD / AIH | Alto |
 
-### Metas regulamentadas
+### Metas regulamentadas — pipeline (2026-08-16)
 
-1. Popular `indicadores` com os 13 códigos + expressões versionadas.
-2. Inserir metas em `metas_financiamento` por competência/origem (`Componente Qualidade APS` / `IGM SUS Paulista`).
-3. No ETL, resolver `meta` por `(cod, competencia, estabelecimento_id)` antes de gravar JSON.
-4. Preencher `historico` e `porUnidade` com queries reais (eliminar fallback sintético da UI).
+Catálogo + resolução **já implementados**; falta só inserir os valores oficiais.
+
+1. ✅ `indicadores` seedado com os 13 códigos (`migration_034_seed_indicadores_catalog.sql`, idempotente).
+   ⚠️ `migration_035_seed_metas_default_2026.sql` insere metas **DEFAULT/placeholder** (nível ~80% do financiamento) para 2026-01..12, municipais, idempotentes. **Não são oficiais** — ajustar via `UPDATE metas_financiamento`. Inversos B3/IGM-ICSAP (meta = teto) ainda dão status invertido na UI.
+2. **Inserir metas** em `metas_financiamento` por competência/origem — valor em **proporção 0–1** (0.50 = 50%). Municipal = `estabelecimento_id`/`unidade_id`/`equipe_id` NULL. Template na migration 034.
+   ```sql
+   INSERT INTO metas_financiamento (indicador_id, competencia, valor_meta, origem)
+   SELECT id, DATE '2026-01-01', 0.50, 'Componente Qualidade APS'
+   FROM indicadores WHERE codigo = 'C1'
+   ON CONFLICT (indicador_id, unidade_id, equipe_id, competencia, origem)
+     DO UPDATE SET valor_meta = EXCLUDED.valor_meta;
+   ```
+3. ✅ ETL resolve `meta` por `(cod, competencia[, estabelecimento_id, equipe_id])` — `consolidate_dashboard.fetch_metas()` → `build_payload(meta_map=…)` → `_build_indicadores_qualidade`. Precedência: linha específica > municipal. Sem meta cadastrada → `meta = null` (status "Não apurado").
+4. **Reconsolidar** (`python consolidate_dashboard.py --all --pg-write`) → `/metas` mostra barra de meta + status colorido (`exec/meta`) automaticamente. `exec` já flui (C1,B1,B2,B3,B5,B6).
+5. (Futuro) Preencher `historico` e `porUnidade` com queries reais (eliminar fallback sintético da UI).
 
 ---
 

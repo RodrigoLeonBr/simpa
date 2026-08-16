@@ -447,6 +447,7 @@ def test_consolidate_group_id_path_uses_cadastro_labels(monkeypatch):
     )
     monkeypatch.setattr(consolidator, "sia_sync_exists", lambda *_a, **_k: False)
     monkeypatch.setattr(consolidator, "fetch_pop_row", lambda *_a, **_k: None)
+    monkeypatch.setattr(consolidator, "fetch_metas", lambda *_a, **_k: {})
 
     payload = consolidator.consolidate_group(
         object(),
@@ -474,6 +475,7 @@ def test_consolidate_group_legacy_path_without_ids(monkeypatch):
     )
     monkeypatch.setattr(consolidator, "fetch_sia_rows", lambda *_a, **_k: [])
     monkeypatch.setattr(consolidator, "sia_sync_exists", lambda *_a, **_k: False)
+    monkeypatch.setattr(consolidator, "fetch_metas", lambda *_a, **_k: {})
 
     payload = consolidator.consolidate_group(
         object(),

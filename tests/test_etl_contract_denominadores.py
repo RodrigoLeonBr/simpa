@@ -224,3 +224,113 @@ def test_build_payload_preserves_kpis_with_pop_row():
     kpis = payload["kpis_gerais"]
     assert "total_atendimentos_aps" in kpis
     assert "total_procedimentos_ambulatoriais" in kpis
+
+
+# ---------------------------------------------------------------------------
+# Razão de produção (C1, B1, B2, B3, B5, B6) — num/den/exec de raw_rows
+# ---------------------------------------------------------------------------
+
+def _r(tipo, secao, descricao, qtd):
+    return {"tipo_relatorio": tipo, "secao": secao, "descricao": descricao,
+            "valores": {"quantidade": qtd}}
+
+
+def _producao_rows():
+    return [
+        # C1: programada / total atendimento individual
+        _r("atendimento_individual", "Tipo de atendimento",
+           "Consulta agendada programada / Cuidado continuado", 25),
+        _r("atendimento_individual", "Tipo de atendimento", "Consulta no dia", 75),
+        # B1/B2 denominador: total consultas odonto = 40
+        _r("atendimento_odontologico", "Tipo de consulta",
+           "Primeira consulta odontológica programática", 10),
+        _r("atendimento_odontologico", "Tipo de consulta",
+           "Consulta de retorno em odontologia", 30),
+        # B2 numerador
+        _r("atendimento_odontologico", "Conduta / Desfecho", "Tratamento concluído", 8),
+        # B3/B5 denominador: total procedimentos odonto = 100
+        _r("atendimento_odontologico", "Procedimentos", "Exodontia de dente permanente", 15),
+        _r("atendimento_odontologico", "Procedimentos", "Exodontia de dente decíduo", 5),
+        _r("atendimento_odontologico", "Procedimentos",
+           "Aplicação tópica de flúor (individual por sessão)", 30),
+        _r("atendimento_odontologico", "Procedimentos", "Orientação de higiene bucal", 50),
+        # B6 numerador: ART (SIGTAP)
+        _r("atendimento_odontologico", "Outros procedimentos (SIGTAP)",
+           "0307010074 - TRATAMENTO RESTAURADOR ATRAUMÁTICO (TRA/ART)", 4),
+    ]
+
+
+def _by_cod(indicadores, cod):
+    return next(e for e in indicadores if e["cod"] == cod)
+
+
+def test_producao_c1_ratio():
+    result = _build_indicadores_qualidade(None, _producao_rows())
+    c1 = _by_cod(result, "C1")
+    assert c1["num"] == "25"
+    assert c1["den"] == 100
+    assert c1["exec"] == 0.25
+
+
+def test_producao_b1_ratio():
+    result = _build_indicadores_qualidade(None, _producao_rows())
+    b1 = _by_cod(result, "B1")
+    assert b1["num"] == "10" and b1["den"] == 40 and b1["exec"] == 0.25
+
+
+def test_producao_b2_uses_total_consultas_denominator():
+    result = _build_indicadores_qualidade(None, _producao_rows())
+    b2 = _by_cod(result, "B2")
+    assert b2["num"] == "8" and b2["den"] == 40 and b2["exec"] == 0.2
+
+
+def test_producao_b3_exodontias_over_total_procedimentos():
+    result = _build_indicadores_qualidade(None, _producao_rows())
+    b3 = _by_cod(result, "B3")
+    assert b3["num"] == "20" and b3["den"] == 100 and b3["exec"] == 0.2
+
+
+def test_producao_b5_preventivos():
+    result = _build_indicadores_qualidade(None, _producao_rows())
+    b5 = _by_cod(result, "B5")
+    assert b5["num"] == "80" and b5["den"] == 100 and b5["exec"] == 0.8
+
+
+def test_producao_b6_art_num_from_sigtap_den_from_procedimentos():
+    result = _build_indicadores_qualidade(None, _producao_rows())
+    b6 = _by_cod(result, "B6")
+    assert b6["num"] == "4" and b6["den"] == 100 and b6["exec"] == 0.04
+
+
+def test_producao_ratio_overrides_pop_denominador_for_c1():
+    """C1 den vem da razão de produção (não de cidadaos_ativos) quando há raw."""
+    result = _build_indicadores_qualidade(_pop_row(cidadaos_ativos=3337), _producao_rows())
+    c1 = _by_cod(result, "C1")
+    assert c1["den"] == 100  # produção, não 3337
+
+
+def test_meta_map_populates_meta_field():
+    result = _build_indicadores_qualidade(None, None, {"C1": 0.5, "B1": 0.6})
+    assert _by_cod(result, "C1")["meta"] == 0.5
+    assert _by_cod(result, "B1")["meta"] == 0.6
+    assert _by_cod(result, "B2")["meta"] is None  # sem meta cadastrada
+
+
+def test_meta_map_absent_keeps_null():
+    result = _build_indicadores_qualidade(None, None, None)
+    assert all(e["meta"] is None for e in result)
+
+
+def test_build_payload_forwards_meta_map():
+    payload = build_payload(**_base_payload_args(), meta_map={"C1": 0.42})
+    c1 = _by_cod(payload["indicadores_qualidade"], "C1")
+    assert c1["meta"] == 0.42
+
+
+def test_producao_absent_section_keeps_dash():
+    """Sem raw da seção, num fica '—' e exec None (backward compat)."""
+    result = _build_indicadores_qualidade(None, [
+        _r("atendimento_individual", "Tipo de atendimento", "Consulta no dia", 10),
+    ])
+    b1 = _by_cod(result, "B1")
+    assert b1["num"] == "—" and b1["exec"] is None

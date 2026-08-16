@@ -258,6 +258,100 @@ def _temas_coletivos(indexed: dict) -> list[dict[str, Any]]:
     return temas
 
 
+# Numeradores/denominadores por RAZÃO DE PRODUÇÃO (autocontidos no e-SUS importado).
+# Base decidida com a Secretaria em 2026-08-16 (razão de produção, não populacional).
+# Descrições confirmadas contra esus_indicadores_raw (DISTINCT por seção).
+_EXODONTIA_DESCS = {
+    "Exodontia de dente permanente",
+    "Exodontia de dente decíduo",
+}
+_PREVENTIVOS_ODONTO_DESCS = {
+    "Aplicação tópica de flúor (individual por sessão)",
+    "Aplicação de selante (por dente)",
+    "Aplicação de cariostático (por dente)",
+    "Profilaxia / Remoção da placa bacteriana",
+    "Evidenciação de placa bacteriana",
+    "Orientação de higiene bucal",
+}
+_ART_DESCS = {"0307010074 - TRATAMENTO RESTAURADOR ATRAUMÁTICO (TRA/ART)"}
+
+# cod -> (num_spec, den_spec) onde spec = (tipo_relatorio, secao, descricoes|None)
+# descricoes=None => soma toda a seção (denominador total).
+_INDICADOR_PRODUCAO: dict[str, tuple[tuple, tuple]] = {
+    # Acesso e Vínculo: consultas programadas / total de atendimentos individuais
+    "C1": (
+        ("atendimento_individual", "Tipo de atendimento",
+         {"Consulta agendada programada / Cuidado continuado"}),
+        ("atendimento_individual", "Tipo de atendimento", None),
+    ),
+    # 1ª consulta odontológica programática / total de consultas odonto
+    "B1": (
+        ("atendimento_odontologico", "Tipo de consulta",
+         {"Primeira consulta odontológica programática"}),
+        ("atendimento_odontologico", "Tipo de consulta", None),
+    ),
+    # Tratamentos concluídos / total de consultas odonto
+    "B2": (
+        ("atendimento_odontologico", "Conduta / Desfecho", {"Tratamento concluído"}),
+        ("atendimento_odontologico", "Tipo de consulta", None),
+    ),
+    # Taxa de exodontias / total de procedimentos odonto
+    "B3": (
+        ("atendimento_odontologico", "Procedimentos", _EXODONTIA_DESCS),
+        ("atendimento_odontologico", "Procedimentos", None),
+    ),
+    # Preventivos odonto / total de procedimentos odonto
+    "B5": (
+        ("atendimento_odontologico", "Procedimentos", _PREVENTIVOS_ODONTO_DESCS),
+        ("atendimento_odontologico", "Procedimentos", None),
+    ),
+    # ART (SIGTAP) / total de procedimentos odonto
+    "B6": (
+        ("atendimento_odontologico", "Outros procedimentos (SIGTAP)", _ART_DESCS),
+        ("atendimento_odontologico", "Procedimentos", None),
+    ),
+}
+
+
+def _sum_section(
+    rows: list[dict[str, Any]],
+    tipo: str,
+    secao: str,
+    only: set[str] | None = None,
+) -> int | None:
+    """Soma 'quantidade' das rows de (tipo, secao). only=None => seção inteira.
+
+    Retorna None quando nenhuma row corresponde (dado ausente na competência).
+    """
+    total = 0
+    found = False
+    for row in rows:
+        if row.get("tipo_relatorio") != tipo or row.get("secao") != secao:
+            continue
+        if only is not None and row.get("descricao") not in only:
+            continue
+        qty = _qty(row.get("valores"), "quantidade")
+        if qty is not None:
+            total += qty
+            found = True
+    return total if found else None
+
+
+def _producao_ratios(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Calcula num/den/exec por razão de produção para cada cod em _INDICADOR_PRODUCAO."""
+    out: dict[str, dict[str, Any]] = {}
+    for cod, (num_spec, den_spec) in _INDICADOR_PRODUCAO.items():
+        num = _sum_section(rows, *num_spec)
+        den = _sum_section(rows, *den_spec)
+        if num is None and den is None:
+            continue
+        entry: dict[str, Any] = {"num": num, "den": den}
+        if num is not None and den and den > 0:
+            entry["exec"] = round(num / den, 4)
+        out[cod] = entry
+    return out
+
+
 def _denominadores(pop_row: dict[str, Any] | None) -> dict[str, Any]:
     """Extrai denominadores de qualidade a partir do snapshot populacao_cadastrada.
 
@@ -305,23 +399,37 @@ def _denominadores(pop_row: dict[str, Any] | None) -> dict[str, Any]:
 
 def _build_indicadores_qualidade(
     pop_row: dict[str, Any] | None = None,
+    raw_rows: list[dict[str, Any]] | None = None,
+    meta_map: dict[str, float] | None = None,
 ) -> list[dict[str, Any]]:
     dens = _denominadores(pop_row)
+    ratios = _producao_ratios(raw_rows) if raw_rows else {}
+    metas = meta_map or {}
     result = []
     for item in INDICADORES_QUALIDADE_CATALOG:
+        cod = item["cod"]
         entry: dict[str, Any] = {
-            "cod": item["cod"],
+            "cod": cod,
             "nomeCurto": item["nomeCurto"],
             "nome": item["nome"],
             "categoria": item["categoria"],
-            "meta": None,
+            "meta": metas.get(cod),
             "exec": None,
             "num": "—",
-            "den": dens.get(item["cod"], "—"),
+            "den": dens.get(cod, "—"),
             "fonte": item["fonte"],
             "periodicidade": item["periodicidade"],
         }
-        if item["cod"] == "B4":
+        # Razão de produção sobrepõe num/den/exec quando há dado bruto (C1,B1,B2,B3,B5,B6).
+        calc = ratios.get(cod)
+        if calc:
+            if calc.get("num") is not None:
+                entry["num"] = str(calc["num"])
+            if calc.get("den") is not None:
+                entry["den"] = calc["den"]
+            if calc.get("exec") is not None:
+                entry["exec"] = calc["exec"]
+        if cod == "B4":
             entry["den_nota"] = "Aproximado: faixas 05-09 + 10-14 anos"
         result.append(entry)
     return result
@@ -438,6 +546,7 @@ def build_payload(
     mysql_available: bool = False,
     pop_row: dict[str, Any] | None = None,
     sih_data: dict[str, Any] | None = None,
+    meta_map: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """Transform staged rows into ContratoDashboard v3.1.0 JSON."""
     sia_rows = sia_rows or []
@@ -496,5 +605,5 @@ def build_payload(
             },
         },
         "emendas_parlamentares": [],
-        "indicadores_qualidade": _build_indicadores_qualidade(pop_row),
+        "indicadores_qualidade": _build_indicadores_qualidade(pop_row, raw_rows, meta_map),
     }

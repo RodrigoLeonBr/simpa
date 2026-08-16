@@ -505,6 +505,43 @@ def write_payload(
     return meta
 
 
+def fetch_metas(
+    conn,
+    competencia: date,
+    estabelecimento_id: int | None = None,
+    equipe_id: int | None = None,
+) -> dict[str, float]:
+    """Resolve meta pactuada por cod de indicador para (competencia[, estab, equipe]).
+
+    Precedência: linha mais específica (estabelecimento/equipe preenchidos) vence a
+    meta municipal (colunas NULL). valor_meta em proporção 0–1 (0.50 = 50%).
+    Retorna {} quando não há metas cadastradas (tabelas vazias / competência sem pacto).
+    ponytail: match exato de competência; se metas forem por quadrimestre, gravar na
+    competência-âncora ou estender aqui para range.
+    """
+    best: dict[str, tuple[int, float]] = {}
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT i.codigo, m.valor_meta,
+                   (m.estabelecimento_id IS NOT NULL)::int
+                   + (m.equipe_id IS NOT NULL)::int AS espec
+            FROM metas_financiamento m
+            JOIN indicadores i ON i.id = m.indicador_id
+            WHERE m.competencia = %s
+              AND m.valor_meta IS NOT NULL
+              AND (m.estabelecimento_id = %s OR m.estabelecimento_id IS NULL)
+              AND (m.equipe_id = %s OR m.equipe_id IS NULL)
+            """,
+            (competencia, estabelecimento_id, equipe_id),
+        )
+        for codigo, valor_meta, espec in cur.fetchall():
+            prev = best.get(codigo)
+            if prev is None or espec >= prev[0]:
+                best[codigo] = (espec, float(valor_meta))
+    return {cod: val for cod, (_, val) in best.items()}
+
+
 def fetch_pop_row(
     conn,
     competencia: date,
@@ -573,6 +610,7 @@ def consolidate_group(
     )
     sih_data = fetch_sih_rows(conn, competencia, estabelecimento_id)
     pop_row = fetch_pop_row(conn, competencia, estabelecimento_id)
+    meta_map = fetch_metas(conn, competencia, estabelecimento_id, equipe_id)
     payload = build_payload(
         competencia=competencia,
         municipio=municipio,
@@ -583,6 +621,7 @@ def consolidate_group(
         mysql_available=sia_sync_exists(conn, competencia),
         pop_row=pop_row,
         sih_data=sih_data,
+        meta_map=meta_map,
     )
 
     if pg_write:
