@@ -30,10 +30,10 @@ describe('dashboardView', () => {
   it('PAINEL_KPI_CATALOGS marks APS and Hospitalar A as ready', () => {
     expect(PAINEL_KPI_CATALOGS.APS).toEqual({ A: 'ready', B: 'ready', C: 'ready' });
     expect(PAINEL_KPI_CATALOGS.MAC.A).toBe('ready');
-    expect(PAINEL_KPI_CATALOGS.Hospitalar).toEqual({ A: 'ready', B: 'ready', C: 'pending' });
+    expect(PAINEL_KPI_CATALOGS.Hospitalar).toEqual({ A: 'ready', B: 'ready', C: 'ready' });
     expect(isPainelCatalogReady('Hospitalar')).toBe(true);
     expect(isPainelCatalogReady('Hospitalar', 'B')).toBe(true);
-    expect(isPainelCatalogReady('Hospitalar', 'C')).toBe(false);
+    expect(isPainelCatalogReady('Hospitalar', 'C')).toBe(true);
   });
 
   it('needsConsolidatedDashboard is false for Layout A dinâmico (APS/MAC/Hospitalar)', () => {

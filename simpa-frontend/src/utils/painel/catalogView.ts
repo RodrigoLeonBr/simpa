@@ -13,7 +13,7 @@ export const PAINEL_KPI_CATALOGS: Record<
 > = {
   APS: { A: 'ready', B: 'ready', C: 'ready' },
   MAC: { A: 'ready', B: 'pending', C: 'pending' },
-  Hospitalar: { A: 'ready', B: 'ready', C: 'pending' },
+  Hospitalar: { A: 'ready', B: 'ready', C: 'ready' },
   Misto: { A: 'pending', B: 'pending', C: 'pending' },
 };
 

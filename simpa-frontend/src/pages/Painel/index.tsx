@@ -51,7 +51,7 @@ export default function PainelPage() {
           <>
             {layout === 'A' ? <LayoutA data={data} unidades={unidades} /> : null}
             {layout === 'B' && data ? <LayoutB data={data} unidades={unidades} /> : null}
-            {layout === 'C' && data ? <LayoutC data={data} unidades={unidades} /> : null}
+            {layout === 'C' ? <LayoutC data={data} unidades={unidades} /> : null}
           </>
         ) : (
           <PainelProfilePlaceholder perfil={painelPerfil} unidadesCount={unidades.length} />
