@@ -40,6 +40,7 @@ services:
       - ./migration_030_widgets_consultas_aps.sql:/docker-entrypoint-initdb.d/30-migration_030_widgets_consultas_aps.sql:ro
       - ./migration_031_widget_agregacao_periodo.sql:/docker-entrypoint-initdb.d/31-migration_031_widget_agregacao_periodo.sql:ro
       - ./migration_032_widgets_hospitalar_c.sql:/docker-entrypoint-initdb.d/32-migration_032_widgets_hospitalar_c.sql:ro
+      - ./migration_033_sih_especialidade_carater.sql:/docker-entrypoint-initdb.d/33-migration_033_sih_especialidade_carater.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

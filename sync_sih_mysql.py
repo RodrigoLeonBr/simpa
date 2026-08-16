@@ -117,7 +117,8 @@ def build_sih_query_internacoes() -> str:
     Extração de s_aih com GROUP BY gerencial.
 
     Grão: COMPETENCIA × CNES × PROC_PRINCIPAL × DIAG_PRINCIPAL ×
-          COMPLEXIDADE × FINANCIAMENTO × MOTIVO_SAIDA × SEXO_PACIENTE
+          COMPLEXIDADE × FINANCIAMENTO × MOTIVO_SAIDA × SEXO_PACIENTE ×
+          ESPECIALIDADE × CARATER_INTERNACAO
 
     Notas:
     - Sem CAST: DIARIAS, DIARIAS_UTI, VALOR_TOTAL_AIH são int/decimal nativo.
@@ -138,6 +139,8 @@ def build_sih_query_internacoes() -> str:
             sa.FINANCIAMENTO                                   AS financiamento,
             sa.MOTIVO_SAIDA                                    AS motivo_saida,
             sa.SEXO_PACIENTE                                   AS sexo,
+            sa.ESPECIALIDADE                                   AS especialidade,
+            sa.CARATER_INTERNACAO                              AS carater_internacao,
             COUNT(DISTINCT sa.AIH)                             AS qtd_aih,
             SUM(sa.DIARIAS)                                    AS total_diarias,
             SUM(sa.DIARIAS_UTI)                                AS total_diarias_uti,
@@ -153,7 +156,8 @@ def build_sih_query_internacoes() -> str:
             sa.CNES, pr.{col_cnes},
             sa.PROC_PRINCIPAL, sa.DIAG_PRINCIPAL,
             sa.COMPLEXIDADE, sa.FINANCIAMENTO,
-            sa.MOTIVO_SAIDA, sa.SEXO_PACIENTE
+            sa.MOTIVO_SAIDA, sa.SEXO_PACIENTE,
+            sa.ESPECIALIDADE, sa.CARATER_INTERNACAO
     """
 
 
@@ -439,6 +443,8 @@ def gravar_sih_pg(
                     _clean_str(row.get("financiamento")),
                     _clean_str(row.get("motivo_saida")),
                     _clean_str(row.get("sexo")),
+                    _clean_str(row.get("especialidade")),
+                    _clean_str(row.get("carater_internacao")),
                     int(row.get("qtd_aih") or 0),
                     int(row.get("total_diarias") or 0),
                     int(row.get("total_diarias_uti") or 0),
@@ -451,9 +457,10 @@ def gravar_sih_pg(
                 INSERT INTO sih_internacoes (
                     sincronizacao_id, competencia, cnes, estabelecimento_id,
                     proc_principal, diag_principal, complexidade, financiamento,
-                    motivo_saida, sexo, qtd_aih, total_diarias, total_diarias_uti,
+                    motivo_saida, sexo, especialidade, carater_internacao,
+                    qtd_aih, total_diarias, total_diarias_uti,
                     total_valor, media_idade, media_diarias
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT DO NOTHING
             """
 
