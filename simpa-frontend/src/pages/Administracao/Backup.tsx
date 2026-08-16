@@ -143,22 +143,23 @@ export function BackupPage() {
           {creating ? 'Gerando backup…' : 'Gerar backup agora'}
         </button>
 
-        <div className="admin-backup-upload">
-          <label htmlFor="backup-restore-file">Restaurar de arquivo .sql</label>
-          <input
-            id="backup-restore-file"
-            ref={fileInputRef}
-            type="file"
-            accept=".sql,text/sql,application/sql"
-            data-testid="admin-backup-file-input"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) {
-                openRestoreFromFile(file);
-              }
-            }}
-          />
-        </div>
+        <input
+          id="backup-restore-file"
+          ref={fileInputRef}
+          type="file"
+          accept=".sql,text/sql,application/sql"
+          className="admin-backup-file"
+          data-testid="admin-backup-file-input"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) {
+              openRestoreFromFile(file);
+            }
+          }}
+        />
+        <label htmlFor="backup-restore-file" className="cadastro-btn admin-backup-upload-btn">
+          Restaurar de arquivo .sql
+        </label>
       </div>
 
       {loading ? (
