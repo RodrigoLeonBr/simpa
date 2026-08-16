@@ -324,6 +324,57 @@ powershell -File scripts/docker-release-import.ps1 -BundlePath release/simpa-202
 
 ---
 
+## Corrupção / portabilidade cross-server
+
+Backup gerado aqui e restaurado em outro servidor **não corrompe** se seguir a receita abaixo. O formato (pg_dump plain, SQL texto) é determinístico e portável; os riscos são **operacionais**, não do arquivo.
+
+### Dois modos de backup (`simpa-backend/src/services/backupService.js`)
+
+| Modo | Quando | Conteúdo | Restore |
+|------|--------|----------|---------|
+| **pg_dump** (padrão no Docker) | `pg_dump` disponível (imagem `api` instala `postgresql-client`) | `--no-owner --no-acl --clean --if-exists --format=plain --encoding=UTF8` → **schema + dados** (COPY), autocontido, portável | exige `psql` (COPY/`\restrict` não rodam via Node) |
+| **pure-JS** (fallback) | sem `pg_dump` (ex.: API em host sem client) | **só dados** (TRUNCATE + INSERT + setval, `session_replication_role=replica`) — **sem schema** | `psql -f`, senão `client.query` |
+
+**No setup Docker é sempre pg_dump** → backup completo e portável, restore via `psql` (ambos na imagem).
+
+### Qual modo gerou o arquivo
+
+```bash
+head -1 backup.sql
+```
+
+- `-- PostgreSQL database dump` → **pg_dump** (completo, portável) ✅
+- `-- SIMPA backup (modo interno Node/pg)` → **pure-JS** (só dados; não sobe em DB vazio) ⚠️
+
+### Matriz de risco
+
+| Risco | Corrompe? | Mitigação |
+|-------|-----------|-----------|
+| Restaurar por cima de schema **mais novo** (destino à frente do dump) | ⚠️ falha no meio (`--clean` dropa FK/PK inexistentes) → estado parcial | Recriar DB vazio antes: `scripts\restore-db.ps1` (drop→create→`psql -f`). Nunca restaurar em cima |
+| UTF-8 via pipe no Windows (`Get-Content \| docker exec`) | ✅ quebra acentos | `docker cp` + `psql -f` (scripts já fazem). Nunca piping |
+| Destino sem `psql` (API em host bare) | ❌ erro explícito, não corrompe | Restaurar dentro do container (tem psql) ou instalar `postgresql-client` |
+| Backup em modo **pure-JS** (só dados) | ⚠️ não sobe em DB vazio; não trata colunas array | No Docker não ocorre; conferir header (acima) |
+| Version skew pg_dump/servidor | baixíssimo | Ambos PG15 (client bookworm = 15, server 15-alpine). 15→15 ideal; 15→16 plain SQL ainda roda |
+| Editar/reencodar o `.sql` em editor | ✅ possível (BOM/CRLF) | Transferir as-is (zip/scp/USB). Não abrir-e-salvar |
+
+### Receita segura (origem → destino)
+
+1. Gerar backup na origem (UI Admin → Backup, ou no container). Conferir header = `PostgreSQL database dump`.
+2. Transferir o `.sql` **sem editar**.
+3. Destino — recriar DB vazio + restore num passo:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\restore-db.ps1 -Backup C:\path\backup.sql
+   ```
+4. Alinhar migrations (dump moderno traz `simpa_schema_migrations`):
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\apply-migrations.ps1
+   docker compose -p simpa --env-file .env.docker restart api
+   ```
+
+**Regra de ouro:** usar os scripts do repo (`restore-db.ps1`, `apply-migrations.ps1`), não comandos manuais soltos — eles evitam os dois únicos vetores reais de corrupção (restore em cima de schema + piping UTF-8).
+
+---
+
 ## Troubleshooting
 
 | Problema | Causa | Solução |
