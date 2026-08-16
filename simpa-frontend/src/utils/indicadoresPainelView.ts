@@ -72,7 +72,7 @@ export function widgetRowToFormValues(row?: PainelWidgetConfig | null): Record<s
   };
 }
 
-export const PAINEL_WIDGET_PERFIS = ['APS', 'MAC', 'Hospitalar'] as const;
+export const PAINEL_WIDGET_PERFIS = ['APS', 'MAC', 'Hospitalar', 'Misto'] as const;
 
 export type PainelWidgetPerfil = (typeof PAINEL_WIDGET_PERFIS)[number];
 

@@ -50,7 +50,7 @@ export default function PainelPage() {
         {canRenderLayout ? (
           <>
             {layout === 'A' ? <LayoutA data={data} unidades={unidades} /> : null}
-            {layout === 'B' && data ? <LayoutB data={data} unidades={unidades} /> : null}
+            {layout === 'B' ? <LayoutB data={data} unidades={unidades} /> : null}
             {layout === 'C' ? <LayoutC data={data} unidades={unidades} /> : null}
           </>
         ) : (

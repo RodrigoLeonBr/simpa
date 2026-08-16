@@ -13,7 +13,7 @@ import {
 } from '../../utils/painelWidgetsView';
 
 interface LayoutBProps {
-  data: ContratoDashboard;
+  data: ContratoDashboard | null;
   unidades: Unidade[];
 }
 
@@ -26,7 +26,8 @@ export function LayoutB({ data, unidades }: LayoutBProps) {
     return <FocoDynamic widgets={widgets} loading={loading} />;
   }
 
-  return <FocoConsolidado data={data} />;
+  // Perfis dinâmicos sem widgets cadastrados (data=null) → nada a renderizar.
+  return data ? <FocoConsolidado data={data} /> : null;
 }
 
 function FocoDynamic({

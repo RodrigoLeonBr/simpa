@@ -1,7 +1,7 @@
 import type { PainelCatalogStatus, PainelPerfil, PainelViewContext } from '../../types/painel';
 import type { PainelLayout } from './types';
 
-const DYNAMIC_PAINEL_PERFIS: PainelPerfil[] = ['APS', 'MAC', 'Hospitalar'];
+const DYNAMIC_PAINEL_PERFIS: PainelPerfil[] = ['APS', 'MAC', 'Hospitalar', 'Misto'];
 
 export function isDynamicPainelPerfil(perfil: PainelPerfil): boolean {
   return DYNAMIC_PAINEL_PERFIS.includes(perfil);
@@ -14,7 +14,7 @@ export const PAINEL_KPI_CATALOGS: Record<
   APS: { A: 'ready', B: 'ready', C: 'ready' },
   MAC: { A: 'ready', B: 'pending', C: 'pending' },
   Hospitalar: { A: 'ready', B: 'ready', C: 'ready' },
-  Misto: { A: 'pending', B: 'pending', C: 'pending' },
+  Misto: { A: 'ready', B: 'ready', C: 'ready' },
 };
 
 export function getPainelCatalogStatus(

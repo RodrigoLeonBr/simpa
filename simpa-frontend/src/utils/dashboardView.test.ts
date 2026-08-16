@@ -24,7 +24,7 @@ describe('dashboardView', () => {
   it('getPainelCatalogStatus returns pending for MAC and other non-APS perfis', () => {
     expect(getPainelCatalogStatus('MAC')).toBe('pending');
     expect(getPainelCatalogStatus('Hospitalar')).toBe('pending');
-    expect(getPainelCatalogStatus('Misto', 'C')).toBe('pending');
+    expect(getPainelCatalogStatus('Misto', 'C')).toBe('ready');
   });
 
   it('PAINEL_KPI_CATALOGS marks APS and Hospitalar A as ready', () => {
