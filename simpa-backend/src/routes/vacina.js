@@ -180,7 +180,11 @@ router.post('/populacao', requirePlanningStaff, async (req, res, next) => {
     if (!Number.isFinite(Number(ano)) || !Number.isFinite(Number(grupo_id)) || !Number.isFinite(Number(populacao))) {
       return res.status(400).json({ error: 'ano, grupo_id e populacao devem ser numéricos' });
     }
-    return res.status(201).json(await upsertPopulacao(req.body));
+    return res.status(201).json(await upsertPopulacao({
+      ano: Number(ano),
+      grupo_id: Number(grupo_id),
+      populacao: Number(populacao),
+    }));
   } catch (err) {
     return next(err);
   }
@@ -203,7 +207,11 @@ router.post('/esquema', requirePlanningStaff, async (req, res, next) => {
     if (!Number.isFinite(Number(grupo_id)) || Number(num_doses) <= 0) {
       return res.status(400).json({ error: 'grupo_id deve ser numérico e num_doses > 0' });
     }
-    return res.status(201).json(await upsertEsquema(req.body));
+    return res.status(201).json(await upsertEsquema({
+      imuno_codigo,
+      grupo_id: Number(grupo_id),
+      num_doses: Number(num_doses),
+    }));
   } catch (err) {
     return next(err);
   }
