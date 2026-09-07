@@ -3,8 +3,16 @@ jest.mock('../src/services/db', () => ({
   query: jest.fn(),
 }));
 
+const { EventEmitter } = require('events');
+
+// ponytail: mock child_process at module level so the captured spawn ref is replaced
+jest.mock('child_process', () => ({
+  spawn: jest.fn(),
+}));
+
+const { spawn } = require('child_process');
 const db = require('../src/services/db');
-const { gravarCarga, analisarPreview } = require('../src/services/vacinaImportService');
+const { gravarCarga, analisarPreview, parseUpload } = require('../src/services/vacinaImportService');
 
 const makeParsed = (overrides = {}) => ({
   competencia: '2026-01-01',
@@ -106,3 +114,83 @@ describe('vacinaImportService.analisarPreview', () => {
     expect(res.faixas_nao_mapeadas).toEqual([]);
   });
 });
+
+// ── parseUpload branches ──────────────────────────────────────────────────────
+
+function makeProc() {
+  const stdout = new EventEmitter();
+  const stderr = new EventEmitter();
+  const proc = new EventEmitter();
+  proc.stdout = stdout;
+  proc.stderr = stderr;
+  return proc;
+}
+
+describe('vacinaImportService.parseUpload', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('resolves with parsed JSON on exit code 0', async () => {
+    const proc = makeProc();
+    spawn.mockReturnValue(proc);
+
+    const payload = { competencia: '2026-01-01', doses_total: 1, arquivo_nome: 'x.xlsx', linhas: [] };
+    const p = parseUpload('/tmp/x.xlsx');
+
+    proc.stdout.emit('data', JSON.stringify(payload));
+    proc.emit('close', 0);
+
+    await expect(p).resolves.toEqual(payload);
+  });
+
+  it('rejects with status 422 on non-zero exit code', async () => {
+    const proc = makeProc();
+    spawn.mockReturnValue(proc);
+
+    const p = parseUpload('/tmp/x.xlsx');
+    proc.stderr.emit('data', 'parse error detail');
+    proc.emit('close', 1);
+
+    const err = await p.catch((e) => e);
+    expect(err.status).toBe(422);
+    expect(err.message).toMatch(/parse error detail/);
+  });
+
+  it('rejects with status 502 on invalid JSON output when exit code 0', async () => {
+    const proc = makeProc();
+    spawn.mockReturnValue(proc);
+
+    const p = parseUpload('/tmp/x.xlsx');
+    proc.stdout.emit('data', 'not-json');
+    proc.emit('close', 0);
+
+    const err = await p.catch((e) => e);
+    expect(err.status).toBe(502);
+    expect(err.message).toMatch(/JSON inválida/);
+  });
+
+  it('rejects on spawn error event', async () => {
+    const proc = makeProc();
+    spawn.mockReturnValue(proc);
+
+    const p = parseUpload('/tmp/x.xlsx');
+    proc.emit('error', new Error('spawn ENOENT'));
+
+    await expect(p).rejects.toThrow('spawn ENOENT');
+  });
+
+  it('uses fallback message when stderr is empty on non-zero exit', async () => {
+    const proc = makeProc();
+    spawn.mockReturnValue(proc);
+
+    const p = parseUpload('/tmp/x.xlsx');
+    // no stderr data emitted → stderr stays empty string
+    proc.emit('close', 2);
+
+    const err = await p.catch((e) => e);
+    expect(err.status).toBe(422);
+    expect(err.message).toMatch(/parse_vacina_xlsx exit 2/);
+  });
+});
+
