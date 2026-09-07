@@ -82,7 +82,7 @@ describe('Cadastros pages', () => {
 
     expect(screen.getByTestId('cadastro-grid-page')).toBeInTheDocument();
     // sync operations moved to /importacao — grid now shows status badges
-    expect(screen.getAllByRole('link')).toHaveLength(10);
+    expect(screen.getAllByRole('link')).toHaveLength(14);
     expect(screen.getByTestId('cadastro-card-estabelecimentos')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-procedimentos')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-formas')).toBeInTheDocument();
@@ -92,6 +92,10 @@ describe('Cadastros pages', () => {
     expect(screen.getByTestId('cadastro-card-indicadores-painel')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-procedimentos-sigtap')).toBeInTheDocument();
     expect(screen.getByTestId('cadastro-card-indicadores-metas')).toBeInTheDocument();
+    expect(screen.getByTestId('cadastro-card-vacina-grupos')).toBeInTheDocument();
+    expect(screen.getByTestId('cadastro-card-vacina-faixa-grupo')).toBeInTheDocument();
+    expect(screen.getByTestId('cadastro-card-vacina-populacao')).toBeInTheDocument();
+    expect(screen.getByTestId('cadastro-card-vacina-esquema')).toBeInTheDocument();
     expect(screen.queryByTestId('cadastro-card-unidades')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cadastro-card-prestadores-mac')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cadastro-card-hospitais')).not.toBeInTheDocument();

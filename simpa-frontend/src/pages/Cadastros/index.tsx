@@ -8,6 +8,10 @@ import { FormasPage } from './FormasPage';
 import { IndicadoresPainelPage } from './IndicadoresPainelPage';
 import { MetasOciParPage } from './MetasOciParPage';
 import { ProcedimentosPage } from './ProcedimentosPage';
+import { VacinaEsquemaPage } from './VacinaEsquemaPage';
+import { VacinaFaixaGrupoPage } from './VacinaFaixaGrupoPage';
+import { VacinaGruposPage } from './VacinaGruposPage';
+import { VacinaPopulacaoPage } from './VacinaPopulacaoPage';
 
 export default function CadastrosPage() {
   return (
@@ -19,6 +23,10 @@ export default function CadastrosPage() {
       <Route path="cbos" element={<CbosPage />} />
       <Route path="indicadores-painel" element={<IndicadoresPainelPage />} />
       <Route path="metas-oci-par" element={<MetasOciParPage />} />
+      <Route path="vacina-grupos" element={<VacinaGruposPage />} />
+      <Route path="vacina-faixa-grupo" element={<VacinaFaixaGrupoPage />} />
+      <Route path="vacina-populacao" element={<VacinaPopulacaoPage />} />
+      <Route path="vacina-esquema" element={<VacinaEsquemaPage />} />
       {CADASTRO_ENTITIES.map((entity) => (
         <Route
           key={entity.key}
