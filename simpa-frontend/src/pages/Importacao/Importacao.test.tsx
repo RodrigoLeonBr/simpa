@@ -41,6 +41,12 @@ vi.mock('../../api/sia', () => ({
   fetchSiaSyncProgress: vi.fn().mockRejectedValue(new Error('404')),
 }));
 
+// VacinaImportSection (rendered in index.tsx) needs this mock to avoid unhandled rejections.
+vi.mock('../../api/vacina', () => ({
+  previewVacina: vi.fn(),
+  importVacina: vi.fn(),
+}));
+
 // SihImportSection (rendered in index.tsx) needs this mock to avoid unhandled rejections.
 vi.mock('../../api/sih', async () => {
   const actual = await vi.importActual<typeof import('../../api/sih')>('../../api/sih');
