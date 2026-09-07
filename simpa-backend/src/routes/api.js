@@ -6,6 +6,7 @@ const sihRoutes = require('./sih');
 const cadastrosRoutes = require('./cadastros');
 const adminRoutes = require('./admin');
 const populacaoRoutes = require('./populacao');
+const vacinaRoutes = require('./vacina');
 
 const router = express.Router();
 
@@ -16,5 +17,6 @@ router.use('/sih', sihRoutes);
 router.use('/cadastros', cadastrosRoutes);
 router.use('/admin', adminRoutes);
 router.use('/populacao', populacaoRoutes);
+router.use('/vacina', vacinaRoutes);
 
 module.exports = router;
