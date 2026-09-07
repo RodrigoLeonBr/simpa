@@ -57,6 +57,7 @@ Documentação de produto legada: `prd-simpa.md`, `estrutura_simpa.md`, `readme.
 | Metas | `/metas` | dashboard + `metas_financiamento` | [frontend.md](docs/agent/frontend.md) |
 | Indicadores | `/indicadores` | contrato `indicadores_qualidade` | [frontend.md](docs/agent/frontend.md) |
 | Relatórios | `/relatorios` | (placeholder UI) | [frontend.md](docs/agent/frontend.md) |
+| Vacinas | `/vacinas` | `/api/vacina/*` | [vacinas.md](docs/agent/vacinas.md) |
 | Administração | `/admin/*` | `/api/admin/*` | [auth-roles.md](docs/agent/auth-roles.md#admin) |
 
 Navegação: `simpa-frontend/src/config/navigation.ts` · Rotas: `simpa-frontend/src/App.tsx`.
@@ -94,7 +95,7 @@ Release (build local → destino sem `--build`, `--migrate`, restore): **[docs/a
 
 ## Banco de dados
 
-- Init Docker: `schema_full.sql` + `migration_002` … `031` em `docker-compose.yml`.
+- Init Docker: `schema_full.sql` + `migration_002` … `036` em `docker-compose.yml`.
 - Volume já existente / destino: `scripts/apply-migrations.*` + tabela `simpa_schema_migrations`.
 - Tabelas-chave: `estabelecimentos`, `procedimentos`, `formas_sia`, `cbos_sia`, `enriquecimento_*`, `esus_cargas`, `dados_consolidados`, `usuarios`.
 - Contrato dashboard lido de `dados_consolidados.dados_conteudo` (JSONB).
@@ -185,79 +186,41 @@ Guia: **[docs/agent/compozy.md](docs/agent/compozy.md)**.
 
 ---
 
-## Feature concluída: frontend-manutenibilidade
+## Features concluídas (arquivo)
 
-**Entregue:** catálogo unificado read-only; `useEntityCrud`; lazy routes + `manualChunks` (index ~15 KB gzip); split enrichment/utils/drawer; registry `cadastroEntities` com `mode`; docs agent.
-
-Spec: `.compozy/tasks/frontend-manutenibilidade/` · Resumo padrões: **[frontend.md](docs/agent/frontend.md#patterns)**.
-
----
-
-## Feature concluída: importacao-depara-unidade-equipe
-
-**Entregue:** registry `esus_import_mapeamentos`; preview gate + upload com `resolucoes`; FKs em `esus_cargas`/`dados_consolidados`; Painel por `estabelecimento_id`/`equipe_id`; review-001 resolvido.
-
-**Commit:** `be60db2` · Spec arquivada: `.compozy/tasks/_archived/*-importacao-depara-unidade-equipe/`
-
-Resumo: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-importacao-depara)** · Importação UI: **[frontend.md](docs/agent/frontend.md#importacao)** · API: **[backend-api.md](docs/agent/backend-api.md)**.
-
----
-
-## Feature concluída: estabelecimentos-perfil-painel
-
-**Entregue:** `perfil` editável (planning staff); sync preserva `perfil_editado`; 5 tabelas `enriquecimento_*`; seletor APS/MAC/Hospitalar/Misto no Painel; layouts A/B/C só no APS (demais perfis → placeholder); E2E Playwright.
-
-**Commits principais:** `4c43959`, `8353acf`, `5e20371`.
-
-Resumo técnico: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-estabelecimentos-perfil-painel)** · Painel: **[frontend.md](docs/agent/frontend.md#painel)**.
-
----
-
-## Feature concluída: cadastros-forma-cbo-sia-sih
-
-**Entregue:** espelho MySQL `forma`/`cbo` → `formas_sia`/`cbos_sia`; APIs read-only; cards e páginas Cadastros; enriquecimento `GET /api/sia/producao` com `descricao_forma`/`descricao_cbo`; contrato SIH em `cadastroReferenciaService.js`.
-
-Spec arquivada: `.compozy/tasks/_archived/*-cadastros-forma-cbo-sia-sih/` · Resumo: **[docs/agent/cadastros.md](docs/agent/cadastros.md#workflow-forma-cbo-sia-sih)** · API: **[backend-api.md](docs/agent/backend-api.md)** · UI: **[frontend.md](docs/agent/frontend.md#cadastros)**.
-
----
-
-## Feature concluída: painel-widgets-dinamicos
-
-**Entregue:** migration 008 runtime; `painelMetricsService` + `painelWidgetsService`; `GET /painel-layout`; CRUD/preview/discovery cadastro; `IndicadoresPainelPage`; Layout A dinâmico com fallback; E2E `painel-widgets.spec.ts`.
-
-**Commits:** `fedd158`, `73ff413` · Spec arquivada: `.compozy/tasks/_archived/*-painel-widgets-dinamicos/` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos)** · Design: **[superpowers spec](docs/superpowers/specs/2026-06-20-painel-widgets-dinamicos-design.md)**.
-
----
-
-## Feature concluída: importacao-cadastro-individual
-
-**Entregue:** `migration_012_populacao_cadastrada.sql`; parser `cadastro_individual` em `parse_esus_csv.py`; ETL contract `pop_row` + denominadores C1/IGM-APS/IGM-ICSAP; `populacaoService.js` + `GET /api/populacao`; `PopulacaoPage.tsx` em `/painel/populacao`; badge `cidadaos_ativos` no preview de importação; 526 JS + 171 Python testes passando.
-
-**Commit:** `f204714` · Spec arquivada: `.compozy/tasks/_archived/*-importacao-cadastro-individual/`
-
----
-
-## Feature concluída: importacao-sihd-hospitalar
-
-**Entregue:** `sync_sih_mysql.py` + `migration_013`; `routes/sih.js` + `sih.js` + `sihProducaoService.js`; `SihImportSection.tsx` em `/importacao`; `SihSyncStatusBadge` em Cadastros; `catalogView` Hospitalar A → `ready`; `ModuloSIHD` expandido no contrato dashboard; 449 Vitest + E2E `sih-painel-hospitalar.spec.ts`.
-
-**Commits:** `3126401`, `c9db700` · Spec: `.compozy/tasks/importacao-sihd-hospitalar/` · API: **[backend-api.md](docs/agent/backend-api.md#sihd)** · DB: **[database.md](docs/agent/database.md)**.
+| Feature | Entregue (resumo) | Refs |
+|---------|-------------------|------|
+| `frontend-manutenibilidade` | `useEntityCrud`; lazy routes; `cadastroEntities` registry | [frontend.md](docs/agent/frontend.md#patterns) |
+| `importacao-depara-unidade-equipe` | `esus_import_mapeamentos`; preview gate; FKs cargas/consolidado | [cadastros.md](docs/agent/cadastros.md#workflow-importacao-depara) |
+| `estabelecimentos-perfil-painel` | `perfil` editável; 5 tabelas enriquecimento; seletor perfil Painel | [cadastros.md](docs/agent/cadastros.md#workflow-estabelecimentos-perfil-painel) |
+| `cadastros-forma-cbo-sia-sih` | `formas_sia`/`cbos_sia`; enriquecimento forma/cbo SIA | [cadastros.md](docs/agent/cadastros.md#workflow-forma-cbo-sia-sih) |
+| `painel-widgets-dinamicos` | `migration_008`; `painelWidgetsService`; Layout A dinâmico | [cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos) |
+| `importacao-cadastro-individual` | `migration_012`; `populacao_cadastrada`; denominadores | [etl-python.md](docs/agent/etl-python.md) |
+| `importacao-sihd-hospitalar` | `migration_013`; `sync_sih_mysql.py`; `sihProducaoService` | [backend-api.md](docs/agent/backend-api.md#sihd) |
 
 ---
 
 ## Feature concluída: leitos-hospitalares-vigencia
 
-**Entregue:** leitos hospitalares (perfis Hospitalar/Misto) versionados por vigência em vez de campo único; `migration_026_leitos_vigencia.sql` (tabela `enriquecimento_hospitalar_leitos_vigencia` + backfill da vigência aberta); `leitosCatalog.js`/`leitosVigenciaValidation.js`/`leitosVigenciaService.js` no backend; rotas `GET/POST /estabelecimentos/:id/leitos-vigencias` e `PUT/DELETE …/:vigenciaId` (mutações `requirePlanningStaff`, audit `estabelecimento_leitos_vigencia_update`); `getEstabelecimentoById` retorna `leitos_vigencias`; `utils/leitosCatalog.ts` + `LeitosVigenciasPanel.tsx`/`LeitosVigenciaEditor.tsx` no drawer de estabelecimento; edição inline de leitos no enriquecimento removida (leitos só por vigência); espelho automático da vigência aberta em `enriquecimento_hospitalar/misto.leitos`.
+**Entregue:** leitos hospitalares versionados por vigência (`migration_026`); `leitosVigenciaService.js`/`LeitosVigenciasPanel.tsx`; rotas `GET/POST/PUT/DELETE /estabelecimentos/:id/leitos-vigencias`; espelho em `enriquecimento_hospitalar/misto.leitos`.
 
-Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-leitos-hospitalares-vigencia)** · API: **[backend-api.md](docs/agent/backend-api.md)** · DB: **[database.md](docs/agent/database.md)**.
+Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-leitos-hospitalares-vigencia)** · API: **[backend-api.md](docs/agent/backend-api.md)** · DB: **[database.md](docs/agent/database.md)**.
+
+---
+
+## Feature concluída: vacinas-cobertura
+
+**Entregue:** `migration_036_vacinas.sql` (7 tabelas); `parse_vacina_xlsx.py` (parser xlsx NIES — aba Export, rodapé, filtro Americana, competência do rodapé ou nome do arquivo); `vacinaImportService.js` + `vacinaService.js` + `vacinaCadastroService.js` + `routes/vacina.js`; `VacinaImportSection.tsx` em `/importacao`; página `/vacinas` com `CoberturaMatrix` (heatmap) e export CSV; 4 páginas de cadastro `/cadastros/vacina-{grupos,faixa-grupo,populacao,esquema}`; Jest + Vitest + pytest. Fórmula: doses acumuladas jan→mês / (pop_alvo × num_doses_esquema); sem widget no Painel v1.
+
+**Migration:** `migration_036_vacinas.sql` · Doc: **[vacinas.md](docs/agent/vacinas.md)** · API: **[backend-api.md](docs/agent/backend-api.md#vacinas)** · DB: **[database.md](docs/agent/database.md)**.
 
 ---
 
 ## Feature concluída: painel-periodo-foco-hospitalar
 
-**Entregue:** seleção de período (mês/trimestre/quadrimestre/ano) no Painel e no preview de widgets; `src/services/periodo.js` (`resolvePeriodo`/`getPreviousPeriodo`); `bindTemplate` +placeholders `:competencia_inicio`/`:competencia_fim` (allowlist); `migration_031` coluna `painel_widgets.agregacao_periodo` (`ultimo_mes`/`soma`/`media`); `resolveMetricValueForWidget` (media = média mês a mês; soma/ultimo_mes 1 query); delta compara período anterior equivalente; `/painel-layout` + preview aceitam `periodo`. Frontend: `PeriodoSelect` no FilterBar, `useFilters.periodo` (competencia derivada = mês-fim), campo Agregação no `WidgetEditDrawer`, exemplos SQL de período. **Layout B (Foco) dinâmico** para não-APS (Hospitalar B = ready): exibe todos os widgets. Retrocompat: grão Mês + `ultimo_mes` = comportamento anterior.
+**Entregue:** seleção de período (mês/trimestre/quadrimestre/ano); `periodo.js`; `migration_031` `agregacao_periodo`; `resolveMetricValueForWidget`; `PeriodoSelect`; Layout B (Foco) dinâmico para não-APS.
 
-**Commit:** `df63168` · Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-painel-widgets-dinamicos)** · Manual: **[manual-editar-widget-painel.md](docs/agent/manual-editar-widget-painel.md)** · DB/views: **[database.md](docs/agent/database.md#migration-031-aplicada)**.
+**Commit:** `df63168` · Manual: **[manual-editar-widget-painel.md](docs/agent/manual-editar-widget-painel.md)** · DB: **[database.md](docs/agent/database.md)**.
 
 ---
 
@@ -299,6 +262,8 @@ Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md`
 | Exportar produção e-SUS casada com de-para SIGTAP? | `producaoSigtapService.js` + `GET /api/cadastros/procedimentos-sigtap/producao?competencia=` · UI `ProducaoSigtapExport.tsx` · [cadastros.md](docs/agent/cadastros.md) |
 | Enriquecimento por perfil? | `PUT …/enriquecimento/:slug` + tabelas `enriquecimento_*` |
 | Como cadastra leitos por vigência? | `leitosVigenciaService.js` / `LeitosVigenciasPanel.tsx` |
+| Como calcula cobertura vacinal? | `vacinaService.js` `getCobertura` / `computeCobertura` |
+| Como importa doses do NIES? | `vacinaImportService.js` + `parse_vacina_xlsx.py` |
 | Gate manter/aplicar do sync de cadastros? | `cadastrosSync.js` `planejarSync`/`aplicarPlano` · UI `SyncPlanoPreview.tsx` · [cadastros.md](docs/agent/cadastros.md#workflow-sync-plano-gate) |
 | Deploy release sem build no destino? | `npm run docker:release:export` → `deploy-release.sh --recreate --migrate` · [restore-backup-e-release-docker.md](docs/agent/restore-backup-e-release-docker.md) |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |
@@ -321,7 +286,8 @@ Spec: `docs/superpowers/specs/2026-07-21-leitos-hospitalares-vigencia-design.md`
 | [auth-roles.md](docs/agent/auth-roles.md) | JWT, perfis, auditoria |
 | [testing-ci.md](docs/agent/testing-ci.md) | Testes e pipeline |
 | [compozy.md](docs/agent/compozy.md) | PRD → TechSpec → tasks |
+| [vacinas.md](docs/agent/vacinas.md) | Cobertura vacinal NIES: import xlsx, fórmula, endpoints, frontend |
 
 ---
 
-*Última atualização: 2026-07-24 · Manter CLAUDE.md ≤300 linhas; detalhes novos vão em `docs/agent/`.*
+*Última atualização: 2026-09-07 · Manter CLAUDE.md ≤300 linhas; detalhes novos vão em `docs/agent/`.*

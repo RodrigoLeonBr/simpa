@@ -18,6 +18,10 @@ const EXPECTED_GRID_MODES: Record<string, CadastroEntityMode> = {
   'indicadores-painel': 'custom',
   'procedimentos-sigtap': 'crud',
   '/admin': 'custom',
+  'vacina-grupos': 'custom',
+  'vacina-faixa-grupo': 'custom',
+  'vacina-populacao': 'custom',
+  'vacina-esquema': 'custom',
 };
 
 describe('cadastroEntities config', () => {

@@ -28,8 +28,9 @@
 | `migration_029_esus_sigtap_blocos.sql` | Coluna `procedimentos_esus_sigtap.origem` (`curado`/`descoberto`) + backfill dos blocos SIGTAP do e-SUS; view `v_esus_producao_sigtap` (produção e-SUS × SIGTAP num JOIN único) |
 | `migration_030_widgets_consultas_aps.sql` | Métricas + widgets "Consultas" / "Consultas médicas" (APS Layout A) a partir de `sia_producao` (forma `030101`) |
 | `migration_031_widget_agregacao_periodo.sql` | Coluna `painel_widgets.agregacao_periodo` (`ultimo_mes`/`soma`/`media`) — habilita seleção de período (trimestre/quadrimestre/ano) no Painel |
+| `migration_036_vacinas.sql` | `vacina_cargas`, `vacina_doses`, `vacina_imunobiologicos`, `vacina_grupos`, `vacina_faixa_grupo`, `vacina_populacao_alvo`, `vacina_esquema` — módulo cobertura vacinal NIES; idempotente |
 
-Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `031` em `/docker-entrypoint-initdb.d/`.
+Docker init: `docker-compose.yml` monta `schema_full.sql` + migrations `02` … `036` em `/docker-entrypoint-initdb.d/`.
 
 Deploy remoto (volume já existente): `scripts/apply-migrations.sh` / `.ps1` aplica só pendentes e registra em `simpa_schema_migrations` (criada sob demanda). Ver [docker-env.md](docker-env.md) e [restore-backup-e-release-docker.md](restore-backup-e-release-docker.md).
 
@@ -120,6 +121,20 @@ FK: `sih_aih`, `sih_internacoes` e `sih_procedimentos.sincronizacao_id` → `sih
 **Dicionário de campos / SQL para Indicadores:** [sihd-internacao-dicionario-dados.md](sihd-internacao-dicionario-dados.md).
 
 **FINANCIAMENTO 2-char vs RUB_ID:** `s_aih.FINANCIAMENTO` é 2 chars → mapeia direto para `rubricas_sia.RUB_ID` (2 chars). Diferente do SIA onde `PRD_RUB` tem 4 chars com `LEFT(PRD_RUB, 4)`. Não usar CAST — colunas numéricas `DIARIAS`, `DIARIAS_UTI`, `VALOR_TOTAL_AIH` são nativas `int`/`decimal`.
+
+### Vacinas — Cobertura NIES (migration 036)
+
+| Tabela | Grão / função |
+|--------|---------------|
+| `vacina_cargas` | Uma linha por competência; `UNIQUE(competencia)`; CASCADE para `vacina_doses` |
+| `vacina_doses` | Fato: `carga_id × cnes_sala × imuno_codigo × faixa_nies × sistema_origem` |
+| `vacina_imunobiologicos` | Catálogo `imuno_codigo PK`; populado automaticamente no import |
+| `vacina_grupos` | Grupos populacionais gerenciados via cadastro (`slug UNIQUE`) |
+| `vacina_faixa_grupo` | De-para `faixa_nies PK → grupo_id` (NULL = não mapeado) |
+| `vacina_populacao_alvo` | Denominador: `(ano, grupo_id)` → `populacao INT`; `UNIQUE(ano, grupo_id)` |
+| `vacina_esquema` | Nº de doses por `(imuno_codigo, grupo_id)`; ausência = vacina não-alvo no grupo |
+
+Detalhes de fórmula e fluxo: **[vacinas.md](vacinas.md)**.
 
 ### Auth / admin
 
