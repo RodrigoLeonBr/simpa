@@ -21,6 +21,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/importacao', label: 'Importação', icon: 'importacao' },
   { to: '/metas', label: 'Metas', icon: 'metas' },
   { to: '/indicadores', label: 'Indicadores', icon: 'indicadores' },
+  { to: '/vacinas', label: 'Vacinas', icon: 'indicadores' },
   { to: '/relatorios', label: 'Relatórios', icon: 'relatorios' },
   { to: '/painel/populacao', label: 'População Cadastrada', icon: 'cadastros' },
   { to: '/admin', label: 'Administração', icon: 'admin' },
@@ -40,6 +41,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/indicadores': { title: 'Indicadores', crumb: 'Painel de Indicadores', showFilters: true },
   '/relatorios': { title: 'Relatórios', crumb: 'Comparativo entre Unidades', showFilters: true },
   '/admin': { title: 'Administração', crumb: 'Usuários e Perfis', showFilters: false },
+  '/vacinas': { title: 'Vacinas', crumb: 'Cobertura Vacinal', showFilters: false },
 };
 
 export function resolveRouteMeta(pathname: string): RouteMeta {
