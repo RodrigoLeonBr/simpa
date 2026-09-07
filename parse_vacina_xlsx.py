@@ -141,6 +141,7 @@ def parse(path):
     if not competencia:
         competencia = _parse_competencia_from_filename(path)
 
+    # ponytail: acesso posicional — nomes de coluna do NIES vêm com corrupção de encoding; acesso por nome é menos confiável
     # Descarta rodape (linha vazia + linha de filtros) via coluna doses
     df = df.dropna(subset=[df.columns[6]])  # 'Total doses aplicadas' por posicao
 
@@ -154,8 +155,8 @@ def parse(path):
         imuno_cod, imuno_nome = _split_codigo_nome(row.iloc[5])
         doses_raw = row.iloc[6]
         doses = int(round(float(doses_raw)))
-        faixa = _nullify_nan(row.iloc[7]) if not isinstance(row.iloc[7], float) else _nullify_nan(row.iloc[7])
-        sistema = _nullify_nan(row.iloc[8]) if not isinstance(row.iloc[8], float) else _nullify_nan(row.iloc[8])
+        faixa   = _nullify_nan(row.iloc[7])
+        sistema = _nullify_nan(row.iloc[8])
         linhas.append({
             'cnes_sala': cnes_sala,
             'sala_nome': sala_nome,
@@ -174,5 +175,15 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('Uso: python parse_vacina_xlsx.py <arquivo.xlsx>', file=sys.stderr)
         sys.exit(1)
-    result = parse(sys.argv[1])
-    print(json.dumps(result, ensure_ascii=False))
+    try:
+        result = parse(sys.argv[1])
+    except FileNotFoundError:
+        print(f'ERRO: arquivo nao encontrado: {sys.argv[1]}', file=sys.stderr)
+        sys.exit(1)
+    except ValueError as e:
+        print(f'ERRO: {e}', file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f'ERRO: falha ao ler xlsx: {e}', file=sys.stderr)
+        sys.exit(1)
+    sys.stdout.buffer.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))

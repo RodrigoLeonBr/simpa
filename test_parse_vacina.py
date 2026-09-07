@@ -70,3 +70,16 @@ def test_competencia_fallback_nome_arquivo(tmp_path):
     ], filtro="sem mes aqui")
     res = _run(path)
     assert res['competencia'] == '2026-01-01'
+
+
+def test_imuno_com_hifen_no_nome(tmp_path):
+    path = _make_xlsx(tmp_path, [
+        ['C', 'C', 'R', 'AMERICANA',
+         '4032128 - UBS DONA ROSA',
+         '99 - VACINA COVID-19 PFIZER - COMIRNATY PEDIÁTRICA, RNAM',
+         5.0, '05 a 11 anos', 'NOVO PNI'],
+    ])
+    res = _run(path)
+    linha = res['linhas'][0]
+    assert linha['imuno_codigo'] == '99'
+    assert linha['imuno_nome'] == 'VACINA COVID-19 PFIZER - COMIRNATY PEDIÁTRICA, RNAM'
