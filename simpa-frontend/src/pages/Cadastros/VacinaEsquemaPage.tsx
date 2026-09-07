@@ -51,7 +51,7 @@ export function VacinaEsquemaPage() {
 
   async function handleUpsert(e: React.FormEvent) {
     e.preventDefault();
-    if (!formImuno || !formGrupo || !formDoses) return;
+    if (!formImuno || !formGrupo || !formDoses || Number(formDoses) < 1) return;
     setSaving(true);
     try {
       await upsertEsquema({ imuno_codigo: formImuno, grupo_id: Number(formGrupo), num_doses: Number(formDoses) });
