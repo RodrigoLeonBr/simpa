@@ -16,6 +16,7 @@ const AdminPage = lazy(() => import('./pages/Administracao'));
 const MetasPage = lazy(() => import('./pages/Metas'));
 const IndicadoresPage = lazy(() => import('./pages/Indicadores'));
 const RelatoriosPage = lazy(() => import('./pages/Relatorios'));
+const VacinasPage = lazy(() => import('./pages/Vacinas'));
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/metas" element={<LazyModuleRoute Page={MetasPage} />} />
               <Route path="/indicadores" element={<LazyModuleRoute Page={IndicadoresPage} />} />
               <Route path="/relatorios" element={<LazyModuleRoute Page={RelatoriosPage} />} />
+              <Route path="/vacinas" element={<LazyModuleRoute Page={VacinasPage} />} />
               <Route path="/painel/populacao" element={<LazyModuleRoute Page={PopulacaoPage} />} />
               <Route path="/admin/*" element={<LazyModuleRoute Page={AdminPage} />} />
             </Route>

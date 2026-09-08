@@ -9,6 +9,7 @@ import { SiaProducaoSyncBanner } from '../Cadastros/SiaProducaoSyncBanner';
 import { HistoricoCargas } from './HistoricoCargas';
 import { MapeamentosPanel } from './MapeamentosPanel';
 import { SihImportSection } from './SihImportSection';
+import { VacinaImportSection } from './VacinaImportSection';
 import { UploadZone } from './UploadZone';
 
 type ImportTab = 'importar' | 'mapeamentos';
@@ -107,6 +108,9 @@ export default function ImportacaoPage() {
 
           <hr className="import-section-divider" />
           <SihImportSection />
+
+          <hr className="import-section-divider" />
+          <VacinaImportSection />
         </>
       ) : (
         <MapeamentosPanel initialQuery={initialMapeamentosQuery} />

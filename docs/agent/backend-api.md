@@ -19,6 +19,7 @@ Express em `simpa-backend/src/`. Entry: `app.js` → `server.js`.
 | `/importacao` | `importacao.js` | — |
 | `/sia` | `sia.js` | — |
 | `/sih` | `sih.js` | — |
+| `/vacina` | `vacina.js` | — |
 | `/cadastros` | `cadastros.js` | — |
 | `/admin` | `admin.js` | `requireAdmin` / `requireAdminOrPlanning` |
 
@@ -154,6 +155,48 @@ Services SIHD:
 | `sih.js` | Spawn `sync_sih_mysql.py --pg-write`, cache progresso, gate 409 |
 | `sihProducaoService.js` | Queries `sih_internacoes` / `sih_procedimentos` com filtros opcionais |
 
+### Vacinas — Cobertura NIES (`routes/vacina.js`)
+
+Módulo de importação xlsx (NIES) e cálculo de cobertura vacinal. Detalhes completos: **[vacinas.md](vacinas.md)**.
+
+#### Importação
+
+| Método | Path | Auth | Notas |
+|--------|------|------|-------|
+| POST | `/api/vacina/importacao/preview` | JWT + planning | multer `arquivo`; retorna `{ competencia, doses_total, linhas, faixas_nao_mapeadas }` |
+| POST | `/api/vacina/importacao` | JWT + planning | Grava carga; re-import da mesma competência substitui (DELETE CASCADE + INSERT) |
+| GET | `/api/vacina/cargas` | JWT | Histórico `vacina_cargas` DESC |
+
+#### Cobertura
+
+| Método | Path | Auth | Query |
+|--------|------|------|-------|
+| GET | `/api/vacina/cobertura` | JWT | `ano` (obrigatório), `competencia` YYYY-MM (default dez), `grupo_id`, `imuno_codigo` |
+
+Resposta: `{ imuno_codigo, imuno_nome, grupo_id, grupo_nome, doses, pop_alvo, num_doses, denominador, cobertura_pct }[]`. `cobertura_pct` em %; `null` quando denominador=0.
+
+#### Cadastros vacinas
+
+| Método | Path | Auth | Notas |
+|--------|------|------|-------|
+| GET | `/api/vacina/imunobiologicos` | JWT | Catálogo populado no import |
+| GET/POST | `/api/vacina/grupos` | JWT / + planning | Lista / cria grupo |
+| PUT | `/api/vacina/grupos/:id` | JWT + planning | Patch parcial |
+| GET | `/api/vacina/faixa-grupo` | JWT | Todas as faixas NIES com `grupo_id` |
+| PUT | `/api/vacina/faixa-grupo/:faixa` | JWT + planning | Body `{ grupo_id }` (null = desassociar) |
+| GET | `/api/vacina/populacao` | JWT | `?ano=YYYY` opcional |
+| POST | `/api/vacina/populacao` | JWT + planning | Body `{ ano, grupo_id, populacao }` — upsert |
+| GET/POST | `/api/vacina/esquema` | JWT / + planning | Lista / cria esquema |
+| DELETE | `/api/vacina/esquema/:id` | JWT + planning | Remove (vacina passa a não-alvo no grupo) |
+
+Services:
+
+| Arquivo | Função |
+|---------|--------|
+| `vacinaImportService.js` | `parseUpload` (spawn `parse_vacina_xlsx.py`), `gravarCarga`, `analisarPreview` |
+| `vacinaService.js` | `getCobertura` (query acumulada), `computeCobertura` (puro) |
+| `vacinaCadastroService.js` | CRUD grupos / faixa-grupo / populacao-alvo / esquema / imunobiologicos |
+
 ### Cadastros (`routes/cadastros.js`)
 
 | Método | Path | Auth |
@@ -261,6 +304,9 @@ Ver **[auth-roles.md](auth-roles.md#admin)**.
 | `painelMetricsService.js` | `bindTemplate`, `executeMetric`, `discoverMetricsFromRaw` |
 | `painelWidgetsService.js` | CRUD widgets, `resolvePainelLayout`, `previewWidget` |
 | `auditService.js` | `audit_log` inserts |
+| `vacinaImportService.js` | `parseUpload` (spawn Python), `gravarCarga` (transação), `analisarPreview` |
+| `vacinaService.js` | `getCobertura` (acumulada), `computeCobertura` (puro) |
+| `vacinaCadastroService.js` | CRUD grupos / faixa / populacao / esquema / imunobiologicos |
 
 ## Middleware (`middleware/`)
 

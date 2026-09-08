@@ -24,6 +24,7 @@
 | [auth-roles.md](auth-roles.md) | Login, JWT, perfis, admin |
 | [testing-ci.md](testing-ci.md) | Jest, Vitest, pytest, Playwright, CI |
 | [compozy.md](compozy.md) | Workflows PRD/TechSpec/tasks |
+| [vacinas.md](vacinas.md) | Cobertura vacinal NIES: import xlsx, modelo de dados, fórmula, endpoints, frontend |
 | [indicadores-qualidade.md](indicadores-qualidade.md) | Catálogo `/indicadores`, fontes, queries e avaliação no banco |
 | [relatorios-indicadores.md](relatorios-indicadores.md) | `/relatorios` e `/indicadores`: onde cadastrar, fonte dos valores, comandos de atualização |
 | [importacao-esus-regras.md](importacao-esus-regras.md) | Fluxo importação e-SUS, preview, de-para, status |
