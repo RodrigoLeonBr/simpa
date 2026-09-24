@@ -7,6 +7,8 @@ import type {
   PopulacaoAlvo,
   Esquema,
   Imunobiologico,
+  VacinaDosesResumo,
+  VacinaDosesFiltros,
 } from '../types/vacina';
 
 export type {
@@ -17,6 +19,8 @@ export type {
   PopulacaoAlvo,
   Esquema,
   Imunobiologico,
+  VacinaDosesResumo,
+  VacinaDosesFiltros,
 };
 
 export function previewVacina(file: File): Promise<VacinaImportPreview> {
@@ -121,4 +125,19 @@ export function deleteEsquema(id: number): Promise<{ id: number }> {
 
 export function fetchImunobiologicos(): Promise<Imunobiologico[]> {
   return apiFetch<Imunobiologico[]>('/api/vacina/imunobiologicos');
+}
+
+export function fetchDosesResumo(params: {
+  ano: number;
+  mes?: number | null;
+  cnes_sala?: string | null;
+}): Promise<VacinaDosesResumo> {
+  const p = new URLSearchParams({ ano: String(params.ano) });
+  if (params.mes != null) p.set('mes', String(params.mes));
+  if (params.cnes_sala) p.set('cnes_sala', params.cnes_sala);
+  return apiFetch<VacinaDosesResumo>(`/api/vacina/doses/resumo?${p}`);
+}
+
+export function fetchDosesFiltros(): Promise<VacinaDosesFiltros> {
+  return apiFetch<VacinaDosesFiltros>('/api/vacina/doses/filtros');
 }
