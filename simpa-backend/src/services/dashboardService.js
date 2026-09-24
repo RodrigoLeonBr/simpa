@@ -1,4 +1,5 @@
 const { query } = require('./db');
+const { resolvePeriodo } = require('./periodo');
 
 const PLATAFORMA =
   'SIMPA - Sistema Integrado de Monitoramento e Planejamento de Americana';
@@ -142,13 +143,16 @@ function sumKpis(rows) {
   return result;
 }
 
-async function fetchMunicipalAggregate(competenciaDate, competenciaLabel) {
+// mesesDates: array de datas 'YYYY-MM-01' do período (1 elemento para mês).
+// fimDate: mês final do período — base para snapshots (metas/qualidade) e histórico.
+async function fetchMunicipalAggregate(mesesDates, competenciaLabel, fimDate) {
   const { rows } = await query(
-    `SELECT unidade, equipe, estabelecimento_id, equipe_id, municipio, versao_schema, dados_conteudo
+    `SELECT unidade, equipe, estabelecimento_id, equipe_id, municipio, versao_schema,
+            dados_conteudo, competencia::text AS competencia
      FROM dados_consolidados
-     WHERE competencia = $1
+     WHERE competencia = ANY($1::date[])
      ORDER BY unidade, equipe`,
-    [competenciaDate]
+    [mesesDates]
   );
   if (!rows.length) {
     return null;
@@ -157,16 +161,24 @@ async function fetchMunicipalAggregate(competenciaDate, competenciaLabel) {
   const byUnit = new Map();
   for (const row of rows) {
     const key = row.estabelecimento_id ?? row.unidade;
-    const atend = row.dados_conteudo?.kpis_gerais?.total_atendimentos_aps;
+    const kpis = row.dados_conteudo?.kpis_gerais;
+    const atend = kpis?.total_atendimentos_aps;
     const parsed = atend != null ? Number(atend) : null;
+    const odonto = kpis?.atendimentos_odonto;
+    const parsedOdonto = odonto != null ? Number(odonto) : null;
     const existing = byUnit.get(key) ?? {
       unidade: row.unidade,
       estabelecimento_id: row.estabelecimento_id ?? undefined,
       atendimentos: 0,
+      odonto: 0,
       hasValue: false,
     };
     if (parsed != null) {
       existing.atendimentos += parsed;
+      existing.hasValue = true;
+    }
+    if (parsedOdonto != null) {
+      existing.odonto += parsedOdonto;
       existing.hasValue = true;
     }
     byUnit.set(key, existing);
@@ -181,7 +193,7 @@ async function fetchMunicipalAggregate(competenciaDate, competenciaLabel) {
      GROUP BY competencia
      ORDER BY competencia
      LIMIT 12`,
-    [competenciaDate]
+    [fimDate]
   );
 
   const historicoMensal = historicoRows.map((row) => ({
@@ -190,14 +202,16 @@ async function fetchMunicipalAggregate(competenciaDate, competenciaLabel) {
     meta: null,
   }));
 
-  const first = rows[0];
+  // Snapshots (metas/qualidade) vêm do mês final do período; KPIs de fluxo são somados.
+  const first = rows.find((r) => (r.competencia || '').slice(0, 7) === competenciaLabel) ?? rows[0];
   const kpis = sumKpis(rows);
   const producaoPorUnidade = Array.from(byUnit.values())
     .filter((item) => item.hasValue)
-    .map(({ unidade, estabelecimento_id, atendimentos }) => ({
+    .map(({ unidade, estabelecimento_id, atendimentos, odonto }) => ({
       unidade,
       estabelecimento_id,
       atendimentos,
+      odonto,
     }))
     .sort((a, b) => b.atendimentos - a.atendimentos);
 
@@ -249,14 +263,31 @@ async function fetchMunicipalAggregate(competenciaDate, competenciaLabel) {
 
 async function fetchDashboard({
   competencia,
+  periodo,
   unidade,
   equipe,
   estabelecimento_id,
   equipe_id,
 }) {
-  const parsed = parseCompetencia(competencia);
-  if (!parsed.ok) {
-    return { status: 400, body: { error: parsed.error } };
+  // periodo (mês/trimestre/quadri/ano) tem precedência; deriva os meses do intervalo
+  // e o mês final (fim) que representa a competência mensal para snapshots.
+  let meses;
+  let parsed;
+  if (periodo) {
+    let resolved;
+    try {
+      resolved = resolvePeriodo(periodo);
+    } catch (err) {
+      return { status: 400, body: { error: err.message } };
+    }
+    meses = resolved.meses.map((m) => `${m}-01`);
+    parsed = { ok: true, label: resolved.fim, date: `${resolved.fim}-01` };
+  } else {
+    parsed = parseCompetencia(competencia);
+    if (!parsed.ok) {
+      return { status: 400, body: { error: parsed.error } };
+    }
+    meses = [parsed.date];
   }
 
   const estabelecimentoId = parseOptionalInt(estabelecimento_id);
@@ -280,7 +311,7 @@ async function fetchDashboard({
   };
 
   if (isMunicipalQuery({ unidade, equipe, estabelecimentoId, equipeId })) {
-    const aggregate = await fetchMunicipalAggregate(parsed.date, parsed.label);
+    const aggregate = await fetchMunicipalAggregate(meses, parsed.label, parsed.date);
     if (!aggregate) {
       return {
         status: 404,

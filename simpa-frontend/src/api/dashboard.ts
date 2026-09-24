@@ -9,8 +9,13 @@ export interface DashboardFetchFilters {
 export function fetchDashboard(
   competencia: string,
   filters?: DashboardFetchFilters,
+  periodo?: string,
 ): Promise<ContratoDashboard> {
   const params = new URLSearchParams({ competencia });
+  // periodo (trimestre/quadri/ano) faz o backend somar os meses do intervalo.
+  if (periodo && periodo !== competencia) {
+    params.set('periodo', periodo);
+  }
   if (filters?.estabelecimentoId != null) {
     params.set('estabelecimento_id', String(filters.estabelecimentoId));
   }

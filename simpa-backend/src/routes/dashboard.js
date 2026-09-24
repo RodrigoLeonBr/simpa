@@ -16,10 +16,11 @@ function parseOptionalInt(value) {
 
 router.get('/planejamento', async (req, res, next) => {
   try {
-    const { competencia, unidade, equipe, estabelecimento_id, equipe_id } =
+    const { competencia, periodo, unidade, equipe, estabelecimento_id, equipe_id } =
       req.query;
     const result = await fetchDashboard({
       competencia,
+      periodo,
       unidade,
       equipe,
       estabelecimento_id,

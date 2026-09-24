@@ -46,6 +46,10 @@ services:
       - ./migration_036_vacinas.sql:/docker-entrypoint-initdb.d/36-migration_036_vacinas.sql:ro
       - ./migration_037_sia_sih_metricas_periodo.sql:/docker-entrypoint-initdb.d/37-migration_037_sia_sih_metricas_periodo.sql:ro
       - ./migration_038_widgets_somaveis_soma.sql:/docker-entrypoint-initdb.d/38-migration_038_widgets_somaveis_soma.sql:ro
+      - ./migration_039_widgets_aps_somaveis_soma.sql:/docker-entrypoint-initdb.d/39-migration_039_widgets_aps_somaveis_soma.sql:ro
+      - ./migration_040_aps_atendimento_oficial.sql:/docker-entrypoint-initdb.d/40-migration_040_aps_atendimento_oficial.sql:ro
+      - ./migration_041_esus_rankings_periodo.sql:/docker-entrypoint-initdb.d/41-migration_041_esus_rankings_periodo.sql:ro
+      - ./migration_042_widget_overrides_periodo.sql:/docker-entrypoint-initdb.d/42-migration_042_widget_overrides_periodo.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

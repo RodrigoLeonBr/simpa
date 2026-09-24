@@ -33,15 +33,15 @@ export function useDashboard(options?: { layout?: PainelLayout; forceConsolidate
   // Painel usa layout A dinâmico (não busca dados_consolidados). Páginas analíticas
   // (Relatórios/Indicadores/Metas/Situação) precisam do consolidado sempre.
   const forceConsolidated = options?.forceConsolidated ?? false;
-  const { competencia, unidadeId, equipeId, painelPerfil } = useFilters();
+  const { competencia, periodo, unidadeId, equipeId, painelPerfil } = useFilters();
   const [data, setData] = useState<ContratoDashboard | null>(null);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const filterKey = useMemo(
-    () => `${layout}:${painelPerfil}:${competencia}:${unidadeId ?? 'all'}:${equipeId ?? 'all'}`,
-    [layout, painelPerfil, competencia, unidadeId, equipeId],
+    () => `${layout}:${painelPerfil}:${periodo}:${unidadeId ?? 'all'}:${equipeId ?? 'all'}`,
+    [layout, painelPerfil, periodo, unidadeId, equipeId],
   );
 
   useEffect(() => {
@@ -87,7 +87,7 @@ export function useDashboard(options?: { layout?: PainelLayout; forceConsolidate
 
       try {
         const filters = buildDashboardFilters(unidadeId, equipeId);
-        const payload = await fetchDashboard(competencia, filters);
+        const payload = await fetchDashboard(competencia, filters, periodo);
 
         if (!cancelled) {
           setData(payload);
@@ -109,7 +109,7 @@ export function useDashboard(options?: { layout?: PainelLayout; forceConsolidate
     return () => {
       cancelled = true;
     };
-  }, [filterKey, competencia, unidadeId, equipeId, painelPerfil, layout, forceConsolidated]);
+  }, [filterKey, competencia, periodo, unidadeId, equipeId, painelPerfil, layout, forceConsolidated]);
 
   return { data, unidades, loading, error };
 }

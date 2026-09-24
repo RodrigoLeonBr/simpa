@@ -54,6 +54,7 @@ export interface ModuloAPS {
     unidade: string;
     estabelecimento_id?: number;
     atendimentos: number | null;
+    odonto?: number | null;
   }[];
 }
 

@@ -154,10 +154,14 @@ describe('useDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalledWith('2026-05', {
-        estabelecimentoId: 1,
-        equipeId: 1,
-      });
+      expect(fetchDashboard).toHaveBeenCalledWith(
+        '2026-05',
+        {
+          estabelecimentoId: 1,
+          equipeId: 1,
+        },
+        '2026-05',
+      );
     });
   });
 
@@ -178,7 +182,7 @@ describe('useDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalledWith('2026-05', { estabelecimentoId: 1 });
+      expect(fetchDashboard).toHaveBeenCalledWith('2026-05', { estabelecimentoId: 1 }, '2026-05');
     });
   });
 
@@ -193,7 +197,7 @@ describe('useDashboard', () => {
 
     await waitFor(() => expect(result.current.dashboard.loading).toBe(false));
 
-    expect(fetchDashboard).toHaveBeenCalledWith('2026-05', undefined);
+    expect(fetchDashboard).toHaveBeenCalledWith('2026-05', undefined, '2026-05');
   });
 
   it('fetches dashboard with IDs without waiting for unidades catalog', async () => {
@@ -219,10 +223,14 @@ describe('useDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalledWith('2026-05', {
-        estabelecimentoId: 1,
-        equipeId: 1,
-      });
+      expect(fetchDashboard).toHaveBeenCalledWith(
+        '2026-05',
+        {
+          estabelecimentoId: 1,
+          equipeId: 1,
+        },
+        '2026-05',
+      );
     });
 
     await act(async () => {

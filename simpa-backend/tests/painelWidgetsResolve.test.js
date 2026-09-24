@@ -212,7 +212,7 @@ describe('painelWidgetsService resolve/preview', () => {
     expect(result.competencia).toBe('2026-03');
   });
 
-  it('card soma passa o intervalo completo do período ao SQL', async () => {
+  it('card soma roda a métrica mês a mês e soma o período', async () => {
     query.mockResolvedValueOnce({
       rows: [
         {
@@ -230,7 +230,10 @@ describe('painelWidgetsService resolve/preview', () => {
         },
       ],
     });
-    executeMetric.mockResolvedValueOnce({ rows: [{ valor: 300 }], single: 300 });
+    executeMetric
+      .mockResolvedValueOnce({ rows: [{ valor: 100 }], single: 100 })
+      .mockResolvedValueOnce({ rows: [{ valor: 120 }], single: 120 })
+      .mockResolvedValueOnce({ rows: [{ valor: 80 }], single: 80 });
 
     const result = await resolvePainelLayout({
       perfil: 'Hospitalar',
@@ -238,13 +241,16 @@ describe('painelWidgetsService resolve/preview', () => {
       periodo: '2026-T1',
     });
 
-    expect(executeMetric).toHaveBeenCalledWith(
+    expect(executeMetric).toHaveBeenCalledTimes(3);
+    expect(executeMetric).toHaveBeenNthCalledWith(
+      1,
       10,
-      expect.objectContaining({
-        competencia: '2026-03',
-        competenciaInicio: '2026-01',
-        competenciaFim: '2026-03',
-      })
+      expect.objectContaining({ competencia: '2026-01', competenciaInicio: '2026-01', competenciaFim: '2026-01' })
+    );
+    expect(executeMetric).toHaveBeenNthCalledWith(
+      3,
+      10,
+      expect.objectContaining({ competencia: '2026-03', competenciaInicio: '2026-03', competenciaFim: '2026-03' })
     );
     expect(result.widgets[0].value).toBe(300);
   });

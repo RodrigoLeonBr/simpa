@@ -307,6 +307,83 @@ describe('dashboardService', () => {
       expect(result.body.modulos.atencao_primaria_esus.historico_mensal).toHaveLength(1);
     });
 
+    it('periodo trimestre soma KPIs municipais dos meses do intervalo', async () => {
+      // 2 unidades × 3 meses (jan/fev/mar) → soma por unidade e total.
+      const mk = (unidade, estId, atend, odonto) => ({
+        unidade,
+        equipe: 'Todas',
+        estabelecimento_id: estId,
+        municipio: 'AMERICANA',
+        versao_schema: '3.1.0',
+        competencia: '2026-03-01',
+        dados_conteudo: {
+          kpis_gerais: { total_atendimentos_aps: atend, atendimentos_odonto: odonto },
+          modulos: {},
+        },
+      });
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            mk('UBS A', 1, 10, 1),
+            mk('UBS A', 1, 20, 2),
+            mk('UBS A', 1, 30, 3),
+            mk('UBS B', 2, 100, 5),
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const result = await fetchDashboard({ periodo: '2026-T1' });
+
+      expect(result.status).toBe(200);
+      // query municipal usa ANY(array de meses do trimestre)
+      expect(query.mock.calls[0][0]).toMatch(/competencia = ANY/);
+      expect(query.mock.calls[0][1][0]).toEqual(['2026-01-01', '2026-02-01', '2026-03-01']);
+      expect(result.body.competencia).toBe('2026-03');
+      expect(result.body.kpis_gerais.total_atendimentos_aps).toBe(160);
+      expect(result.body.kpis_gerais.atendimentos_odonto).toBe(11);
+      const prod = result.body.modulos.atencao_primaria_esus.producao_por_unidade;
+      expect(prod.find((p) => p.estabelecimento_id === 1)).toMatchObject({ atendimentos: 60, odonto: 6 });
+    });
+
+    it('municipal producao_por_unidade inclui odonto por unidade', async () => {
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              unidade: 'UBS A',
+              equipe: 'Todas',
+              estabelecimento_id: 1,
+              municipio: 'AMERICANA',
+              versao_schema: '3.1.0',
+              dados_conteudo: {
+                kpis_gerais: { total_atendimentos_aps: 100, atendimentos_odonto: 30 },
+                modulos: {},
+              },
+            },
+            {
+              unidade: 'UBS B',
+              equipe: 'Todas',
+              estabelecimento_id: 2,
+              municipio: 'AMERICANA',
+              versao_schema: '3.1.0',
+              dados_conteudo: {
+                kpis_gerais: { total_atendimentos_aps: 200, atendimentos_odonto: 50 },
+                modulos: {},
+              },
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const result = await fetchDashboard({ competencia: '2026-01' });
+
+      const prod = result.body.modulos.atencao_primaria_esus.producao_por_unidade;
+      const a = prod.find((p) => p.estabelecimento_id === 1);
+      const b = prod.find((p) => p.estabelecimento_id === 2);
+      expect(a).toMatchObject({ atendimentos: 100, odonto: 30 });
+      expect(b).toMatchObject({ atendimentos: 200, odonto: 50 });
+    });
+
     it('municipal aggregate takes SIA/SIH module from a unit with data, not alphabetical first', async () => {
       query
         .mockResolvedValueOnce({

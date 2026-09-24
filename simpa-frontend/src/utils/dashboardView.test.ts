@@ -83,6 +83,34 @@ describe('dashboardView', () => {
     expect(rows[0]?.atendimentos).toBe('540');
   });
 
+  it('unit table uses producao_por_unidade for atend/odonto in municipal aggregate', () => {
+    const unidades = mockDb.unidades as Unidade[];
+    const u0 = unidades[0]!;
+    const u1 = unidades[1]!;
+    const municipal = {
+      ...data,
+      filtros_ativos: { unidade: '', equipe: '' },
+      modulos: {
+        ...data.modulos,
+        atencao_primaria_esus: {
+          ...data.modulos.atencao_primaria_esus,
+          producao_por_unidade: [
+            { unidade: u0.nome, estabelecimento_id: u0.id, atendimentos: 111, odonto: 22 },
+            { unidade: u1.nome, estabelecimento_id: u1.id, atendimentos: 333, odonto: 44 },
+          ],
+        },
+      },
+    } as unknown as ContratoDashboard;
+
+    const rows = buildUnitTable(municipal, unidades);
+    const r0 = rows.find((r) => r.nome === u0.nome);
+    const r1 = rows.find((r) => r.nome === u1.nome);
+    expect(r0?.atendimentos).toBe('111');
+    expect(r0?.odonto).toBe('22');
+    expect(r1?.atendimentos).toBe('333');
+    expect(r1?.odonto).toBe('44');
+  });
+
   it('maps unavailable SIA status to red tone', () => {
     const unavailable = {
       ...data,

@@ -353,14 +353,14 @@ function buildScope(scope = {}) {
 }
 
 // Roda a métrica respeitando agregacao_periodo do widget.
-// media → média mês a mês (indicadores/taxas). soma/ultimo_mes → 1 query
-// (o SQL decide via :competencia ou :competencia_inicio/:competencia_fim).
+// soma/media → roda o SQL mês a mês e soma/tira a média (funciona com qualquer
+// template — :competencia mono-mês ou BETWEEN — pois cada iteração fixa 1 mês).
+// ultimo_mes → colapsa no mês final (snapshot).
 async function resolveMetricValueForWidget(widget, scope, opts = {}) {
-  if (
-    widget.agregacao_periodo === 'media' &&
-    Array.isArray(scope.meses) &&
-    scope.meses.length > 1
-  ) {
+  const agg = widget.agregacao_periodo;
+  const multiMes = Array.isArray(scope.meses) && scope.meses.length > 1;
+
+  if ((agg === 'soma' || agg === 'media') && multiMes) {
     const singles = [];
     let lastRows = [];
     for (const mes of scope.meses) {
@@ -371,18 +371,17 @@ async function resolveMetricValueForWidget(widget, scope, opts = {}) {
       }
       lastRows = result.rows;
     }
-    const single = singles.length
-      ? singles.reduce((acc, value) => acc + value, 0) / singles.length
-      : null;
+    if (!singles.length) {
+      return { rows: lastRows, single: null };
+    }
+    const total = singles.reduce((acc, value) => acc + value, 0);
+    // ponytail: soma de COUNT(DISTINCT) por mês pode super-contar entidades que
+    // cruzam meses; nenhum widget somável hoje é COUNT DISTINCT (esses ficam ultimo_mes).
+    const single = agg === 'media' ? total / singles.length : total;
     return { rows: lastRows, single };
   }
 
-  // soma: intervalo completo do período → templates com BETWEEN somam todos os meses.
-  if (widget.agregacao_periodo === 'soma') {
-    return resolveMetricValue(widget.metrica_id, scope, opts);
-  }
-
-  // ultimo_mes (default): colapsa o escopo no mês final para que templates com
+  // ultimo_mes (default) ou período de 1 mês: colapsa no mês final para que templates com
   // BETWEEN :competencia_inicio/:fim devolvam o snapshot do mês, não a soma do período.
   const fimScope = { ...scope, competenciaInicio: scope.competencia, competenciaFim: scope.competencia };
   return resolveMetricValue(widget.metrica_id, fimScope, opts);
