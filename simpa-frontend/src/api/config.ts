@@ -5,3 +5,9 @@ export function fetchCompetenciaPadrao(): Promise<string> {
     (payload) => payload.competencia,
   );
 }
+
+export function fetchCompetencias(): Promise<string[]> {
+  return apiFetch<{ competencias: string[] }>('/api/config/competencias').then(
+    (payload) => payload.competencias,
+  );
+}

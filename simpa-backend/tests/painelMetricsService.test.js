@@ -324,11 +324,32 @@ describe('painelMetricsService', () => {
   describe('discoverMetricsFromSia/Sih', () => {
     it('buildRelationalMetricKey usa prefixo e coluna', () => {
       expect(buildRelationalMetricKey('sia.col', 'quantidade')).toBe('sia.col.quantidade');
-      expect(buildRelationalSumSqlTemplate({
+      const tpl = buildRelationalSumSqlTemplate({
         tableName: 'sia_producao',
         tableAlias: 'sp',
         columnName: 'quantidade',
-      })).toContain('SUM(sp.quantidade)');
+      });
+      expect(tpl).toContain('SUM(sp.quantidade)');
+      // respeita o período via intervalo, não mês fixo
+      expect(tpl).toContain(
+        'sp.competencia BETWEEN :competencia_inicio::date AND :competencia_fim::date'
+      );
+      expect(tpl).not.toContain('competencia = :competencia::date');
+    });
+
+    it('bindTemplate liga inicio/fim do template SIA/SIH ao intervalo do período', () => {
+      const tpl = buildRelationalSumSqlTemplate({
+        tableName: 'sih_internacoes',
+        tableAlias: 'si',
+        columnName: 'qtd_aih',
+      });
+      const bound = bindTemplate(tpl, {
+        competencia: '2026-03',
+        competenciaInicio: '2026-01',
+        competenciaFim: '2026-03',
+      });
+      expect(bound.text).toContain('BETWEEN $1::date AND $2::date');
+      expect(bound.values).toEqual(['2026-01-01', '2026-03-01', null]);
     });
 
     it('discoverMetricsFromSia retorna zero sem produção importada', async () => {

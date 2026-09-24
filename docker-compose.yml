@@ -44,6 +44,8 @@ services:
       - ./migration_034_seed_indicadores_catalog.sql:/docker-entrypoint-initdb.d/34-migration_034_seed_indicadores_catalog.sql:ro
       - ./migration_035_seed_metas_default_2026.sql:/docker-entrypoint-initdb.d/35-migration_035_seed_metas_default_2026.sql:ro
       - ./migration_036_vacinas.sql:/docker-entrypoint-initdb.d/36-migration_036_vacinas.sql:ro
+      - ./migration_037_sia_sih_metricas_periodo.sql:/docker-entrypoint-initdb.d/37-migration_037_sia_sih_metricas_periodo.sql:ro
+      - ./migration_038_widgets_somaveis_soma.sql:/docker-entrypoint-initdb.d/38-migration_038_widgets_somaveis_soma.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

@@ -204,6 +204,18 @@ async function fetchMunicipalAggregate(competenciaDate, competenciaLabel) {
   const baseContent = first.dados_conteudo || {};
   const modulosBase = baseContent.modulos ?? {};
 
+  // No agregado municipal `first` é a unidade alfabeticamente primeira (tipicamente
+  // uma UBS sem SIA/SIH), então seu módulo marcaria UNAVAILABLE/PENDING mesmo com
+  // dados importados em outra unidade. Pegar o módulo de qualquer unidade que tenha dados.
+  // ponytail: escolhe a 1ª unidade com dados, não soma todas — trocar por agregação se municipal precisar de totais SIA/SIH.
+  const siaModule =
+    rows.find((r) =>
+      String(r.dados_conteudo?.modulos?.ambulatorial_sia?.status_conexao ?? '').includes('CONNECTED'),
+    )?.dados_conteudo?.modulos?.ambulatorial_sia ?? modulosBase.ambulatorial_sia;
+  const sihdModule =
+    rows.find((r) => r.dados_conteudo?.modulos?.hospitalar_sihd?.status_importacao === 'OK')
+      ?.dados_conteudo?.modulos?.hospitalar_sihd ?? modulosBase.hospitalar_sihd;
+
   return envelopeDashboard(
     {
       unidade: '',
@@ -219,6 +231,8 @@ async function fetchMunicipalAggregate(competenciaDate, competenciaLabel) {
         kpis_gerais: kpis,
         modulos: {
           ...modulosBase,
+          ...(siaModule ? { ambulatorial_sia: siaModule } : {}),
+          ...(sihdModule ? { hospitalar_sihd: sihdModule } : {}),
           atencao_primaria_esus: {
             ...(modulosBase.atencao_primaria_esus ?? {}),
             historico_mensal: historicoMensal,

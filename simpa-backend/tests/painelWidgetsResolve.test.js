@@ -212,6 +212,79 @@ describe('painelWidgetsService resolve/preview', () => {
     expect(result.competencia).toBe('2026-03');
   });
 
+  it('card soma passa o intervalo completo do período ao SQL', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          slug: 'aih_total',
+          ordem: 1,
+          tipo: 'card',
+          titulo: 'AIH',
+          formato: 'numero',
+          metrica_id: 10,
+          fonte_config: {},
+          spark_metrica_id: null,
+          delta_config: null,
+          agregacao_periodo: 'soma',
+        },
+      ],
+    });
+    executeMetric.mockResolvedValueOnce({ rows: [{ valor: 300 }], single: 300 });
+
+    const result = await resolvePainelLayout({
+      perfil: 'Hospitalar',
+      layout: 'B',
+      periodo: '2026-T1',
+    });
+
+    expect(executeMetric).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({
+        competencia: '2026-03',
+        competenciaInicio: '2026-01',
+        competenciaFim: '2026-03',
+      })
+    );
+    expect(result.widgets[0].value).toBe(300);
+  });
+
+  it('card ultimo_mes colapsa inicio/fim no mês final do período', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          slug: 'aih_snapshot',
+          ordem: 1,
+          tipo: 'card',
+          titulo: 'AIH mês',
+          formato: 'numero',
+          metrica_id: 10,
+          fonte_config: {},
+          spark_metrica_id: null,
+          delta_config: null,
+          agregacao_periodo: 'ultimo_mes',
+        },
+      ],
+    });
+    executeMetric.mockResolvedValueOnce({ rows: [{ valor: 90 }], single: 90 });
+
+    await resolvePainelLayout({
+      perfil: 'Hospitalar',
+      layout: 'B',
+      periodo: '2026-T1',
+    });
+
+    expect(executeMetric).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({
+        competencia: '2026-03',
+        competenciaInicio: '2026-03',
+        competenciaFim: '2026-03',
+      })
+    );
+  });
+
   it('grafico_linha sob período expõe intervalo (inicio/fim) ao SQL', async () => {
     query.mockResolvedValueOnce({
       rows: [

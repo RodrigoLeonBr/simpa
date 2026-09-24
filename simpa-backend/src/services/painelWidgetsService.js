@@ -377,7 +377,15 @@ async function resolveMetricValueForWidget(widget, scope, opts = {}) {
     return { rows: lastRows, single };
   }
 
-  return resolveMetricValue(widget.metrica_id, scope, opts);
+  // soma: intervalo completo do período → templates com BETWEEN somam todos os meses.
+  if (widget.agregacao_periodo === 'soma') {
+    return resolveMetricValue(widget.metrica_id, scope, opts);
+  }
+
+  // ultimo_mes (default): colapsa o escopo no mês final para que templates com
+  // BETWEEN :competencia_inicio/:fim devolvam o snapshot do mês, não a soma do período.
+  const fimScope = { ...scope, competenciaInicio: scope.competencia, competenciaFim: scope.competencia };
+  return resolveMetricValue(widget.metrica_id, fimScope, opts);
 }
 
 async function resolveDelta(widget, scope, currentValue) {

@@ -306,6 +306,50 @@ describe('dashboardService', () => {
       expect(result.body.modulos.atencao_primaria_esus.producao_por_unidade).toHaveLength(2);
       expect(result.body.modulos.atencao_primaria_esus.historico_mensal).toHaveLength(1);
     });
+
+    it('municipal aggregate takes SIA/SIH module from a unit with data, not alphabetical first', async () => {
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              unidade: 'AAA UBS', // primeira alfabética, sem SIA/SIH
+              equipe: 'Todas',
+              estabelecimento_id: 1,
+              municipio: 'AMERICANA',
+              versao_schema: '3.1.0',
+              dados_conteudo: {
+                kpis_gerais: { total_atendimentos_aps: 100 },
+                modulos: {
+                  ambulatorial_sia: { status_conexao: 'MySQL_XAMPP_UNAVAILABLE' },
+                  hospitalar_sihd: { status_importacao: 'PENDING_AIH_FILE' },
+                },
+              },
+            },
+            {
+              unidade: 'ZZZ HOSPITAL',
+              equipe: 'Todas',
+              estabelecimento_id: 2,
+              municipio: 'AMERICANA',
+              versao_schema: '3.1.0',
+              dados_conteudo: {
+                kpis_gerais: { total_atendimentos_aps: 50 },
+                modulos: {
+                  ambulatorial_sia: { status_conexao: 'MySQL_XAMPP_CONNECTED', procedimentos_especializados: [{ x: 1 }] },
+                  hospitalar_sihd: { status_importacao: 'OK', total_aih: 7 },
+                },
+              },
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const result = await fetchDashboard({ competencia: '2026-01' });
+
+      expect(result.status).toBe(200);
+      expect(result.body.modulos.ambulatorial_sia.status_conexao).toBe('MySQL_XAMPP_CONNECTED');
+      expect(result.body.modulos.hospitalar_sihd.status_importacao).toBe('OK');
+      expect(result.body.modulos.hospitalar_sihd.total_aih).toBe(7);
+    });
   });
 
   describe('isMunicipalQuery', () => {

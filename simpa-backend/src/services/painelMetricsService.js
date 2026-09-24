@@ -299,9 +299,13 @@ function buildRelationalSumSqlTemplate({ tableName, tableAlias, columnName }) {
     throw new InvalidMetricTemplateError('coluna relacional inválida');
   }
 
+  // BETWEEN :competencia_inicio/:fim (não `= :competencia`) para respeitar a
+  // granularidade do Painel (mês/trimestre/quadri/ano). Widget 'soma' passa o
+  // intervalo completo; 'ultimo_mes' colapsa inicio=fim no mês final (ver
+  // resolveMetricValueForWidget), então o mesmo template serve aos dois casos.
   return `SELECT COALESCE(SUM(${tableAlias}.${column}), 0) AS valor
 FROM ${tableName} ${tableAlias}
-WHERE ${tableAlias}.competencia = :competencia::date
+WHERE ${tableAlias}.competencia BETWEEN :competencia_inicio::date AND :competencia_fim::date
   AND (:estabelecimento_id::bigint IS NULL
        OR ${tableAlias}.estabelecimento_id = :estabelecimento_id::bigint)`;
 }

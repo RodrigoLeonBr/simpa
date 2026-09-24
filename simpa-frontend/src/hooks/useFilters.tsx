@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { fetchCompetenciaPadrao } from '../api/config';
+import { fetchCompetenciaPadrao, fetchCompetencias } from '../api/config';
 import { DEFAULT_COMPETENCIAS } from '../config/navigation';
 import type { PainelPerfil } from '../types/painel';
 import { periodoFimCompetencia } from '../utils/periodo';
@@ -36,6 +36,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
   const [unidadeId, setUnidadeIdState] = useState<number | null>(null);
   const [equipeId, setEquipeIdState] = useState<number | null>(null);
   const [painelPerfil, setPainelPerfilState] = useState<PainelPerfil>('APS');
+  const [competencias, setCompetencias] = useState<string[]>(DEFAULT_COMPETENCIAS);
 
   // competência mensal derivada (mês final do período) — páginas não-Painel seguem mensais.
   const competencia = periodoFimCompetencia(periodo);
@@ -45,12 +46,20 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchCompetenciaPadrao()
       .then((valor) => {
-        if (DEFAULT_COMPETENCIAS.includes(valor)) {
+        if (/^\d{4}-\d{2}$/.test(valor)) {
           setPeriodo(valor);
         }
       })
       .catch(() => {
         // mantém default hardcoded se config indisponível
+      });
+
+    fetchCompetencias()
+      .then((lista) => {
+        if (lista.length) setCompetencias(lista);
+      })
+      .catch(() => {
+        // mantém DEFAULT_COMPETENCIAS se endpoint indisponível
       });
   }, []);
 
@@ -76,14 +85,14 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       unidadeId,
       equipeId,
       painelPerfil,
-      competencias: DEFAULT_COMPETENCIAS,
+      competencias,
       setPeriodo,
       setCompetencia,
       setUnidadeId,
       setEquipeId,
       setPainelPerfil,
     }),
-    [periodo, competencia, unidadeId, equipeId, painelPerfil, setCompetencia, setUnidadeId, setEquipeId, setPainelPerfil],
+    [periodo, competencia, competencias, unidadeId, equipeId, painelPerfil, setCompetencia, setUnidadeId, setEquipeId, setPainelPerfil],
   );
 
   return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>;

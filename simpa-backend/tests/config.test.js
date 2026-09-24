@@ -26,4 +26,15 @@ describe('config routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.competencia).toBe('2026-05');
   });
+
+  it('GET /competencias returns the month range across sources without auth', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ competencia: '2026-03' }, { competencia: '2026-02' }, { competencia: '2026-01' }],
+    });
+
+    const res = await request(app).get('/api/config/competencias');
+
+    expect(res.status).toBe(200);
+    expect(res.body.competencias).toEqual(['2026-03', '2026-02', '2026-01']);
+  });
 });
