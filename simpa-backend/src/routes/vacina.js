@@ -8,6 +8,7 @@ const { removeTempFile } = require('../services/storage');
 const requirePlanningStaff = require('../middleware/requirePlanningStaff');
 const { parseUpload, gravarCarga, analisarPreview } = require('../services/vacinaImportService');
 const { getCobertura } = require('../services/vacinaService');
+const { getResumoDoses, getFiltros } = require('../services/vacinaRelatorioService');
 const {
   listGrupos,
   createGrupo,
@@ -44,7 +45,7 @@ router.post('/importacao/preview', requirePlanningStaff, upload.single('arquivo'
   try {
     if (!file) return res.status(400).json({ error: 'Envie o arquivo no campo arquivo' });
 
-    const parsed = await parseUpload(file.path);
+    const parsed = await parseUpload(file.path, file.originalname);
     parsed.arquivo_nome = file.originalname;
 
     if (!parsed.competencia) {
@@ -64,7 +65,7 @@ router.post('/importacao', requirePlanningStaff, upload.single('arquivo'), async
   try {
     if (!file) return res.status(400).json({ error: 'Envie o arquivo no campo arquivo' });
 
-    const parsed = await parseUpload(file.path);
+    const parsed = await parseUpload(file.path, file.originalname);
     parsed.arquivo_nome = file.originalname;
 
     if (req.body.competencia) {
@@ -110,6 +111,36 @@ router.get('/cobertura', async (req, res, next) => {
     const imunoCodigo = req.query.imuno_codigo || undefined;
 
     return res.json(await getCobertura({ ano, competenciaAte, grupoId, imunoCodigo }));
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ── Relatórios de doses ─────────────────────────────────────────────────────────
+
+router.get('/doses/resumo', async (req, res, next) => {
+  try {
+    const ano = parseInt(req.query.ano, 10);
+    if (!Number.isFinite(ano) || ano < 2000 || ano > 2100) {
+      return res.status(400).json({ error: 'ano deve ser inteiro entre 2000 e 2100' });
+    }
+    let mes = null;
+    if (req.query.mes != null && req.query.mes !== '') {
+      mes = parseInt(req.query.mes, 10);
+      if (!Number.isFinite(mes) || mes < 1 || mes > 12) {
+        return res.status(400).json({ error: 'mes deve ser inteiro entre 1 e 12' });
+      }
+    }
+    const cnesSala = req.query.cnes_sala || null;
+    return res.json(await getResumoDoses({ ano, mes, cnesSala }));
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/doses/filtros', async (_req, res, next) => {
+  try {
+    return res.json(await getFiltros());
   } catch (err) {
     return next(err);
   }
