@@ -1,6 +1,6 @@
 -- =============================================================================
--- SIMPA — Migration 039: seed de métricas de vacina no catálogo do Painel
--- Depends on: migration_008_painel_widgets.sql, migration_036..038 (vacinas)
+-- SIMPA — Migration 047: seed de métricas de vacina no catálogo do Painel
+-- Depends on: migration_008_painel_widgets.sql, migration_036 + 045/046 (vacinas)
 --
 -- GUARD: só popula quando ainda não há métrica vacina.* (sobrevive a restore;
 -- re-rode após subir backup). Join/assunção: tabelas vacina_* já existem.
@@ -8,8 +8,8 @@
 -- Placeholders válidos: :competencia_inicio/:fim (YYYY-MM-01). Proração de
 -- cobertura % é feita por sql_override no widget (EXTRACT(MONTH ...)/12.0).
 --
--- Manual:  psql -h localhost -p 5433 -U postgres -d simpa -f migration_039_vacina_metricas_seed.sql
--- Docker:  Get-Content migration_039_vacina_metricas_seed.sql | docker exec -i simpa-postgres-1 psql -U postgres -d simpa
+-- Manual:  psql -h localhost -p 5433 -U postgres -d simpa -f migration_047_vacina_metricas_seed.sql
+-- Docker:  Get-Content migration_047_vacina_metricas_seed.sql | docker exec -i simpa-postgres-1 psql -U postgres -d simpa
 -- =============================================================================
 
 INSERT INTO painel_metricas_catalogo (chave, fonte_tipo, label, descricao, agregacao, sql_template, status, ocorrencias)

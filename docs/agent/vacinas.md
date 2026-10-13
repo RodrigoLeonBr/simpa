@@ -161,7 +161,7 @@ Indicadores de vacina são **widgets do perfil `Vacinas`**, reusando a máquina 
 - **Cadastro:** botão "Gerenciar indicadores" em `/vacinas` redireciona para `/cadastros/indicadores-painel?perfil=Vacinas`; a página lê o query-param e pré-seleciona o perfil.
 - **Renderização:** `/vacinas` chama `fetchPainelLayout({ perfil: 'Vacinas', layout: 'A', periodo: 'YYYY-MM' })` e renderiza via `DynamicWidgetGrid` (componente compartilhado extraído de `LayoutB`). Sem widgets cadastrados (404) → seção oculta.
 - **Proração no widget:** a cobertura % prorrateada é calculada no `sql_override` via `EXTRACT(MONTH FROM :competencia_fim::date) / 12.0`.
-- **Métricas base `vacina.*`** — `vacina.doses_total`, `vacina.doses_serie`, `vacina.ranking_vacina` — semeadas em `migration_039_vacina_metricas_seed.sql` (fonte_tipo `consolidado`); exemplos de SQL disponíveis no grupo "Vacinas" do editor de widgets.
+- **Métricas base `vacina.*`** — `vacina.doses_total`, `vacina.doses_serie`, `vacina.ranking_vacina` — semeadas em `migration_047_vacina_metricas_seed.sql` (fonte_tipo `consolidado`); exemplos de SQL disponíveis no grupo "Vacinas" do editor de widgets.
 
 ---
 
@@ -190,7 +190,7 @@ ETL Python: `parse_vacina_xlsx.py` (raiz). Invocado pelo `vacinaImportService.js
 
 ## Referências cruzadas
 
-- Migrations: `migration_036_vacinas.sql` (tabelas), `migration_037_vacina_seed.sql` (grupos/faixa/pop seed), `migration_038_vacina_esquema_pni.sql` (esquema PNI), `migration_039_vacina_metricas_seed.sql` (métricas `vacina.*`)
+- Migrations: `migration_036_vacinas.sql` (tabelas), `migration_045_vacina_grupos_seed.sql` (grupos/faixa/pop seed), `migration_046_vacina_esquema_pni.sql` (esquema PNI), `migration_047_vacina_metricas_seed.sql` (métricas `vacina.*`)
 - ETL Python: `parse_vacina_xlsx.py` (raiz) — ver [etl-python.md](etl-python.md)
 - Modelo de dados completo: [database.md](database.md#migration-036-vacinas)
 - Endpoints: [backend-api.md](backend-api.md#vacinas)
