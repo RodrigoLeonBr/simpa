@@ -26,6 +26,31 @@ describe('computeCobertura', () => {
     expect(out[0].cobertura_pct).toBeCloseTo(150);
     expect(out[0].denominador).toBe(100);
   });
+
+  it('fatorPeriodo escala o denominador (março = 3/12)', () => {
+    const out = computeCobertura(
+      [{ imuno_codigo: '42', imuno_nome: 'Penta', grupo_id: 1, grupo_nome: '<1a', doses: 1424, pop_alvo: 2320, num_doses: 3 }],
+      3 / 12,
+    );
+    expect(out[0].denominador).toBeCloseTo(2320 * 3 * (3 / 12)); // 1740
+    expect(out[0].cobertura_pct).toBeCloseTo((1424 / 1740) * 100); // ~81.8
+  });
+
+  it('fatorPeriodo default = 1 (compatível com chamadas antigas)', () => {
+    const out = computeCobertura([
+      { imuno_codigo: '93', imuno_nome: 'HPV', grupo_id: 1, grupo_nome: 'Adol', doses: 200, pop_alvo: 100, num_doses: 2 },
+    ]);
+    expect(out[0].denominador).toBe(200);
+    expect(out[0].cobertura_pct).toBeCloseTo(100);
+  });
+
+  it('fatorPeriodo = 0 → denominador 0 → cobertura null', () => {
+    const out = computeCobertura(
+      [{ imuno_codigo: '42', imuno_nome: 'Penta', grupo_id: 1, grupo_nome: '<1a', doses: 100, pop_alvo: 2320, num_doses: 3 }],
+      0,
+    );
+    expect(out[0].cobertura_pct).toBeNull();
+  });
 });
 
 describe('getCobertura', () => {
@@ -63,5 +88,14 @@ describe('getCobertura', () => {
     const [, params] = query.mock.calls[0];
     expect(params[3]).toBeNull(); // grupoId defaults to null
     expect(params[4]).toBeNull(); // imunoCodigo defaults to null
+  });
+
+  it('deriva fatorPeriodo do mês de competenciaAte (junho = 6/12)', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ imuno_codigo: '42', imuno_nome: 'Penta', grupo_id: 1, grupo_nome: '<1a', num_doses: 3, pop_alvo: 2320, doses: 1740 }],
+    });
+    const result = await getCobertura({ ano: 2026, competenciaAte: '2026-06-01' });
+    expect(result[0].denominador).toBeCloseTo(2320 * 3 * (6 / 12)); // 3480
+    expect(result[0].cobertura_pct).toBeCloseTo((1740 / 3480) * 100); // 50
   });
 });

@@ -1,15 +1,16 @@
 const { query } = require('./db');
 
 /**
- * Pure. Coerces pg strings; computes denominador and cobertura_pct.
- * @param {Array} rows — each: {imuno_codigo, imuno_nome, grupo_id, grupo_nome, doses, pop_alvo, num_doses}
+ * Pure. Coerces pg strings; computes denominador (prorrateado) e cobertura_pct.
+ * @param {Array} rows — {imuno_codigo, imuno_nome, grupo_id, grupo_nome, doses, pop_alvo, num_doses}
+ * @param {number} fatorPeriodo — fração do ano decorrida (mês/12). Default 1 (ano cheio).
  */
-function computeCobertura(rows) {
+function computeCobertura(rows, fatorPeriodo = 1) {
   return rows.map((r) => {
     const doses = Number(r.doses);
     const pop_alvo = Number(r.pop_alvo);
     const num_doses = Number(r.num_doses);
-    const denominador = pop_alvo * num_doses;
+    const denominador = pop_alvo * num_doses * fatorPeriodo;
     const cobertura_pct = denominador > 0 ? (doses / denominador) * 100 : null;
     return { imuno_codigo: r.imuno_codigo, imuno_nome: r.imuno_nome, grupo_id: r.grupo_id, grupo_nome: r.grupo_nome, doses, pop_alvo, num_doses, denominador, cobertura_pct };
   });
@@ -43,7 +44,10 @@ async function getCobertura({ ano, competenciaAte, grupoId = null, imunoCodigo =
       ORDER BY g.nome, imuno_nome`,
     [ano, inicio, competenciaAte, grupoId, imunoCodigo]
   );
-  return computeCobertura(rows);
+  // Meta proporcional ao período decorrido: mês/12 (dezembro → 1 = meta anual cheia).
+  const mesNum = Number.parseInt(String(competenciaAte).slice(5, 7), 10);
+  const fatorPeriodo = Number.isFinite(mesNum) && mesNum >= 1 && mesNum <= 12 ? mesNum / 12 : 1;
+  return computeCobertura(rows, fatorPeriodo);
 }
 
 module.exports = { computeCobertura, getCobertura };
