@@ -153,6 +153,54 @@ describe('CadastroSyncBanner', () => {
     });
   });
 
+  it('refs sem mudanças → toast "já em dia"', async () => {
+    vi.mocked(sincronizarCadastros).mockResolvedValue({ status: 'ok' } as never);
+    const user = userEvent.setup();
+    render(<CadastroSyncBanner />);
+    await user.click(screen.getByTestId('cadastro-sync-refs-button'));
+    await waitFor(() => expect(screen.getByTestId('toast-banner')).toHaveTextContent(/já em dia/i));
+  });
+
+  it('refs status erro → toast com erro', async () => {
+    vi.mocked(sincronizarCadastros).mockResolvedValue({ status: 'error', error: 'falhou refs' } as never);
+    const user = userEvent.setup();
+    render(<CadastroSyncBanner />);
+    await user.click(screen.getByTestId('cadastro-sync-refs-button'));
+    await waitFor(() => expect(screen.getByTestId('toast-banner')).toHaveTextContent(/falhou refs/i));
+  });
+
+  it('refs rejeitado → toast de falha', async () => {
+    vi.mocked(sincronizarCadastros).mockRejectedValue(new Error('rede caiu'));
+    const user = userEvent.setup();
+    render(<CadastroSyncBanner />);
+    await user.click(screen.getByTestId('cadastro-sync-refs-button'));
+    await waitFor(() => expect(screen.getByTestId('toast-banner')).toHaveTextContent(/rede caiu/i));
+  });
+
+  it('erro XAMPP também marca degradado', async () => {
+    vi.mocked(computarSyncPlano).mockRejectedValue(new Error('conexão xampp recusada'));
+    const user = userEvent.setup();
+    render(<CadastroSyncBanner />);
+    await user.click(screen.getByTestId('cadastro-sync-button'));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+  });
+
+  it('falha ao aplicar plano → mensagem degradada', async () => {
+    vi.mocked(computarSyncPlano).mockResolvedValue({
+      estabelecimentos: [{ chave: '001', tipo: 'novo', diff: { nome: { mysql: 'UBS A' } } }],
+      procedimentos: [],
+      resumo: { estabelecimentos: { novo: 1, alterado: 0, sumiu: 0 }, procedimentos: { novo: 0, alterado: 0, sumiu: 0 } },
+      sincronizado_em: '2026-07-28T12:00:00Z',
+    });
+    vi.mocked(aplicarSyncPlano).mockRejectedValue(new Error('aplicar falhou'));
+    const user = userEvent.setup();
+    render(<CadastroSyncBanner />);
+    await user.click(screen.getByTestId('cadastro-sync-button'));
+    await user.click(await screen.findByRole('button', { name: /aplicar todos/i }));
+    await user.click(screen.getByRole('button', { name: /confirmar/i }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/aplicar falhou/i));
+  });
+
   it('refs button calls sincronizarCadastros and refreshes badge', async () => {
     vi.mocked(sincronizarCadastros).mockResolvedValue({
       status: 'ok',

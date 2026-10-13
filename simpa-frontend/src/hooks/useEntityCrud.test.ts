@@ -235,6 +235,89 @@ describe('useEntityCrud', () => {
     expect(fetchList).toHaveBeenCalledOnce();
   });
 
+  it('onSubmit em edição dispara toast de updated', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const options = buildOptions({ onSubmit, messages: { updated: 'Custom upd' } });
+    const { result } = renderHook(() => useEntityCrud(options));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.openEdit({ id: 1, nome: 'Alpha' }));
+    await act(async () => {
+      await result.current.handleSubmit({ nome: 'X' });
+    });
+    expect(onSubmit).toHaveBeenCalledWith({ nome: 'X' }, { id: 1, nome: 'Alpha' });
+    expect(result.current.toast.message).toBe('Custom upd');
+  });
+
+  it('handleSubmit lança quando update/create não configurados', async () => {
+    const editOpts = buildOptions({ updateItem: undefined, mapUpdatePayload: undefined });
+    const edit = renderHook(() => useEntityCrud(editOpts));
+    await waitFor(() => expect(edit.result.current.loading).toBe(false));
+    act(() => edit.result.current.openEdit({ id: 1, nome: 'Alpha' }));
+    await expect(edit.result.current.handleSubmit({ nome: 'X' })).rejects.toThrow('Atualização não configurada');
+
+    const createOpts = buildOptions({ createItem: undefined, mapCreatePayload: undefined });
+    const create = renderHook(() => useEntityCrud(createOpts));
+    await waitFor(() => expect(create.result.current.loading).toBe(false));
+    await expect(create.result.current.handleSubmit({ nome: 'X' })).rejects.toThrow('Criação não configurada');
+  });
+
+  it('toasts default quando messages ausentes (create/update/inactivate)', async () => {
+    const options = buildOptions({ messages: {} });
+    const { result } = renderHook(() => useEntityCrud(options));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.handleSubmit({ nome: 'Novo' }); });
+    expect(result.current.toast.message).toBe('Registro criado');
+
+    act(() => result.current.openEdit({ id: 1, nome: 'Alpha' }));
+    await act(async () => { await result.current.handleSubmit({ nome: 'A' }); });
+    expect(result.current.toast.message).toBe('Registro atualizado');
+  });
+
+  it('handleConfirm: retorno antecipado sem targetRow', async () => {
+    const options = buildOptions();
+    const { result } = renderHook(() => useEntityCrud(options));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => { await result.current.handleConfirm(); });
+    expect(result.current.busyId).toBeNull();
+  });
+
+  it('handleConfirm delete cai para inactivateItem quando não há deleteItem', async () => {
+    const inactivateItem = vi.fn().mockResolvedValue({});
+    const options = buildOptions({ deleteItem: undefined, inactivateItem, messages: {} });
+    const { result } = renderHook(() => useEntityCrud(options));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => result.current.openConfirm({ id: 1, nome: 'Alpha' }, 'delete'));
+    await act(async () => { await result.current.handleConfirm(); });
+    expect(inactivateItem).toHaveBeenCalledWith(1);
+    expect(result.current.toast.message).toBe('Registro excluído');
+  });
+
+  it('handleConfirm lança quando exclusão/inativação não configuradas', async () => {
+    const delOpts = buildOptions({ deleteItem: undefined, inactivateItem: undefined });
+    const del = renderHook(() => useEntityCrud(delOpts));
+    await waitFor(() => expect(del.result.current.loading).toBe(false));
+    act(() => del.result.current.openConfirm({ id: 1, nome: 'A' }, 'delete'));
+    await act(async () => { await del.result.current.handleConfirm(); });
+    expect(del.result.current.toast.message).toBe('Exclusão não configurada');
+
+    const inOpts = buildOptions({ inactivateItem: undefined });
+    const inact = renderHook(() => useEntityCrud(inOpts));
+    await waitFor(() => expect(inact.result.current.loading).toBe(false));
+    act(() => inact.result.current.openConfirm({ id: 1, nome: 'A' }, 'inactivate'));
+    await act(async () => { await inact.result.current.handleConfirm(); });
+    expect(inact.result.current.toast.message).toBe('Inativação não configurada');
+  });
+
+  it('carregar usa mensagem de fallback quando erro não é Error', async () => {
+    const fetchList = vi.fn().mockRejectedValue('string-err');
+    const options = buildOptions({ fetchList, messages: { loadFailed: 'Falhou carga' } });
+    const { result } = renderHook(() => useEntityCrud(options));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBe('Falhou carga');
+  });
+
   it('closeConfirm limpa targetRow', async () => {
     const options = buildOptions();
     const { result } = renderHook(() => useEntityCrud(options));

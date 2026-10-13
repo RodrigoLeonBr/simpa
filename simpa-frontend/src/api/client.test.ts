@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiBase, apiFetch, setTokenProvider, setUnauthorizedHandler } from './client';
+import { apiBase, apiFetch, apiDownload, setTokenProvider, setUnauthorizedHandler } from './client';
 
 describe('apiFetch', () => {
   beforeEach(() => {
@@ -102,5 +102,54 @@ describe('apiFetch', () => {
     );
 
     await expect(apiFetch('/dashboard')).rejects.toThrow('Bad Gateway');
+  });
+
+  it('401 invokes unauthorized handler and throws', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) }));
+    await expect(apiFetch('/dashboard')).rejects.toThrow('Unauthorized');
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('apiDownload', () => {
+  beforeEach(() => {
+    setTokenProvider(null);
+    setUnauthorizedHandler(null);
+    vi.restoreAllMocks();
+  });
+  afterEach(() => {
+    setTokenProvider(null);
+    setUnauthorizedHandler(null);
+  });
+
+  it('downloads blob via anchor and attaches bearer token', async () => {
+    setTokenProvider(() => 'tkn');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['data']) }));
+    URL.createObjectURL = vi.fn(() => 'blob:url');
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.fn();
+    vi.spyOn(document, 'createElement').mockReturnValue({ href: '', download: '', click } as unknown as HTMLAnchorElement);
+
+    await apiDownload('/export.csv', 'out.csv');
+
+    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+    expect((init.headers as Headers).get('Authorization')).toBe('Bearer tkn');
+    expect(click).toHaveBeenCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:url');
+  });
+
+  it('401 invokes handler and throws', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) }));
+    await expect(apiDownload('/f', 'x')).rejects.toThrow('Unauthorized');
+    expect(handler).toHaveBeenCalled();
+  });
+
+  it('non-ok throws server error message', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, statusText: 'Err', json: async () => ({ error: 'falhou' }) }));
+    await expect(apiDownload('/f', 'x')).rejects.toThrow('falhou');
   });
 });
