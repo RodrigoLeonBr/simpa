@@ -88,8 +88,8 @@ def test_fetch_sih_rows_returns_ok_with_kpis():
         (120, 48000.0, 12.5, 3.33),   # KPI row
     ]
     cur.fetchall.return_value = [
-        ("J", 45, 18000.0),
-        ("I", 30, 12000.0),
+        ("X", "Doenças do aparelho respiratório", 45, 18000.0),
+        ("IX", "Doenças do aparelho circulatório", 30, 12000.0),
     ]
 
     result = consolidate_dashboard.fetch_sih_rows(conn, date(2025, 1, 1))
@@ -117,20 +117,21 @@ def test_fetch_sih_rows_cid_chapter_descricao():
         ("ok", "2025-02-01"),
         (50, 20000.0, 5.0, 2.0),
     ]
+    # Capítulo já resolvido no SQL (JOIN cid10_capitulos): rotulo + titulo.
     cur.fetchall.return_value = [
-        ("J", 20, 8000.0),
-        ("F", 10, 4000.0),
-        ("Z", 5, 1000.0),
-        ("X", 3, 500.0),   # maps to V/W/X/Y — Causas externas
+        ("X", "Doenças do aparelho respiratório", 20, 8000.0),
+        ("V", "Transtornos mentais e comportamentais", 10, 4000.0),
+        ("XXI", "Fatores que influenciam o estado de saúde e o contato com os serviços de saúde", 5, 1000.0),
+        ("XX", "Causas externas de morbidade e de mortalidade", 3, 500.0),
     ]
 
     result = consolidate_dashboard.fetch_sih_rows(conn, date(2025, 1, 1))
 
     chapters = {item["capitulo"]: item["descricao"] for item in result["internacoes_por_capitulo_cid"]}
-    assert chapters["J"] == "J — Doenças respiratórias"
-    assert chapters["F"] == "F — Transtornos mentais"
-    assert chapters["Z"] == "Z — Fatores que influenciam a saúde"
-    assert chapters["X"] == "V/W/X/Y — Causas externas"
+    assert chapters["X"] == "Doenças do aparelho respiratório"
+    assert chapters["V"] == "Transtornos mentais e comportamentais"
+    assert chapters["XXI"] == "Fatores que influenciam o estado de saúde e o contato com os serviços de saúde"
+    assert chapters["XX"] == "Causas externas de morbidade e de mortalidade"
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +149,7 @@ def test_fetch_sih_rows_with_estabelecimento_id():
         ("ok", "2025-02-01"),
         (80, 30000.0, 8.0, 1.5),
     ]
-    cur.fetchall.return_value = [("I", 40, 15000.0)]
+    cur.fetchall.return_value = [("IX", "Doenças do aparelho circulatório", 40, 15000.0)]
 
     result = consolidate_dashboard.fetch_sih_rows(conn, date(2025, 1, 1), estabelecimento_id=5)
 

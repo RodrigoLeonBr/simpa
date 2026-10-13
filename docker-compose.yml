@@ -50,6 +50,8 @@ services:
       - ./migration_040_aps_atendimento_oficial.sql:/docker-entrypoint-initdb.d/40-migration_040_aps_atendimento_oficial.sql:ro
       - ./migration_041_esus_rankings_periodo.sql:/docker-entrypoint-initdb.d/41-migration_041_esus_rankings_periodo.sql:ro
       - ./migration_042_widget_overrides_periodo.sql:/docker-entrypoint-initdb.d/42-migration_042_widget_overrides_periodo.sql:ro
+      - ./migration_043_cid10_capitulos.sql:/docker-entrypoint-initdb.d/43-migration_043_cid10_capitulos.sql:ro
+      - ./migration_044_cid10_categorias.sql:/docker-entrypoint-initdb.d/44-migration_044_cid10_categorias.sql:ro
     ports:
       - '${PG_PUBLISH_PORT:-5433}:5432'
     healthcheck:

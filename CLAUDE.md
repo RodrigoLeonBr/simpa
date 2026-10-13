@@ -224,6 +224,14 @@ Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-leitos-hospitalares-vi
 
 ---
 
+## Feature concluída: internacoes-por-cid-capitulo-categoria
+
+**Entregue:** correção do indicador "Internações por CID" — agrupava por `LEFT(diag,1)` (1ª letra, capítulo errado para D e H). `migration_043` cria `cid10_capitulos` (22 capítulos, faixa de 3 chars) e corrige `sih.internacoes_por_cid` + `consolidate_dashboard.py` + `sihProducaoService.js`. `migration_044` cria `cid10_categorias` (~2045 categorias DATASUS, pt-BR) + métrica/widget drill-down `sih.internacoes_por_cid_categoria` (Hospitalar Layout C, `ranking_cid_cat_c`). Fonte: `cid10_categorias_datasus.csv`.
+
+**Migrations:** `migration_043_cid10_capitulos.sql`, `migration_044_cid10_categorias.sql` · DB: **[database.md](docs/agent/database.md)**.
+
+---
+
 ## Convenções para agentes
 
 ### Faça
@@ -264,6 +272,7 @@ Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-leitos-hospitalares-vi
 | Como cadastra leitos por vigência? | `leitosVigenciaService.js` / `LeitosVigenciasPanel.tsx` |
 | Como calcula cobertura vacinal? | `vacinaService.js` `getCobertura` / `computeCobertura` |
 | Como importa doses do NIES? | `vacinaImportService.js` + `parse_vacina_xlsx.py` |
+| Como resolve capítulo/categoria CID-10 (Internações por CID)? | `cid10_capitulos` (faixa 3 chars) / `cid10_categorias` · `consolidate_dashboard.py` `fetch_sih_rows` · métricas `sih.internacoes_por_cid` / `…_categoria` |
 | Gate manter/aplicar do sync de cadastros? | `cadastrosSync.js` `planejarSync`/`aplicarPlano` · UI `SyncPlanoPreview.tsx` · [cadastros.md](docs/agent/cadastros.md#workflow-sync-plano-gate) |
 | Deploy release sem build no destino? | `npm run docker:release:export` → `deploy-release.sh --recreate --migrate` · [restore-backup-e-release-docker.md](docs/agent/restore-backup-e-release-docker.md) |
 | Contrato dashboard tipos | `simpa-frontend/src/types/contrato.ts` |

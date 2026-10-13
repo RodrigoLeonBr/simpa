@@ -232,6 +232,8 @@ Se falhar, **não pule a ordem** — corrija e rode `apply-migrations` de novo (
 | 029 | `procedimentos_esus_sigtap.origem` + view `v_esus_producao_sigtap` |
 | 030 | métricas/widgets "Consultas" APS (SIA) |
 | 031 | `painel_widgets.agregacao_periodo` (período trimestre/quadri/ano) |
+| 043 | `cid10_capitulos` (22 capítulos CID-10) + corrige `sih.internacoes_por_cid` (capítulo por faixa de 3 chars, não 1ª letra) |
+| 044 | `cid10_categorias` (~2045 categorias CID-10, DATASUS) + métrica/widget drill-down `sih.internacoes_por_cid_categoria` |
 
 ### Conferir depois
 

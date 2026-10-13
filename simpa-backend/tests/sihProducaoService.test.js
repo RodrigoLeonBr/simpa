@@ -182,25 +182,25 @@ describe('getSihSummary', () => {
 // ---------------------------------------------------------------------------
 
 describe('listInternacoesPorCapituloCid', () => {
-  it('returns capitulo and qtd_aih fields', async () => {
+  it('returns capitulo, descricao and qtd_aih fields', async () => {
     query.mockResolvedValueOnce({
       rows: [
-        { capitulo: 'J', qtd_aih: '45', total_valor: '18000.00' },
-        { capitulo: 'I', qtd_aih: '30', total_valor: '12000.00' },
+        { capitulo: 'X', descricao: 'Doenças do aparelho respiratório', qtd_aih: '45', total_valor: '18000.00' },
+        { capitulo: 'IX', descricao: 'Doenças do aparelho circulatório', qtd_aih: '30', total_valor: '12000.00' },
       ],
     });
     const rows = await listInternacoesPorCapituloCid('2025-01', null);
     expect(rows).toHaveLength(2);
-    expect(rows[0].capitulo).toBe('J');
+    expect(rows[0].capitulo).toBe('X');
     expect(rows[0].qtd_aih).toBe('45');
   });
 
-  it('groups by LEFT(diag_principal, 1)', async () => {
+  it('resolves chapter by 3-char category via cid10_capitulos', async () => {
     query.mockResolvedValueOnce({ rows: [] });
     await listInternacoesPorCapituloCid('2025-01', null);
     const [sql] = query.mock.calls[0];
-    expect(sql).toMatch(/LEFT\(si\.diag_principal, 1\)/);
-    expect(sql).toMatch(/GROUP BY LEFT\(si\.diag_principal, 1\)/);
+    expect(sql).toMatch(/JOIN cid10_capitulos c/);
+    expect(sql).toMatch(/UPPER\(LEFT\(si\.diag_principal, 3\)\) BETWEEN c\.faixa_inicio AND c\.faixa_fim/);
   });
 
   it('filters out null/empty diag_principal', async () => {

@@ -277,35 +277,6 @@ def _get_sia_producao_columns(conn) -> set[str]:
     return _SIA_PRODUCAO_COLUMNS_CACHE
 
 
-_CID_CAPITULOS: dict[str, str] = {
-    "A": "A — Doenças infecciosas e parasitárias",
-    "B": "B — Doenças infecciosas e parasitárias",
-    "C": "C — Neoplasias malignas",
-    "D": "D — Doenças do sangue / Neoplasias in situ",
-    "E": "E — Doenças endócrinas",
-    "F": "F — Transtornos mentais",
-    "G": "G — Doenças do sistema nervoso",
-    "H": "H — Doenças olhos/ouvidos",
-    "I": "I — Doenças circulatórias",
-    "J": "J — Doenças respiratórias",
-    "K": "K — Doenças digestivas",
-    "L": "L — Doenças da pele",
-    "M": "M — Doenças musculoesqueléticas",
-    "N": "N — Doenças geniturinárias",
-    "O": "O — Gravidez, parto e puerpério",
-    "P": "P — Afecções perinatais",
-    "Q": "Q — Malformações congênitas",
-    "R": "R — Sintomas e sinais inespecíficos",
-    "S": "S — Lesões e traumatismos",
-    "T": "T — Intoxicações e causas externas",
-    "V": "V/W/X/Y — Causas externas",
-    "W": "V/W/X/Y — Causas externas",
-    "X": "V/W/X/Y — Causas externas",
-    "Y": "V/W/X/Y — Causas externas",
-    "Z": "Z — Fatores que influenciam a saúde",
-}
-
-
 def fetch_sih_rows(
     conn,
     competencia: date,
@@ -377,14 +348,18 @@ def fetch_sih_rows(
             cur.execute(
                 f"""
                 SELECT
-                    LEFT(si.diag_principal, 1)  AS capitulo,
-                    SUM(si.qtd_aih)::bigint      AS qtd_aih,
+                    c.rotulo                      AS capitulo,
+                    c.titulo                      AS descricao,
+                    SUM(si.qtd_aih)::bigint       AS qtd_aih,
                     SUM(si.total_valor)::numeric  AS total_valor
                 FROM sih_internacoes si
+                JOIN cid10_capitulos c
+                  ON UPPER(LEFT(si.diag_principal, 3))
+                     BETWEEN c.faixa_inicio AND c.faixa_fim
                 WHERE si.competencia = %s
                   AND si.diag_principal IS NOT NULL
                   AND si.diag_principal != ''{estab_filter}
-                GROUP BY LEFT(si.diag_principal, 1)
+                GROUP BY c.numero, c.rotulo, c.titulo
                 ORDER BY qtd_aih DESC
                 """,
                 cid_params,
@@ -394,9 +369,9 @@ def fetch_sih_rows(
         internacoes_por_capitulo = [
             {
                 "capitulo": row[0],
-                "descricao": _CID_CAPITULOS.get(row[0], "Outros / Ignorado"),
-                "qtd_aih": int(row[1] or 0),
-                "total_valor": float(row[2] or 0),
+                "descricao": row[1],
+                "qtd_aih": int(row[2] or 0),
+                "total_valor": float(row[3] or 0),
             }
             for row in cid_rows
         ]

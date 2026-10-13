@@ -196,12 +196,15 @@ async function listInternacoesPorCapituloCid(competencia, estabelecimentoId) {
 
   const { rows } = await query(
     `SELECT
-         LEFT(si.diag_principal, 1)  AS capitulo,
-         SUM(si.qtd_aih)::bigint     AS qtd_aih,
+         c.rotulo                     AS capitulo,
+         c.titulo                     AS descricao,
+         SUM(si.qtd_aih)::bigint      AS qtd_aih,
          SUM(si.total_valor)::numeric AS total_valor
      FROM sih_internacoes si
+     JOIN cid10_capitulos c
+       ON UPPER(LEFT(si.diag_principal, 3)) BETWEEN c.faixa_inicio AND c.faixa_fim
      ${where}
-     GROUP BY LEFT(si.diag_principal, 1)
+     GROUP BY c.numero, c.rotulo, c.titulo
      ORDER BY qtd_aih DESC`,
     values
   );
