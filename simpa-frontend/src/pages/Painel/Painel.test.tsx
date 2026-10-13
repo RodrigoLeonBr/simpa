@@ -23,6 +23,7 @@ vi.mock('../../components/charts/LazyEChart', () => ({
   sparklineOption: vi.fn(() => ({})),
   trendOption: vi.fn(() => ({})),
   heroTrendOption: vi.fn(() => ({})),
+  competenciaMesAno: (c: string) => { const m = c.match(/^(\d{4})-(\d{2})/); return m ? `${m[2]}/${m[1].slice(2)}` : c; },
 }));
 
 vi.mock('../../hooks/useDashboard', () => ({

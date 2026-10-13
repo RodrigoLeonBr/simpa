@@ -4,7 +4,7 @@ import {
   buildRanking,
   buildTrendSeries,
 } from '../../utils/dashboardView';
-import { EChart, trendOption } from '../../components/charts/LazyEChart';
+import { competenciaMesAno, EChart, trendOption } from '../../components/charts/LazyEChart';
 import { KpiCard } from '../../components/painel/KpiCard';
 import { RankingBar } from '../../components/painel/RankingBar';
 import { useFilters } from '../../hooks/useFilters';
@@ -73,7 +73,10 @@ export function LayoutA({ data, unidades }: LayoutAProps) {
           <div className="painel-section-head">
             <h3>{trendTitle}</h3>
             <span className="mono painel-section-meta">
-              {trend[0]?.competencia.slice(5) ?? '—'} — {trend[trend.length - 1]?.competencia.slice(5) ?? '—'}
+              {trend[0] ? competenciaMesAno(trend[0].competencia) : '—'} —{' '}
+              {trend[trend.length - 1]
+                ? competenciaMesAno(trend[trend.length - 1].competencia)
+                : '—'}
             </span>
           </div>
           <EChart option={trendOption(trend)} height={200} testId="trend-chart" />

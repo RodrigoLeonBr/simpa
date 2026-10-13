@@ -1,5 +1,11 @@
 import type { EChartsCoreOption } from 'echarts/core';
 
+/** "YYYY-MM" → "MM/AA"; mantém o ano p/ séries multi-ano não colidirem no eixo. */
+export function competenciaMesAno(competencia: string): string {
+  const m = competencia.match(/^(\d{4})-(\d{2})/);
+  return m ? `${m[2]}/${m[1].slice(2)}` : competencia;
+}
+
 export function sparklineOption(series: number[], color: string): EChartsCoreOption {
   return {
     backgroundColor: 'transparent',
@@ -29,7 +35,7 @@ export function trendOption(
     tooltip: { trigger: 'axis' },
     xAxis: {
       type: 'category',
-      data: points.map((point) => point.competencia.slice(5)),
+      data: points.map((point) => competenciaMesAno(point.competencia)),
       axisLine: { lineStyle: { color: '#e2e9f1' } },
       axisLabel: { color: '#8595a8', fontSize: 9 },
     },
@@ -88,7 +94,7 @@ export function indicadorHistoryOption(
     tooltip: { trigger: 'axis' },
     xAxis: {
       type: 'category',
-      data: points.map((point) => point.competencia.slice(5)),
+      data: points.map((point) => competenciaMesAno(point.competencia)),
       axisLine: { lineStyle: { color: '#e2e9f1' } },
       axisLabel: { color: '#8595a8', fontSize: 9 },
     },
@@ -142,7 +148,7 @@ export function situacaoTrendOption(
     tooltip: { trigger: 'axis' },
     xAxis: {
       type: 'category',
-      data: points.map((point) => point.competencia.slice(5)),
+      data: points.map((point) => competenciaMesAno(point.competencia)),
       axisLine: { lineStyle: { color: '#1c2c44' } },
       axisLabel: { color: '#6f86a3', fontSize: 9 },
     },

@@ -11,6 +11,7 @@ vi.mock('../../components/charts/LazyEChart', () => ({
   EChart: () => <div data-testid="layout-b-echart" />,
   heroTrendOption: vi.fn(() => ({ series: [] })),
   trendOption: vi.fn(() => ({ series: [] })),
+  competenciaMesAno: (c: string) => { const m = c.match(/^(\d{4})-(\d{2})/); return m ? `${m[2]}/${m[1].slice(2)}` : c; },
 }));
 
 vi.mock('../../components/painel/KpiCard', () => ({

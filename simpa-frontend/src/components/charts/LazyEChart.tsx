@@ -28,6 +28,7 @@ export function EChart(props: EChartProps) {
 }
 
 export {
+  competenciaMesAno,
   heroTrendOption,
   indicadorHistoryOption,
   situacaoTrendOption,

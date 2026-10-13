@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { EChart, situacaoTrendOption } from '../../components/charts/LazyEChart';
+import { competenciaMesAno, EChart, situacaoTrendOption } from '../../components/charts/LazyEChart';
 import { useApp } from '../../contexts/AppContext';
 import { useDashboard } from '../../hooks/useDashboard';
 import { useFilters } from '../../hooks/useFilters';
@@ -30,7 +30,7 @@ export function SituacaoOverlay() {
   const trend = data ? buildTrendSeries(data) : [];
   const trendRange =
     trend.length > 0
-      ? `${trend[0]!.competencia.slice(5)} — ${trend[trend.length - 1]!.competencia.slice(5)}`
+      ? `${competenciaMesAno(trend[0]!.competencia)} — ${competenciaMesAno(trend[trend.length - 1]!.competencia)}`
       : '—';
 
   return (

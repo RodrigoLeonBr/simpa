@@ -1,6 +1,11 @@
 import type { ContratoDashboard, Unidade } from '../../types/contrato';
 import { buildPainelKpis, buildTrendSeries } from '../../utils/dashboardView';
-import { EChart, heroTrendOption, trendOption } from '../../components/charts/LazyEChart';
+import {
+  competenciaMesAno,
+  EChart,
+  heroTrendOption,
+  trendOption,
+} from '../../components/charts/LazyEChart';
 import { KpiCard } from '../../components/painel/KpiCard';
 import { RankingBar } from '../../components/painel/RankingBar';
 import { QualityBars } from '../../components/painel/QualityBars';
@@ -59,7 +64,10 @@ function FocoDynamic({
             <div className="painel-section-head">
               <h3>{widget.titulo}</h3>
               <span className="mono painel-section-meta">
-                {series[0]?.competencia.slice(5) ?? '—'} — {series[series.length - 1]?.competencia.slice(5) ?? '—'}
+                {series[0] ? competenciaMesAno(series[0].competencia) : '—'} —{' '}
+                {series[series.length - 1]
+                  ? competenciaMesAno(series[series.length - 1].competencia)
+                  : '—'}
               </span>
             </div>
             <EChart option={trendOption(series)} height={200} />
