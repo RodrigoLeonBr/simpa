@@ -70,18 +70,19 @@ vacina_esquema(id, imuno_codigo, grupo_id FK, num_doses INT > 0) UNIQUE (imuno_c
 ## Fórmula de cobertura
 
 ```
-cobertura(vacina, grupo, ano) =
-    Σ doses(faixas do grupo, competencia jan→mês-alvo)
-    ─────────────────────────────────────────────────
-    populacao_alvo(grupo, ano) × num_doses_esquema(vacina, grupo)
+cobertura(vacina, grupo, ano, mês) =
+    Σ doses(faixas do grupo, jan→mês)
+    ─────────────────────────────────────────────────────
+    populacao_alvo(grupo, ano) × num_doses_esquema × (mês/12)
 ```
 
 - **Acumulada no ano:** soma as doses de janeiro até `competencia` (inclusive).
+- **Meta proporcional ao período:** o denominador é escalado por `mês/12` (dezembro → fator 1 = meta anual cheia). 100% = no ritmo da meta anual.
 - **Vacina não-alvo:** se não existe linha em `vacina_esquema` para o par (vacina, grupo), essa combinação não aparece no resultado.
 - **Pop = 0 ou denominador = 0:** `cobertura_pct = null`.
 - **Faixa não mapeada:** faixas com `grupo_id IS NULL` em `vacina_faixa_grupo` não contribuem para o numerador de nenhum grupo.
 
-Implementação: `vacinaService.js` → `getCobertura` (query SQL + `computeCobertura` puro).
+Implementação: `vacinaService.js` → `computeCobertura(rows, fatorPeriodo)` (cálculo puro) + `getCobertura` que deriva `fatorPeriodo = mês(competenciaAte) / 12`.
 
 ---
 
@@ -153,6 +154,17 @@ Quatro páginas de cadastro montadas em `CadastroCrudPage` via `cadastroEntities
 
 ---
 
+## Indicadores dinâmicos (/vacinas)
+
+Indicadores de vacina são **widgets do perfil `Vacinas`**, reusando a máquina de `painel_widgets` — a mesma de `/cadastros/indicadores-painel`.
+
+- **Cadastro:** botão "Gerenciar indicadores" em `/vacinas` redireciona para `/cadastros/indicadores-painel?perfil=Vacinas`; a página lê o query-param e pré-seleciona o perfil.
+- **Renderização:** `/vacinas` chama `fetchPainelLayout({ perfil: 'Vacinas', layout: 'A', periodo: 'YYYY-MM' })` e renderiza via `DynamicWidgetGrid` (componente compartilhado extraído de `LayoutB`). Sem widgets cadastrados (404) → seção oculta.
+- **Proração no widget:** a cobertura % prorrateada é calculada no `sql_override` via `EXTRACT(MONTH FROM :competencia_fim::date) / 12.0`.
+- **Métricas base `vacina.*`** — `vacina.doses_total`, `vacina.doses_serie`, `vacina.ranking_vacina` — semeadas em `migration_039_vacina_metricas_seed.sql` (fonte_tipo `consolidado`); exemplos de SQL disponíveis no grupo "Vacinas" do editor de widgets.
+
+---
+
 ## Serviços backend
 
 | Arquivo | Função |
@@ -178,7 +190,7 @@ ETL Python: `parse_vacina_xlsx.py` (raiz). Invocado pelo `vacinaImportService.js
 
 ## Referências cruzadas
 
-- Migration: `migration_036_vacinas.sql` (raiz)
+- Migrations: `migration_036_vacinas.sql` (tabelas), `migration_037_vacina_seed.sql` (grupos/faixa/pop seed), `migration_038_vacina_esquema_pni.sql` (esquema PNI), `migration_039_vacina_metricas_seed.sql` (métricas `vacina.*`)
 - ETL Python: `parse_vacina_xlsx.py` (raiz) — ver [etl-python.md](etl-python.md)
 - Modelo de dados completo: [database.md](database.md#migration-036-vacinas)
 - Endpoints: [backend-api.md](backend-api.md#vacinas)
