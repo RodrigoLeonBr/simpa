@@ -5,6 +5,17 @@ export interface VacinaImportPreview {
   faixas_nao_mapeadas: string[];
 }
 
+export interface VacinaCarga {
+  id: number;
+  competencia: string;
+  arquivo_nome: string;
+  linhas: number;
+  doses_total: number;
+  importado_por: string | null;
+  importado_em: string;
+  status: string;
+}
+
 export interface CoberturaRow {
   imuno_codigo: string;
   imuno_nome: string;

@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { importVacina, previewVacina } from '../../api/vacina';
+import { fetchCargas, importVacina, previewVacina } from '../../api/vacina';
 import { VacinaImportSection } from './VacinaImportSection';
 
 vi.mock('../../api/vacina', async () => {
@@ -10,11 +10,26 @@ vi.mock('../../api/vacina', async () => {
     ...actual,
     previewVacina: vi.fn(),
     importVacina: vi.fn(),
+    fetchCargas: vi.fn(),
   };
 });
 
 const mockPreviewVacina = vi.mocked(previewVacina);
 const mockImportVacina = vi.mocked(importVacina);
+const mockFetchCargas = vi.mocked(fetchCargas);
+
+const sampleCargas = [
+  {
+    id: 3,
+    competencia: '2026-03-01',
+    arquivo_nome: 'vacina_mar_2026.xlsx',
+    linhas: 3055,
+    doses_total: 14811,
+    importado_por: 'planejamento',
+    importado_em: '2026-10-13T13:22:00.000Z',
+    status: 'ok',
+  },
+];
 
 const samplePreview = {
   competencia: '2026-01-01',
@@ -40,6 +55,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockPreviewVacina.mockResolvedValue(samplePreview);
   mockImportVacina.mockResolvedValue(sampleImportResult);
+  mockFetchCargas.mockResolvedValue([]);
 });
 
 afterEach(() => cleanup());
@@ -132,5 +148,62 @@ describe('VacinaImportSection confirm flow', () => {
     await waitFor(() => {
       expect(screen.getByTestId('vacina-import-error')).toHaveTextContent('Servidor indisponível');
     });
+  });
+});
+
+describe('VacinaImportSection histórico', () => {
+  it('lista as cargas retornadas por fetchCargas', async () => {
+    mockFetchCargas.mockResolvedValue(sampleCargas);
+    render(<VacinaImportSection />);
+
+    await waitFor(() => {
+      const hist = screen.getByTestId('vacina-cargas-historico');
+      expect(hist).toHaveTextContent('2026-03');
+      expect(hist).toHaveTextContent('vacina_mar_2026.xlsx');
+      expect(hist).toHaveTextContent('14811');
+    });
+  });
+
+  it('mostra estado vazio quando não há cargas', async () => {
+    mockFetchCargas.mockResolvedValue([]);
+    render(<VacinaImportSection />);
+    await waitFor(() => {
+      expect(screen.getByTestId('vacina-cargas-vazio')).toBeInTheDocument();
+    });
+  });
+
+  it('avisa que vai substituir quando a competência do preview já existe', async () => {
+    mockFetchCargas.mockResolvedValue(sampleCargas);
+    mockPreviewVacina.mockResolvedValue({
+      ...samplePreview,
+      competencia: '2026-03-01',
+    });
+
+    const user = userEvent.setup();
+    render(<VacinaImportSection />);
+    await screen.findByText('vacina_mar_2026.xlsx'); // histórico carregado
+
+    await user.upload(screen.getByTestId('vacina-import-file'), makeFile());
+    await user.click(screen.getByTestId('vacina-preview-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('vacina-import-substituir')).toHaveTextContent('2026-03');
+      expect(screen.getByTestId('vacina-confirm-btn')).toHaveTextContent('Confirmar substituição');
+    });
+  });
+
+  it('não avisa substituição para competência nova', async () => {
+    mockFetchCargas.mockResolvedValue(sampleCargas);
+    // samplePreview = 2026-01, não presente em sampleCargas (2026-03)
+    const user = userEvent.setup();
+    render(<VacinaImportSection />);
+    await screen.findByText('vacina_mar_2026.xlsx');
+
+    await user.upload(screen.getByTestId('vacina-import-file'), makeFile());
+    await user.click(screen.getByTestId('vacina-preview-btn'));
+
+    await screen.findByTestId('vacina-import-preview');
+    expect(screen.queryByTestId('vacina-import-substituir')).not.toBeInTheDocument();
+    expect(screen.getByTestId('vacina-confirm-btn')).toHaveTextContent('Confirmar importação');
   });
 });

@@ -1,6 +1,7 @@
 import { apiFetch } from './client';
 import type {
   VacinaImportPreview,
+  VacinaCarga,
   CoberturaRow,
   VacinaGrupo,
   FaixaGrupo,
@@ -13,6 +14,7 @@ import type {
 
 export type {
   VacinaImportPreview,
+  VacinaCarga,
   CoberturaRow,
   VacinaGrupo,
   FaixaGrupo,
@@ -53,6 +55,10 @@ export function fetchCobertura(params: {
   if (params.grupo_id != null) p.set('grupo_id', String(params.grupo_id));
   if (params.imuno_codigo != null) p.set('imuno_codigo', params.imuno_codigo);
   return apiFetch<CoberturaRow[]>(`/api/vacina/cobertura?${p}`);
+}
+
+export function fetchCargas(): Promise<VacinaCarga[]> {
+  return apiFetch<VacinaCarga[]>('/api/vacina/cargas');
 }
 
 export function fetchGrupos(): Promise<VacinaGrupo[]> {

@@ -45,6 +45,7 @@ vi.mock('../../api/sia', () => ({
 vi.mock('../../api/vacina', () => ({
   previewVacina: vi.fn(),
   importVacina: vi.fn(),
+  fetchCargas: vi.fn().mockResolvedValue([]),
 }));
 
 // SihImportSection (rendered in index.tsx) needs this mock to avoid unhandled rejections.
