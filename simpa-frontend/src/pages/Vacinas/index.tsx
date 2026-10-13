@@ -41,9 +41,11 @@ export default function VacinasPage() {
   }, [mes]);
 
   useEffect(() => {
+    let cancelled = false;
     fetchPainelLayout({ perfil: 'Vacinas', layout: 'A', periodo: `${ANO}-${mes}` })
-      .then((r) => setIndicadores(r.widgets))
-      .catch(() => setIndicadores([])); // ponytail: 404 = sem widgets → seção oculta
+      .then((r) => { if (!cancelled) setIndicadores(r.widgets); })
+      .catch(() => { if (!cancelled) setIndicadores([]); }); // ponytail: 404 = sem widgets → seção oculta
+    return () => { cancelled = true; };
   }, [mes]);
 
   return (

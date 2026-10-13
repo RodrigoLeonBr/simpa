@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { fetchPainelLayout } from '../../api/painelWidgets';
 import { MemoryRouter } from 'react-router-dom';
 import VacinasPage from './index';
 
@@ -28,5 +29,14 @@ describe('VacinasPage — indicadores', () => {
     render(<MemoryRouter><VacinasPage /></MemoryRouter>);
     const link = screen.getByTestId('vacinas-gerenciar-indicadores');
     expect(link).toHaveAttribute('href', expect.stringContaining('perfil=Vacinas'));
+  });
+
+  it('oculta a seção quando não há widgets', async () => {
+    vi.mocked(fetchPainelLayout).mockResolvedValueOnce({
+      perfil: 'Vacinas', layout: 'A', periodo: '2026-12', competencia: '2026-12', widgets: [],
+    });
+    render(<MemoryRouter><VacinasPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByTestId('vacinas-gerenciar-indicadores')).toBeInTheDocument());
+    expect(screen.queryByTestId('vacinas-indicadores')).toBeNull();
   });
 });
