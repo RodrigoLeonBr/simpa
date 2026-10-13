@@ -270,6 +270,60 @@ LIMIT 12`,
       },
     ],
   },
+  {
+    id: 'vacinas',
+    label: 'Vacinas (cobertura prorrateada)',
+    examples: [
+      {
+        id: 'vacina-cobertura-card',
+        title: 'Card % cobertura de uma vacina×grupo (prorrateado)',
+        hint: 'Troque imuno_codigo e o slug do grupo. Formato = Percentual. O mês vem de :competencia_fim.',
+        target: 'main',
+        sql: `SELECT COALESCE(SUM(d.doses),0)::numeric
+     / NULLIF(p.populacao * e.num_doses
+              * (EXTRACT(MONTH FROM :competencia_fim::date)/12.0), 0) AS valor
+FROM vacina_esquema e
+JOIN vacina_populacao_alvo p
+  ON p.grupo_id = e.grupo_id
+ AND p.ano = EXTRACT(YEAR FROM :competencia_fim::date)
+JOIN vacina_faixa_grupo fg ON fg.grupo_id = e.grupo_id
+LEFT JOIN vacina_doses d
+  ON d.imuno_codigo = e.imuno_codigo
+ AND d.faixa_nies = fg.faixa_nies
+ AND d.competencia BETWEEN make_date(EXTRACT(YEAR FROM :competencia_fim::date)::int,1,1)
+                       AND :competencia_fim::date
+WHERE e.imuno_codigo = '42'
+  AND e.grupo_id = (SELECT id FROM vacina_grupos WHERE slug = 'criancas-menores-1-ano')`,
+      },
+      {
+        id: 'vacina-doses-serie',
+        title: 'Linha/sparkline — doses por mês no ano',
+        hint: 'Série mensal de janeiro até o mês selecionado.',
+        target: 'both',
+        sql: `SELECT to_char(d.competencia,'YYYY-MM') AS competencia,
+       COALESCE(SUM(d.doses),0)::bigint AS valor
+FROM vacina_doses d
+WHERE d.competencia BETWEEN make_date(EXTRACT(YEAR FROM :competencia_fim::date)::int,1,1)
+                        AND :competencia_fim::date
+GROUP BY d.competencia
+ORDER BY d.competencia`,
+      },
+      {
+        id: 'vacina-ranking',
+        title: 'Ranking — doses por imunobiológico no período',
+        hint: 'Alias obrigatório: unidade + valor.',
+        target: 'main',
+        sql: `SELECT COALESCE(i.imuno_nome, d.imuno_codigo) AS unidade,
+       COALESCE(SUM(d.doses),0)::bigint AS valor
+FROM vacina_doses d
+LEFT JOIN vacina_imunobiologicos i ON i.imuno_codigo = d.imuno_codigo
+WHERE d.competencia BETWEEN :competencia_inicio::date AND :competencia_fim::date
+GROUP BY 1
+ORDER BY valor DESC
+LIMIT 10`,
+      },
+    ],
+  },
 ];
 
 export function findSqlExample(id: string): PainelSqlExample | undefined {

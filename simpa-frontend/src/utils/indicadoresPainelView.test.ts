@@ -5,6 +5,7 @@ import {
   fetchPainelWidgetsByPerfilLayout,
   formatDiscoverCatalogToast,
   formatPainelWidgetLayoutLabel,
+  PAINEL_WIDGET_PERFIS,
   swapWidgetOrderIds,
 } from './indicadoresPainelView';
 
@@ -74,6 +75,12 @@ describe('fetchPainelWidgetsByPerfilLayout', () => {
       includeInactive: true,
     });
     expect(rows.map((row) => row.id)).toEqual([1, 2]);
+  });
+});
+
+describe('PAINEL_WIDGET_PERFIS', () => {
+  it('inclui o perfil Vacinas', () => {
+    expect(PAINEL_WIDGET_PERFIS).toContain('Vacinas');
   });
 });
 
