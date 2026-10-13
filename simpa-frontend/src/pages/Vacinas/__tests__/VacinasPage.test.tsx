@@ -1,4 +1,5 @@
 import { render, screen, waitFor, within, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import VacinasPage from '../index';
@@ -9,6 +10,10 @@ vi.mock('../../../api/vacina', () => ({
 
 vi.mock('../../../utils/csv', () => ({
   downloadCsv: vi.fn(),
+}));
+
+vi.mock('../../../api/painelWidgets', () => ({
+  fetchPainelLayout: vi.fn().mockResolvedValue({ widgets: [] }),
 }));
 
 // CoberturaMatrix is a real sibling — let it render (it's pure, no API calls).
@@ -43,14 +48,14 @@ beforeEach(() => {
 
 describe('VacinasPage', () => {
   it('renders the page title', async () => {
-    render(<VacinasPage />);
+    render(<MemoryRouter><VacinasPage /></MemoryRouter>);
     expect(screen.getByText(/Cobertura Vacinal 2026/i)).toBeInTheDocument();
     // Wait for loading to finish so async state settles
     await screen.findByTestId('vacinas-matrix');
   });
 
   it('fetches on mount and renders the matrix with vaccine name', async () => {
-    render(<VacinasPage />);
+    render(<MemoryRouter><VacinasPage /></MemoryRouter>);
     const cell = await screen.findByText('COVID-19');
     expect(cell).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith({ ano: 2026, competencia: '2026-12' });
@@ -59,7 +64,7 @@ describe('VacinasPage', () => {
   it('refetches with new competencia when month changes', async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValue(ROWS);
-    const { container } = render(<VacinasPage />);
+    const { container } = render(<MemoryRouter><VacinasPage /></MemoryRouter>);
     await waitFor(() => expect(mockFetch).toHaveBeenCalledWith({ ano: 2026, competencia: '2026-12' }));
 
     mockFetch.mockResolvedValue(ROWS);
@@ -73,7 +78,7 @@ describe('VacinasPage', () => {
 
   it('shows empty message when API returns no rows', async () => {
     mockFetch.mockResolvedValue([]);
-    render(<VacinasPage />);
+    render(<MemoryRouter><VacinasPage /></MemoryRouter>);
     const msg = await screen.findByTestId('vacinas-empty');
     expect(msg).toBeInTheDocument();
   });

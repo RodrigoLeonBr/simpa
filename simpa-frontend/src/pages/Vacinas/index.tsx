@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchCobertura } from '../../api/vacina';
+import { fetchPainelLayout } from '../../api/painelWidgets';
 import type { CoberturaRow } from '../../types/vacina';
+import type { ResolvedPainelWidget } from '../../types/painelWidgets';
 import { downloadCsv } from '../../utils/csv';
 import { CoberturaMatrix } from './CoberturaMatrix';
+import { DynamicWidgetGrid } from '../../components/painel/DynamicWidgetGrid';
 
 const ANO = 2026;
 
@@ -27,12 +31,19 @@ export default function VacinasPage() {
   const [mes, setMes] = useState('12');
   const [rows, setRows] = useState<CoberturaRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [indicadores, setIndicadores] = useState<ResolvedPainelWidget[]>([]);
 
   useEffect(() => {
     setLoading(true);
     fetchCobertura({ ano: ANO, competencia: `${ANO}-${mes}` })
       .then((r) => { setRows(r); setLoading(false); })
       .catch(() => setLoading(false));
+  }, [mes]);
+
+  useEffect(() => {
+    fetchPainelLayout({ perfil: 'Vacinas', layout: 'A', periodo: `${ANO}-${mes}` })
+      .then((r) => setIndicadores(r.widgets))
+      .catch(() => setIndicadores([])); // ponytail: 404 = sem widgets → seção oculta
   }, [mes]);
 
   return (
@@ -62,6 +73,13 @@ export default function VacinasPage() {
           >
             Exportar CSV
           </button>
+          <Link
+            to="/cadastros/indicadores-painel?perfil=Vacinas"
+            className="vacinas-export-btn"
+            data-testid="vacinas-gerenciar-indicadores"
+          >
+            Gerenciar indicadores
+          </Link>
         </div>
       </div>
 
@@ -81,8 +99,16 @@ export default function VacinasPage() {
             <span className="vacinas-legend-item"><span className="vacinas-legend-dot amber" /> 50–79%</span>
             <span className="vacinas-legend-item"><span className="vacinas-legend-dot red" /> &lt; 50%</span>
             <span className="vacinas-legend-item"><span className="vacinas-legend-dot gray" /> Sem dado</span>
+            <span className="vacinas-legend-note">Meta proporcional ao mês ({mes}/12)</span>
           </div>
         </>
+      )}
+
+      {indicadores.length > 0 && (
+        <section className="vacinas-indicadores" data-testid="vacinas-indicadores">
+          <h3 className="painel-title">Indicadores</h3>
+          <DynamicWidgetGrid widgets={indicadores} testId="vacinas-indicadores-grid" />
+        </section>
       )}
     </div>
   );
