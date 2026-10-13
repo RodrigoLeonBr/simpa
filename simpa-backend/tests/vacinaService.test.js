@@ -98,4 +98,14 @@ describe('getCobertura', () => {
     expect(result[0].denominador).toBeCloseTo(2320 * 3 * (6 / 12)); // 3480
     expect(result[0].cobertura_pct).toBeCloseTo((1740 / 3480) * 100); // 50
   });
+
+  it('competenciaAte malformada cai no fator 1 (fallback)', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ imuno_codigo: '42', imuno_nome: 'Penta', grupo_id: 1, grupo_nome: '<1a', num_doses: 3, pop_alvo: 100, doses: 300 }],
+    });
+    const result = await getCobertura({ ano: 2026, competenciaAte: 'invalid' });
+    // fator 1 → denominador = pop × esquema
+    expect(result[0].denominador).toBe(300);
+    expect(result[0].cobertura_pct).toBeCloseTo(100);
+  });
 });
