@@ -119,6 +119,36 @@ describe('IndicadoresPainelPage', () => {
     cleanup();
   });
 
+  describe('deep-link ?perfil=', () => {
+    it('pré-seleciona perfil Vacinas via query param', async () => {
+      mockPlanningUser();
+      vi.mocked(fetchPainelWidgets).mockResolvedValue([] as never);
+
+      render(
+        <MemoryRouter initialEntries={['/cadastros/indicadores-painel?perfil=Vacinas']}>
+          <IndicadoresPainelPage />
+        </MemoryRouter>,
+      );
+
+      const select = await screen.findByTestId('indicadores-painel-perfil-select');
+      expect((select as HTMLSelectElement).value).toBe('Vacinas');
+    });
+
+    it('fallback para APS quando perfil inválido na URL', async () => {
+      mockPlanningUser();
+      vi.mocked(fetchPainelWidgets).mockResolvedValue([] as never);
+
+      render(
+        <MemoryRouter initialEntries={['/cadastros/indicadores-painel?perfil=Inexistente']}>
+          <IndicadoresPainelPage />
+        </MemoryRouter>,
+      );
+
+      const select = await screen.findByTestId('indicadores-painel-perfil-select');
+      expect((select as HTMLSelectElement).value).toBe('APS');
+    });
+  });
+
   describe('listagem e permissões', () => {
     it('renderiza 8 widgets seed quando API retorna lista', async () => {
       mockPlanningUser();

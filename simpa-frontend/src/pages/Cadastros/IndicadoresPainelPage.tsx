@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   createPainelWidget,
   discoverPainelMetricas,
@@ -51,7 +51,14 @@ export function IndicadoresPainelPage() {
   const { user } = useAuth();
   const canEdit = useMemo(() => canEditIndicadoresPainel(user?.perfil), [user?.perfil]);
   const rowCountRef = useRef(0);
-  const [widgetPerfil, setWidgetPerfil] = useState<PainelWidgetPerfil>('APS');
+  const [searchParams] = useSearchParams();
+  const perfilParam = searchParams.get('perfil');
+  const initialPerfil: PainelWidgetPerfil = (PAINEL_WIDGET_PERFIS as readonly string[]).includes(
+    perfilParam ?? '',
+  )
+    ? (perfilParam as PainelWidgetPerfil)
+    : 'APS';
+  const [widgetPerfil, setWidgetPerfil] = useState<PainelWidgetPerfil>(initialPerfil);
   const [widgetLayout, setWidgetLayout] = useState<PainelWidgetLayout>('A');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewRow, setPreviewRow] = useState<PainelWidgetConfig | null>(null);
