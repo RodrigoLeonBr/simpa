@@ -31,6 +31,30 @@ describe('vacinaRelatorioService.getResumoDoses', () => {
     expect(out.por_sistema[0].sistema_origem).toBe('NOVO PNI');
   });
 
+  it('mes set but month absent from serie → total_doses_mes 0 (nullish fallback)', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ competencia: '2026-01', doses: '100' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const out = await getResumoDoses({ ano: 2026, mes: 5, cnesSala: null });
+    expect(out.total_doses_ano).toBe(100); // jan only, within jan..mai
+    expect(out.total_doses_mes).toBe(0); // mai ausente da série → ?? 0
+  });
+
+  it('cnesSala passes through as $3 and defaults apply when omitted', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+
+    await getResumoDoses({ ano: 2026, cnesSala: '4032128' }); // mes omitido → default null
+
+    // todas as 5 queries recebem cnes_sala como 3º parâmetro
+    for (const call of db.query.mock.calls) {
+      expect(call[1][2]).toBe('4032128');
+    }
+  });
+
   it('without mes, total_doses_mes equals full-year accumulated', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [
