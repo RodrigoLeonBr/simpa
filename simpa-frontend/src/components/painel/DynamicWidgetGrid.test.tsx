@@ -9,6 +9,14 @@ vi.mock('../charts/LazyEChart', () => ({
   competenciaMesAno: (c: string) => c,
 }));
 
+vi.mock('./KpiCard', () => ({
+  KpiCard: ({ kpi }: { kpi: { label: string } }) => <div data-testid="kpi-card">{kpi.label}</div>,
+}));
+
+vi.mock('./RankingBar', () => ({
+  RankingBar: () => <div data-testid="ranking-bar" />,
+}));
+
 const card: ResolvedPainelWidget = {
   slug: 'c1', ordem: 1, tipo: 'card', titulo: 'Doses', subtitulo: null,
   formato: 'numero', value: 123, valueLabel: '123', isNull: false,
@@ -24,5 +32,10 @@ describe('DynamicWidgetGrid', () => {
   it('lista vazia não quebra', () => {
     render(<DynamicWidgetGrid widgets={[]} testId="empty-grid" />);
     expect(screen.getByTestId('empty-grid')).toBeInTheDocument();
+  });
+
+  it('mostra estado de carregando', () => {
+    render(<DynamicWidgetGrid widgets={[]} loading testId="loading-grid" />);
+    expect(screen.getByText('Atualizando indicadores dinâmicos…')).toBeInTheDocument();
   });
 });
