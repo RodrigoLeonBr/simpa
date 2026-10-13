@@ -216,6 +216,14 @@ Resumo: **[cadastros.md](docs/agent/cadastros.md#workflow-leitos-hospitalares-vi
 
 ---
 
+## Feature concluída: vacinas-indicadores-proracao
+
+**Entregue:** cobertura em `/vacinas` com **denominador prorrateado pelo mês** (`pop × num_doses × mês/12`; dez = ano cheio) em `vacinaService.computeCobertura(rows, fatorPeriodo)`; **indicadores dinâmicos** reusando `painel_widgets` via perfil `Vacinas` (cadastro em `/cadastros/indicadores-painel?perfil=Vacinas`, render em `/vacinas` por `DynamicWidgetGrid` extraído de `LayoutB`); seeds `migration_045` (grupos/faixa/pop, Censo IBGE 2022 Americana), `migration_046` (esquema PNI), `migration_047` (métricas `vacina.*`). Proração no widget via `EXTRACT(MONTH FROM :competencia_fim::date)/12.0`.
+
+**Migrations:** `migration_045_vacina_grupos_seed.sql`, `migration_046_vacina_esquema_pni.sql`, `migration_047_vacina_metricas_seed.sql` · Doc: **[vacinas.md](docs/agent/vacinas.md)**.
+
+---
+
 ## Feature concluída: painel-periodo-foco-hospitalar
 
 **Entregue:** seleção de período (mês/trimestre/quadrimestre/ano); `periodo.js`; `migration_031` `agregacao_periodo`; `resolveMetricValueForWidget`; `PeriodoSelect`; Layout B (Foco) dinâmico para não-APS.
