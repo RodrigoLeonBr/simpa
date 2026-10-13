@@ -128,7 +128,7 @@ def _nullify_nan(val):
     return val
 
 
-def parse(path):
+def parse(path, name_hint=None):
     df = pd.read_excel(path, sheet_name='Export')
 
     # Detecta competencia a partir da linha de rodape antes de descartar
@@ -138,8 +138,10 @@ def parse(path):
             competencia = _parse_competencia_from_footer(cell)
             break
 
+    # Fallback pelo nome: upload chega com path temporario (multer), entao
+    # o nome original do arquivo vem como name_hint.
     if not competencia:
-        competencia = _parse_competencia_from_filename(path)
+        competencia = _parse_competencia_from_filename(name_hint or path)
 
     # ponytail: acesso posicional — nomes de coluna do NIES vêm com corrupção de encoding; acesso por nome é menos confiável
     # Descarta rodape (linha vazia + linha de filtros) via coluna doses
@@ -173,10 +175,10 @@ def parse(path):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print('Uso: python parse_vacina_xlsx.py <arquivo.xlsx>', file=sys.stderr)
+        print('Uso: python parse_vacina_xlsx.py <arquivo.xlsx> [nome_original]', file=sys.stderr)
         sys.exit(1)
     try:
-        result = parse(sys.argv[1])
+        result = parse(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
     except FileNotFoundError:
         print(f'ERRO: arquivo nao encontrado: {sys.argv[1]}', file=sys.stderr)
         sys.exit(1)

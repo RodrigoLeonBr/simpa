@@ -62,7 +62,7 @@ export interface VacinaDosesResumo {
   por_vacina: { imuno_codigo: string; imuno_nome: string; doses: number }[];
   por_faixa: { faixa_nies: string; doses: number }[];
   por_unidade: { cnes_sala: string; sala_nome: string; doses: number }[];
-  por_sistema: { sistema_origem: string; doses: number }[];
+  por_sistema: { sistema_origem: string | null; doses: number }[];
 }
 
 export interface VacinaDosesFiltros {

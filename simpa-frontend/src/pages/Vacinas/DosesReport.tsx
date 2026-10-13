@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { fetchDosesResumo, fetchDosesFiltros } from '../../api/vacina';
 import type { VacinaDosesResumo, VacinaDosesFiltros } from '../../types/vacina';
-import { EChart } from '../../components/charts/EChart';
+import { EChart } from '../../components/charts/LazyEChart';
 import { downloadCsv } from '../../utils/csv';
 
 const MONTHS: Array<[string, string]> = [

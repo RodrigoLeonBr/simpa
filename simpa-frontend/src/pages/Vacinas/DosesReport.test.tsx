@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchDosesResumo, fetchDosesFiltros } from '../../api/vacina';
 import { DosesReport } from './DosesReport';
 
+vi.mock('../../components/charts/LazyEChart', () => ({
+  EChart: ({ testId }: { testId?: string }) => <div data-testid={testId} />,
+}));
+
 vi.mock('../../api/vacina', async () => {
   const actual = await vi.importActual<typeof import('../../api/vacina')>('../../api/vacina');
   return { ...actual, fetchDosesResumo: vi.fn(), fetchDosesFiltros: vi.fn() };

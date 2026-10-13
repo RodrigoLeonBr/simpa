@@ -14,9 +14,11 @@ const pythonBin = process.env.PYTHON_BIN || 'python3';
  * @param {string} xlsxPath
  * @returns {Promise<{competencia:string, doses_total:number, arquivo_nome:string, linhas:Array}>}
  */
-function parseUpload(xlsxPath) {
+function parseUpload(xlsxPath, originalName) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(pythonBin, [PARSER_SCRIPT, xlsxPath], {
+    const args = [PARSER_SCRIPT, xlsxPath];
+    if (originalName) args.push(originalName);
+    const proc = spawn(pythonBin, args, {
       cwd: path.dirname(PARSER_SCRIPT),
       env: { ...process.env },
     });
